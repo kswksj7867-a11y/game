@@ -439,6 +439,10 @@ button { font: inherit; color: inherit; }
 .recipe b { font-weight: 600; color: var(--ink); white-space: nowrap; }
 .recipe.is-ready { border-color: rgba(255, 194, 75, 0.5); color: var(--amber); }
 .recipe.is-done { opacity: 0.55; }
+.recipe.is-hot { border-color: rgba(127, 231, 255, 0.55); color: var(--ink); }
+.recipe.is-hot.is-ready { border-color: var(--amber); }
+.recipes.is-compact { gap: 4px; }
+.recipes.is-compact .recipe { padding: 5px 9px; font-size: 0.75rem; }
 
 .final { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 18px; }
 .final-score {
@@ -626,6 +630,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         <h2 class="panel-title" id="choice-title">스킬을 하나 고르세요</h2>
         <div class="cards" id="cards"></div>
         <div class="slots" id="choice-slots"></div>
+        <details class="recipes-box" open>
+          <summary>합체 레시피</summary>
+          <ul class="recipes is-compact" id="choice-recipes"></ul>
+        </details>
       </section>
 
       <section class="overlay" id="screen-pause" aria-labelledby="pause-title" hidden>
@@ -719,7 +727,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       title: $('screen-title'), stages: $('screen-stages'), choice: $('screen-choice'), pause: $('screen-pause'), result: $('screen-result'),
     },
     titleBest: $('title-best'), start: $('start'), stageList: $('stage-list'), stagesBack: $('stages-back'),
-    choiceEyebrow: $('choice-eyebrow'), choiceTitle: $('choice-title'), cards: $('cards'), choiceSlots: $('choice-slots'),
+    choiceEyebrow: $('choice-eyebrow'), choiceTitle: $('choice-title'), cards: $('cards'), choiceSlots: $('choice-slots'), choiceRecipes: $('choice-recipes'),
     pauseInfo: $('pause-info'), pauseSlots: $('pause-slots'), recipes: $('recipes'), resume: $('resume'), quit: $('quit'),
     resultEyebrow: $('result-eyebrow'), resultTitle: $('result-title'), finalScore: $('final-score'), finalSeal: $('final-seal'),
     finalNote: $('final-note'), stTime: $('st-time'), stLevel: $('st-level'), stKills: $('st-kills'), stStage: $('st-stage'),
@@ -741,29 +749,43 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   const WEAPON_SLOTS = 4;
   const PASSIVE_SLOTS = 4;
   const MAX_ENEMIES = 260;
-  const MAX_ESHOTS = 520;
+  const MAX_ESHOTS = 560;
   const MAX_GEMS = 360;
   const STORE_KEY = 'galaxy-defense:v2';
   const OLD_KEY = 'galaxy-defense:v1';
   const MAX_RECORDS = 200;
 
+  // `bias` makes some squads more common in a region so each one plays differently.
   const STAGES = [
-    { name: '달 궤도', about: '첫 출격 지역. 적이 천천히 늘어나요.', mul: 1, color: '#a88bff', sky: ['#0d1236', '#070918'], neb: ['#a88bff', '#7fe7ff', '#ff6f91'] },
-    { name: '소행성대', about: '떠다니는 바위 사이로 더 많은 적이 와요.', mul: 1.2, color: '#ffa94d', sky: ['#1d1531', '#08070f'], neb: ['#ffa94d', '#ff6f91', '#a88bff'], rocks: true },
-    { name: '푸른 성운', about: '추적기 떼가 사방에서 몰려와요.', mul: 1.45, color: '#3fe0b2', sky: ['#072a35', '#04080f'], neb: ['#3fe0b2', '#7fe7ff', '#a88bff'], rocks: true, seekers: 2 },
-    { name: '사건의 지평선', about: '총알이 빨라지고 장갑선이 일찍 나와요.', mul: 1.75, color: '#ff5a6e', sky: ['#2a0d1f', '#080409'], neb: ['#ff5a6e', '#a88bff', '#ffa94d'], rocks: true, early: 0.7 },
-    { name: '은하 중심', about: '모든 적이 최대 전력으로 몰려와요.', mul: 2.1, color: '#ffc24b', sky: ['#2a2210', '#0a0805'], neb: ['#ffc24b', '#eef0ff', '#ff6f91'], rocks: true, seekers: 1.5, early: 0.55 },
+    { name: '달 궤도', about: '첫 출격 지역. 적이 천천히 늘어나요.', mul: 1, color: '#a88bff', sky: ['#0d1236', '#070918'], neb: ['#a88bff', '#7fe7ff', '#ff6f91'], bias: {} },
+    { name: '소행성대', about: '바위와 혜성 사이로 폭격기가 지나가요.', mul: 1.2, color: '#ffa94d', sky: ['#1d1531', '#08070f'], neb: ['#ffa94d', '#ff6f91', '#a88bff'], rocks: true, bias: { rocks: 2, comets: 2, bombers: 1.7, minefield: 1.4 } },
+    { name: '푸른 성운', about: '벌떼와 유령기가 사방에서 몰려와요.', mul: 1.45, color: '#3fe0b2', sky: ['#072a35', '#04080f'], neb: ['#3fe0b2', '#7fe7ff', '#a88bff'], rocks: true, bias: { seekers: 2, snake: 2, hsnake: 2, phantoms: 2, splitters: 1.5, ambush: 1.5 } },
+    { name: '사건의 지평선', about: '광선함과 저격기가 길목을 막아요.', mul: 1.75, color: '#ff5a6e', sky: ['#2a0d1f', '#080409'], neb: ['#ff5a6e', '#a88bff', '#ffa94d'], rocks: true, early: 0.7, bias: { lancers: 2, snipers: 2, spinner: 1.6, minefield: 1.5, wall: 1.4 } },
+    { name: '은하 중심', about: '모함과 수리선을 앞세운 총공세예요.', mul: 2.1, color: '#ffc24b', sky: ['#2a2210', '#0a0805'], neb: ['#ffc24b', '#eef0ff', '#ff6f91'], rocks: true, early: 0.55, bias: { carrier: 1.7, healers: 1.7, shieldwall: 1.7, spinner: 1.3, lancers: 1.3 } },
   ];
   // kamikaze ships blow up when they ram you
   const ENEMY = {
     scout: { r: 11, hp: 14, xp: 1, pts: 10, touch: 8, kamikaze: true },
+    swarm: { r: 7, hp: 6, xp: 1, pts: 5, touch: 5, kamikaze: true },
+    fragment: { r: 8, hp: 8, xp: 1, pts: 5, touch: 6, kamikaze: true },
     seeker: { r: 9, hp: 10, xp: 1, pts: 10, touch: 6, kamikaze: true },
+    comet: { r: 10, hp: 22, xp: 2, pts: 15, touch: 14, kamikaze: true },
     diver: { r: 13, hp: 30, xp: 2, pts: 20, touch: 12, kamikaze: true },
+    splitter: { r: 16, hp: 60, xp: 3, pts: 30, touch: 12 },
+    sniper: { r: 12, hp: 40, xp: 3, pts: 40, touch: 10 },
+    phantom: { r: 12, hp: 45, xp: 3, pts: 40, touch: 10 },
+    mine: { r: 10, hp: 25, xp: 1, pts: 10, touch: 16 },
+    bomber: { r: 18, hp: 80, xp: 4, pts: 50, touch: 14 },
+    healer: { r: 14, hp: 70, xp: 4, pts: 60, touch: 10 },
     gunner: { r: 20, hp: 90, xp: 4, pts: 50, touch: 15 },
+    spinner: { r: 18, hp: 120, xp: 5, pts: 60, touch: 15 },
+    shield: { r: 20, hp: 140, xp: 5, pts: 60, touch: 16 },
+    lancer: { r: 18, hp: 110, xp: 5, pts: 70, touch: 15 },
     tank: { r: 24, hp: 260, xp: 8, pts: 80, touch: 20 },
+    carrier: { r: 30, hp: 420, xp: 12, pts: 140, touch: 22 },
     rock: { r: 16, hp: 40, xp: 1, pts: 5, touch: 10 },
     cruiser: { r: 44, hp: 2600, xp: 90, pts: 1500, touch: 25, boss: true },
-    mother: { r: 54, hp: 60000, xp: 0, pts: 20000, touch: 30, boss: true },
+    mother: { r: 54, hp: 50000, xp: 0, pts: 20000, touch: 30, boss: true },
   };
   // Five levels of stats per weapon, what each level adds, and the combined form.
   const WEAPONS = {
@@ -860,16 +882,38 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   };
   // Chance per kill before luck; gunners and tanks triple it.
   const DROPS = [['heal', 0.012], ['magnet', 0.006], ['bomb', 0.004], ['mystery', 0.014], ['chest', 0.0025]];
+  // Squads the director can send: when they start (seconds into the run), how often, and how much spawn budget they use.
   const PATTERNS = [
     { id: 'sine', from: 0, w: 4, cost: 5 },
     { id: 'arc', from: 0, w: 3, cost: 6 },
-    { id: 'seekers', from: 60, w: 4, cost: 4 },
-    { id: 'rain', from: 70, w: 3, cost: 7 },
+    { id: 'zigzag', from: 20, w: 3, cost: 5 },
+    { id: 'stair', from: 30, w: 2.5, cost: 6 },
+    { id: 'pincer', from: 45, w: 2.5, cost: 8 },
+    { id: 'seekers', from: 60, w: 3.5, cost: 4 },
+    { id: 'rain', from: 70, w: 2.5, cost: 7 },
+    { id: 'snake', from: 80, w: 2.5, cost: 6 },
     { id: 'vee', from: 90, w: 2, cost: 5 },
+    { id: 'circle', from: 100, w: 2, cost: 7 },
     { id: 'divers', from: 110, w: 2.5, cost: 5 },
+    { id: 'escort', from: 120, w: 1.6, cost: 9 },
+    { id: 'hsnake', from: 130, w: 2, cost: 6 },
+    { id: 'splitters', from: 140, w: 1.8, cost: 7 },
+    { id: 'snipers', from: 150, w: 1.6, cost: 6 },
     { id: 'gunner', from: 160, w: 1.6, cost: 8 },
+    { id: 'loop', from: 170, w: 2, cost: 7 },
+    { id: 'bombers', from: 180, w: 1.6, cost: 8 },
+    { id: 'wall', from: 200, w: 1.6, cost: 9 },
+    { id: 'minefield', from: 210, w: 1.5, cost: 7 },
+    { id: 'phantoms', from: 230, w: 1.6, cost: 7 },
+    { id: 'ambush', from: 240, w: 1.4, cost: 6 },
+    { id: 'spinner', from: 260, w: 1.3, cost: 9 },
+    { id: 'lancers', from: 280, w: 1.3, cost: 9 },
     { id: 'tank', from: 300, w: 1.2, cost: 12 },
+    { id: 'shieldwall', from: 320, w: 1.2, cost: 12 },
+    { id: 'healers', from: 360, w: 1.1, cost: 11 },
+    { id: 'carrier', from: 420, w: 1, cost: 14 },
     { id: 'rocks', from: 0, w: 3, cost: 4, needs: 'rocks' },
+    { id: 'comets', from: 60, w: 2, cost: 5, needs: 'rocks' },
   ];
   const ICONS = {
     cannon: '<path d="M8 20V9M12 20V4M16 20V9" />',
@@ -954,7 +998,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     deep: token('--deep', '#0d1236'), void: token('--void', '#070918'),
   };
   const KIND_COLOR = {
-    scout: COLOR.coral, seeker: COLOR.lime, diver: COLOR.orange, gunner: COLOR.teal, tank: COLOR.steel,
+    scout: COLOR.coral, swarm: COLOR.lime, fragment: COLOR.coral, seeker: COLOR.lime, comet: COLOR.orange, diver: COLOR.orange,
+    splitter: COLOR.coral, sniper: COLOR.steel, phantom: COLOR.violet, mine: COLOR.danger, bomber: COLOR.amber, healer: COLOR.teal,
+    gunner: COLOR.teal, spinner: COLOR.violet, shield: COLOR.cyan, lancer: COLOR.cyan, tank: COLOR.steel, carrier: COLOR.steel,
     rock: COLOR.rock, cruiser: COLOR.amber, mother: COLOR.violet,
   };
   const FONT_DATA = '"Orbit", ui-monospace, monospace';
@@ -1089,7 +1135,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   const sfx = (() => {
     const last = {};
-    const GAP = { shot: 0.075, hit: 0.045, boom: 0.06, gem: 0.035, zap: 0.08, missile: 0.15, laser: 0.3, nova: 0.2, hurt: 0.15 };
+    const GAP = { shot: 0.075, hit: 0.045, boom: 0.06, gem: 0.035, zap: 0.08, missile: 0.15, laser: 0.3, nova: 0.2, hurt: 0.15, snipe: 0.1, charge: 0.3, beam: 0.2 };
     const b = () => audio.sfx;
     const sounds = {
       shot() { tone(b(), 1250, 0, 0.05, 'square', 0.016, 820); },
@@ -1117,6 +1163,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       clear() { [523.25, 659.25, 783.99, 1046.5, 1318.5, 1567.98].forEach((f, k) => tone(b(), f, k * 0.11, 0.5, 'triangle', 0.08)); },
       stamp() { tone(b(), 130, 0, 0.16, 'sine', 0.22, 55); },
       dash() { tone(b(), 300, 0, 0.25, 'sawtooth', 0.02, 900); },
+      snipe() { tone(b(), 1700, 0, 0.12, 'sawtooth', 0.03, 500); },
+      charge() { tone(b(), 300, 0, 0.9, 'sawtooth', 0.02, 1200, 1800); },
+      beam() { tone(b(), 120, 0, 0.8, 'sawtooth', 0.05, 90, 900); hiss(b(), 0, 0.6, 0.06, 3000, 1500, 'bandpass'); },
     };
     function play(name) {
       const ac = audio.ac;
@@ -1300,7 +1349,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       g.fillRect(-24, -24, 48, 48);
     });
   }
-  const ORB = { coral: orb(COLOR.coral), amber: orb(COLOR.amber), violet: orb(COLOR.violet), teal: orb(COLOR.teal), cyan: orb(COLOR.cyan), lime: orb(COLOR.lime) };
+  const ORB = { coral: orb(COLOR.coral), amber: orb(COLOR.amber), violet: orb(COLOR.violet), teal: orb(COLOR.teal), cyan: orb(COLOR.cyan), lime: orb(COLOR.lime), red: orb(COLOR.danger) };
   const BOLT = sprite(48, 1, (g) => {
     g.shadowColor = COLOR.cyan;
     g.shadowBlur = 8;
@@ -1449,6 +1498,245 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       g.arc(0, 6, 3, 0, TAU);
       g.fill();
     },
+    swarm(g) {
+      hullPath(g, COLOR.lime, (p) => {
+        p.beginPath();
+        p.moveTo(0, 7);
+        p.lineTo(6, -4);
+        p.lineTo(0, -1.5);
+        p.lineTo(-6, -4);
+        p.closePath();
+      });
+    },
+    fragment(g) {
+      hullPath(g, COLOR.coral, (p) => {
+        p.beginPath();
+        p.moveTo(0, -8);
+        p.lineTo(7, 0);
+        p.lineTo(0, 8);
+        p.lineTo(-7, 0);
+        p.closePath();
+      });
+      g.fillStyle = COLOR.ink;
+      g.beginPath();
+      g.arc(0, 0, 1.6, 0, TAU);
+      g.fill();
+    },
+    comet(g) { // points along +x, rotated to its heading
+      const grd = g.createRadialGradient(0, 0, 0, 0, 0, 14);
+      grd.addColorStop(0, rgba(COLOR.amber, 0.9));
+      grd.addColorStop(1, rgba(COLOR.orange, 0));
+      g.fillStyle = grd;
+      g.fillRect(-15, -15, 30, 30);
+      g.fillStyle = COLOR.orange;
+      g.beginPath();
+      g.arc(2, 0, 8, 0, TAU);
+      g.fill();
+      g.fillStyle = rgba(COLOR.void, 0.35);
+      g.beginPath();
+      g.arc(4, -2, 2.5, 0, TAU);
+      g.fill();
+    },
+    splitter(g) {
+      for (let k = 0; k < 3; k++) {
+        const a = Math.PI / 2 + (k / 3) * TAU;
+        hullPath(g, COLOR.coral, (p) => {
+          p.beginPath();
+          p.arc(Math.cos(a) * 8, Math.sin(a) * 8, 8, 0, TAU);
+        });
+      }
+      g.fillStyle = rgba(COLOR.void, 0.5);
+      g.beginPath();
+      g.arc(0, 0, 6, 0, TAU);
+      g.fill();
+      g.fillStyle = COLOR.amber;
+      g.beginPath();
+      g.arc(0, 0, 3, 0, TAU);
+      g.fill();
+    },
+    sniper(g) {
+      hullPath(g, COLOR.steel, (p) => {
+        p.beginPath();
+        p.moveTo(-12, -8);
+        p.lineTo(12, -8);
+        p.lineTo(7, 6);
+        p.lineTo(-7, 6);
+        p.closePath();
+      });
+      g.fillStyle = rgba(COLOR.void, 0.6);
+      g.fillRect(-2, 4, 4, 13);
+      g.fillStyle = COLOR.danger;
+      g.beginPath();
+      g.arc(0, -2, 3, 0, TAU);
+      g.fill();
+    },
+    phantom(g) {
+      hullPath(g, COLOR.violet, (p) => {
+        p.beginPath();
+        p.moveTo(0, -12);
+        p.quadraticCurveTo(12, -10, 11, 4);
+        p.lineTo(6, 12);
+        p.lineTo(3, 7);
+        p.lineTo(0, 12);
+        p.lineTo(-3, 7);
+        p.lineTo(-6, 12);
+        p.lineTo(-11, 4);
+        p.quadraticCurveTo(-12, -10, 0, -12);
+        p.closePath();
+      });
+      g.fillStyle = COLOR.ink;
+      for (const x of [-4, 4]) {
+        g.beginPath();
+        g.arc(x, -2, 2, 0, TAU);
+        g.fill();
+      }
+    },
+    mine(g) {
+      g.strokeStyle = COLOR.danger;
+      g.lineWidth = 2;
+      for (let k = 0; k < 8; k++) {
+        const a = (k / 8) * TAU;
+        g.beginPath();
+        g.moveTo(Math.cos(a) * 7, Math.sin(a) * 7);
+        g.lineTo(Math.cos(a) * 12, Math.sin(a) * 12);
+        g.stroke();
+      }
+      hullPath(g, COLOR.steel, (p) => {
+        p.beginPath();
+        p.arc(0, 0, 8, 0, TAU);
+      });
+      g.fillStyle = rgba(COLOR.void, 0.45);
+      g.beginPath();
+      g.arc(0, 0, 8, 0, TAU);
+      g.fill();
+    },
+    bomber(g) { // points along +x, the way it flies
+      hullPath(g, COLOR.amber, (p) => {
+        p.beginPath();
+        p.moveTo(18, 0);
+        p.lineTo(4, -6);
+        p.lineTo(-6, -18);
+        p.lineTo(-12, -18);
+        p.lineTo(-8, -5);
+        p.lineTo(-16, -4);
+        p.lineTo(-16, 4);
+        p.lineTo(-8, 5);
+        p.lineTo(-12, 18);
+        p.lineTo(-6, 18);
+        p.lineTo(4, 6);
+        p.closePath();
+      });
+      g.fillStyle = rgba(COLOR.void, 0.45);
+      g.fillRect(-8, -2, 16, 4);
+      g.fillStyle = COLOR.ink;
+      g.beginPath();
+      g.arc(10, 0, 2.2, 0, TAU);
+      g.fill();
+    },
+    healer(g) {
+      hullPath(g, COLOR.teal, (p) => {
+        p.beginPath();
+        p.moveTo(-5, -14);
+        p.lineTo(5, -14);
+        p.lineTo(5, -5);
+        p.lineTo(14, -5);
+        p.lineTo(14, 5);
+        p.lineTo(5, 5);
+        p.lineTo(5, 14);
+        p.lineTo(-5, 14);
+        p.lineTo(-5, 5);
+        p.lineTo(-14, 5);
+        p.lineTo(-14, -5);
+        p.lineTo(-5, -5);
+        p.closePath();
+      });
+      g.fillStyle = COLOR.ink;
+      g.fillRect(-2, -7, 4, 14);
+      g.fillRect(-7, -2, 14, 4);
+    },
+    spinner(g) { // rotated as it spins
+      for (let k = 0; k < 3; k++) {
+        g.save();
+        g.rotate((k / 3) * TAU);
+        hullPath(g, COLOR.violet, (p) => {
+          p.beginPath();
+          p.moveTo(0, 0);
+          p.lineTo(20, -5);
+          p.lineTo(18, 5);
+          p.closePath();
+        });
+        g.restore();
+      }
+      hullPath(g, COLOR.violet, (p) => {
+        p.beginPath();
+        p.arc(0, 0, 10, 0, TAU);
+      });
+      g.fillStyle = COLOR.ink;
+      g.beginPath();
+      g.arc(0, 0, 3.5, 0, TAU);
+      g.fill();
+    },
+    shield(g) {
+      hullPath(g, COLOR.steel, (p) => {
+        p.beginPath();
+        p.moveTo(-16, -14);
+        p.lineTo(16, -14);
+        p.lineTo(20, 2);
+        p.lineTo(10, 10);
+        p.lineTo(-10, 10);
+        p.lineTo(-20, 2);
+        p.closePath();
+      });
+      g.strokeStyle = rgba(COLOR.cyan, 0.35);
+      g.lineWidth = 7;
+      g.beginPath();
+      g.arc(0, -2, 22, Math.PI * 0.18, Math.PI * 0.82);
+      g.stroke();
+      g.strokeStyle = COLOR.cyan;
+      g.lineWidth = 3;
+      g.stroke();
+    },
+    lancer(g) {
+      hullPath(g, COLOR.steel, (p) => {
+        p.beginPath();
+        p.moveTo(0, 18);
+        p.lineTo(9, 6);
+        p.lineTo(16, -6);
+        p.lineTo(8, -16);
+        p.lineTo(-8, -16);
+        p.lineTo(-16, -6);
+        p.lineTo(-9, 6);
+        p.closePath();
+      });
+      g.fillStyle = rgba(COLOR.void, 0.5);
+      g.fillRect(-3, -14, 6, 26);
+      g.fillStyle = COLOR.cyan;
+      g.beginPath();
+      g.arc(0, 12, 4, 0, TAU);
+      g.fill();
+    },
+    carrier(g) {
+      hullPath(g, COLOR.steel, (p) => {
+        p.beginPath();
+        p.moveTo(-32, -12);
+        p.lineTo(-20, -22);
+        p.lineTo(20, -22);
+        p.lineTo(32, -12);
+        p.lineTo(34, 10);
+        p.lineTo(24, 20);
+        p.lineTo(-24, 20);
+        p.lineTo(-34, 10);
+        p.closePath();
+      });
+      g.fillStyle = rgba(COLOR.void, 0.5);
+      g.fillRect(-14, 6, 28, 12);
+      g.fillStyle = COLOR.amber;
+      for (const x of [-22, -11, 0, 11, 22]) g.fillRect(x - 1.5, -14, 3, 3);
+      g.fillStyle = COLOR.danger;
+      g.beginPath();
+      g.arc(0, -6, 4, 0, TAU);
+      g.fill();
+    },
     rock(g) {
       const pts = [[1, 0], [0.75, 0.62], [0.12, 1], [-0.6, 0.78], [-1, 0.1], [-0.72, -0.7], [0.05, -1], [0.7, -0.66]];
       g.beginPath();
@@ -1570,10 +1858,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
     });
   }
+  const SPRITE_SIZE = {
+    tank: 52, gunner: 46, carrier: 74, shield: 50, spinner: 46, lancer: 42, bomber: 42, healer: 34, splitter: 38,
+    sniper: 36, phantom: 30, mine: 28, comet: 32, swarm: 18, fragment: 20,
+  };
   function buildSprites() {
     const k = Math.min(4, Math.max(1, scale * dpr));
     for (const kind of Object.keys(PAINT)) {
-      const size = kind === 'tank' ? 52 : kind === 'gunner' ? 46 : 34;
+      const size = SPRITE_SIZE[kind] || 34;
       const img = sprite(size, k, PAINT[kind]);
       SPR[kind] = { img, flash: whiteOf(img), size };
     }
@@ -1606,6 +1898,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   const rings = [];
   const texts = [];
   const zaps = [];
+  const beams = [];
+  const warns = [];
   const stars = [];
   const keys = new Set();
   const drag = { id: null, x: 0, y: 0 };
@@ -1706,7 +2000,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (grid.length !== n) grid = Array.from({ length: n }, () => []);
     else for (const cell of grid) cell.length = 0;
     for (const e of enemies) {
-      if (e.dead || e.t < 0 || e.boss) continue; // bosses are checked on their own
+      if (e.dead || e.t < 0 || e.boss || e.ghost) continue; // bosses are checked on their own; faded phantoms can't be hit
       const cx = Math.floor((e.x + 60) / CELL);
       const cy = Math.floor((e.y + 80) / CELL);
       if (cx < 0 || cy < 0 || cx >= gridCols || cy >= gridRows) continue;
@@ -1842,7 +2136,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   // Early levels come every few seconds; later ones take longer.
   function xpNeed(level) {
-    return Math.round(3 + 2 * level + 0.16 * level * level);
+    return Math.round(3 + 2 * level + 0.13 * level * level);
   }
   function gainXp(v) {
     run.xp += v;
@@ -1872,83 +2166,260 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const def = ENEMY[kind];
     const hp = def.hp * (def.boss ? 1 : hpScale());
     const e = {
-      kind, r: def.r, hp, maxHp: hp, xp: Math.max(1, Math.round(def.xp * (1 + run.t / 400))), pts: def.pts,
+      kind, r: def.r, hp, maxHp: hp, xp: Math.max(1, Math.round(def.xp * (1 + run.t / 300))), pts: def.pts,
       touch: def.touch, boss: !!def.boss, x: -100, y: -100, t: 0, flash: 0, dead: false, fireAt: -1,
       kx: 0, ky: 0, ox: 0, oy: 0, droneT: 0, ...props,
     };
     enemies.push(e);
     return e;
   }
+  function gunnerProps(cx) {
+    return {
+      move: 'gunner', step: 'enter', cx, x: cx, y: -30, ty: H * rand(0.16, 0.3), life: 10,
+      volley: Math.max(0.9, 1.9 - run.t / 600), spread: Math.min(7, 3 + Math.floor(run.t / 200)), fireT: 1.2, volleyN: 0,
+    };
+  }
   function spawnPattern(id) {
     const fire = fireChance();
-    if (id === 'sine') {
-      const count = 5 + Math.min(3, Math.floor(run.t / 120));
-      const x0 = rand(60, W - 60);
-      const amp = rand(30, 60);
-      const freq = rand(1.6, 2.6);
-      const vy = 100 + Math.min(60, run.t / 8);
-      for (let i = 0; i < count; i++) {
-        addEnemy('scout', { move: 'sine', t: -i * 0.3, x0, y0: -20, amp, freq, phase: i * 0.5, vy, fireAt: Math.random() < fire ? rand(0.8, 2.2) : -1, fireAgain: run.t > 360 });
+    const late = run.t > 360;
+    const shotAt = () => (Math.random() < fire ? rand(0.7, 2) : -1);
+    const top = bossTop() - 50; // the first band below the instruments
+    switch (id) {
+      case 'sine': {
+        const count = 5 + Math.min(3, Math.floor(run.t / 120));
+        const x0 = rand(60, W - 60);
+        const amp = rand(30, 60);
+        const freq = rand(1.6, 2.6);
+        const vy = 100 + Math.min(60, run.t / 8);
+        for (let i = 0; i < count; i++) addEnemy('scout', { move: 'sine', t: -i * 0.3, x0, y0: -20, amp, freq, phase: i * 0.5, vy, fireAt: shotAt(), fireAgain: late });
+        break;
       }
-    } else if (id === 'arc') {
-      const fromLeft = Math.random() < 0.5;
-      const p0 = { x: fromLeft ? -20 : W + 20, y: H * 0.08 };
-      const p1 = { x: W / 2, y: H * rand(0.6, 0.8) };
-      const p2 = { x: fromLeft ? W + 20 : -20, y: H * 0.14 };
-      const dur = Math.max(3, 4.6 - run.t / 200);
-      for (let i = 0; i < 6; i++) {
-        addEnemy('scout', { move: 'curve', t: -i * 0.26, p0, p1, p2, dur, fireAt: Math.random() < fire ? rand(0.6, dur - 0.6) : -1, fireAgain: run.t > 360 });
+      case 'arc': {
+        const fromLeft = Math.random() < 0.5;
+        const p0 = { x: fromLeft ? -20 : W + 20, y: H * 0.08 };
+        const p1 = { x: W / 2, y: H * rand(0.6, 0.8) };
+        const p2 = { x: fromLeft ? W + 20 : -20, y: H * 0.14 };
+        const dur = Math.max(3, 4.6 - run.t / 200);
+        for (let i = 0; i < 6; i++) {
+          addEnemy('scout', { move: 'curve', t: -i * 0.26, p0, p1, p2, dur, fireAt: Math.random() < fire ? rand(0.6, dur - 0.6) : -1, fireAgain: late });
+        }
+        break;
       }
-    } else if (id === 'rain') {
-      for (let i = 0; i < 7; i++) {
-        addEnemy('scout', { move: 'rain', t: -i * 0.18, x: rand(16, W - 16), y: -20, vy: rand(90, 130) + Math.min(60, run.t / 8), fireAt: Math.random() < fire * 0.6 ? rand(1, 2.5) : -1 });
+      case 'zigzag': {
+        const x0 = rand(90, W - 90);
+        const span = rand(45, 80);
+        const period = rand(1.3, 2);
+        const vy = 90 + Math.min(60, run.t / 8);
+        for (let i = 0; i < 6; i++) addEnemy('scout', { move: 'zigzag', t: -i * 0.3, x0, span, period, y0: -20, vy, fireAt: shotAt(), fireAgain: late });
+        break;
       }
-    } else if (id === 'seekers') {
-      const side = run.t > 180 ? pick(['top', 'top', 'left', 'right']) : 'top'; // flanking starts after 3:00
-      const count = run.t < 180 ? 3 : 4 + Math.floor(run.t / 400);
-      for (let i = 0; i < count; i++) {
-        const x = side === 'left' ? -14 : side === 'right' ? W + 14 : rand(20, W - 20);
-        const y = side === 'top' ? -14 : rand(H * 0.1, H * 0.55);
-        addEnemy('seeker', { move: 'seek', t: -i * 0.22, x, y, vx: 0, vy: 0, speed: 64 + Math.min(76, run.t / 8), angle: Math.PI / 2 });
+      case 'stair': {
+        const fromLeft = Math.random() < 0.5;
+        const vy = 80 + Math.min(50, run.t / 10);
+        for (let i = 0; i < 7; i++) {
+          addEnemy('scout', { move: 'line', t: -i * 0.22, x0: fromLeft ? 30 + i * 50 : W - 30 - i * 50, y0: -20, vy, fireAt: shotAt(), fireAgain: late });
+        }
+        break;
       }
-    } else if (id === 'vee') {
-      const cx = rand(90, W - 90);
-      const vy = 62 + Math.min(40, run.t / 12);
-      for (const [dx, dy] of [[0, 0], [-26, -22], [26, -22], [-52, -44], [52, -44]]) {
-        addEnemy('scout', { move: 'line', x0: cx + dx, y0: -24 + dy, vy, fireAt: rand(0.9, 2), fireAgain: run.t > 240 });
+      case 'pincer': {
+        const vy = 70 + Math.min(40, run.t / 10);
+        for (const side of [-1, 1]) {
+          for (let i = 0; i < 5; i++) addEnemy('scout', { move: 'drift', t: -i * 0.3, x: side < 0 ? -16 : W + 16, y: H * 0.06, vx: -side * 95, vy, fireAt: shotAt() });
+        }
+        break;
       }
-    } else if (id === 'divers') {
-      const count = run.t > 360 ? 3 : 2;
-      for (let i = 0; i < count; i++) {
-        const tx = (W / (count + 1)) * (i + 1) + rand(-20, 20);
-        addEnemy('diver', {
-          move: 'diver', step: 'enter', t: -i * 0.45, sx: tx + rand(-40, 40), sy: -24, tx, ty: H * rand(0.14, 0.3),
-          hover: rand(0.7, 1.3), dashSpeed: Math.min(470, 300 + run.t / 3), angle: Math.PI / 2,
-        });
+      case 'seekers': {
+        const side = run.t > 180 ? pick(['top', 'top', 'left', 'right']) : 'top'; // flanking starts after 3:00
+        const count = run.t < 180 ? 3 : 4 + Math.floor(run.t / 400);
+        for (let i = 0; i < count; i++) {
+          const x = side === 'left' ? -14 : side === 'right' ? W + 14 : rand(20, W - 20);
+          const y = side === 'top' ? -14 : rand(H * 0.1, H * 0.55);
+          addEnemy('seeker', { move: 'seek', t: -i * 0.22, x, y, vx: 0, vy: 0, speed: 64 + Math.min(76, run.t / 8), angle: Math.PI / 2 });
+        }
+        break;
       }
-    } else if (id === 'gunner') {
-      const cx = rand(80, W - 80);
-      addEnemy('gunner', {
-        move: 'gunner', step: 'enter', cx, x: cx, y: -30, ty: H * rand(0.16, 0.3), life: 10,
-        volley: Math.max(0.9, 1.9 - run.t / 600), spread: Math.min(7, 3 + Math.floor(run.t / 200)), fireT: 1.2,
-      });
-    } else if (id === 'tank') {
-      addEnemy('tank', { move: 'tank', x: rand(50, W - 50), y: -30, vy: 26, fireT: 1.5 });
-    } else if (id === 'rocks') {
-      const count = 3 + Math.floor(Math.random() * 2);
-      for (let i = 0; i < count; i++) {
-        const size = rand(0.7, 1.5);
-        addEnemy('rock', {
-          move: 'rock', t: -i * 0.5, x: rand(20, W - 20), y: -24, vx: rand(-14, 14), vy: rand(38, 70), rot: rand(0, TAU), vr: rand(-1.2, 1.2),
-          r: 16 * size, hp: ENEMY.rock.hp * size * hpScale(), maxHp: ENEMY.rock.hp * size * hpScale(), size,
-        });
+      case 'rain':
+        for (let i = 0; i < 7; i++) {
+          addEnemy('scout', { move: 'rain', t: -i * 0.18, x: rand(16, W - 16), y: -20, vy: rand(90, 130) + Math.min(60, run.t / 8), fireAt: Math.random() < fire * 0.6 ? rand(1, 2.5) : -1 });
+        }
+        break;
+      case 'snake': {
+        const n = 10 + Math.min(6, Math.floor(run.t / 120));
+        const x0 = rand(70, W - 70);
+        const amp = rand(40, 80);
+        const freq = rand(2.4, 3.2);
+        const vy = 120 + Math.min(70, run.t / 7);
+        for (let i = 0; i < n; i++) addEnemy('swarm', { move: 'sine', t: -i * 0.12, x0, y0: -16, amp, freq, phase: 0, vy });
+        break;
       }
+      case 'hsnake': {
+        const fromLeft = Math.random() < 0.5;
+        const n = 10 + Math.min(6, Math.floor(run.t / 120));
+        const y0 = Math.max(top + 20, H * rand(0.15, 0.35));
+        const amp = rand(25, 50);
+        const freq = rand(2.6, 3.4);
+        const vx = (fromLeft ? 1 : -1) * (120 + Math.min(70, run.t / 7));
+        for (let i = 0; i < n; i++) addEnemy('swarm', { move: 'hsine', t: -i * 0.12, x0: fromLeft ? -16 : W + 16, y0, amp, freq, vx, dropAt: rand(1.6, 2.6) });
+        break;
+      }
+      case 'vee': {
+        const cx = rand(90, W - 90);
+        const vy = 62 + Math.min(40, run.t / 12);
+        for (const [dx, dy] of [[0, 0], [-26, -22], [26, -22], [-52, -44], [52, -44]]) {
+          addEnemy('scout', { move: 'line', x0: cx + dx, y0: -24 + dy, vy, fireAt: rand(0.9, 2), fireAgain: run.t > 240 });
+        }
+        break;
+      }
+      case 'circle': {
+        const cx = rand(100, W - 100);
+        const R = 46;
+        const vy = 55 + Math.min(40, run.t / 12);
+        const spin = (Math.random() < 0.5 ? 1 : -1) * 1.6;
+        for (let i = 0; i < 8; i++) addEnemy('scout', { move: 'ring', cx, cy: -R - 20, R, a0: (i / 8) * TAU, spin, vy, fireAt: shotAt() });
+        break;
+      }
+      case 'divers': {
+        const count = run.t > 360 ? 3 : 2;
+        for (let i = 0; i < count; i++) {
+          const tx = (W / (count + 1)) * (i + 1) + rand(-20, 20);
+          addEnemy('diver', {
+            move: 'diver', step: 'enter', t: -i * 0.45, sx: tx + rand(-40, 40), sy: -24, tx, ty: H * rand(0.14, 0.3),
+            hover: rand(0.7, 1.3), dashSpeed: Math.min(470, 300 + run.t / 3), angle: Math.PI / 2,
+          });
+        }
+        break;
+      }
+      case 'escort': {
+        const lead = addEnemy('gunner', gunnerProps(rand(90, W - 90)));
+        for (const [dx, dy] of [[-38, -6], [38, -6], [-22, 24], [22, 24]]) addEnemy('scout', { move: 'follow', lead, dx, dy, fireAt: shotAt() });
+        break;
+      }
+      case 'splitters': {
+        const n = run.t > 420 ? 3 : 2;
+        for (let i = 0; i < n; i++) {
+          addEnemy('splitter', { move: 'sine', t: -i * 0.8, x0: rand(60, W - 60), y0: -24, amp: 30, freq: 1.2, phase: rand(0, TAU), vy: 45 + Math.min(30, run.t / 15), fireAt: shotAt() });
+        }
+        break;
+      }
+      case 'snipers': {
+        const spots = shuffle([0.15, 0.5, 0.85]).slice(0, run.t > 400 ? 3 : 2);
+        spots.forEach((fx, i) => addEnemy('sniper', { move: 'sniper', step: 'enter', t: -i * 0.6, x: W * fx, y: -20, ty: top + rand(0, 30), shots: 3 }));
+        break;
+      }
+      case 'gunner':
+        addEnemy('gunner', gunnerProps(rand(80, W - 80)));
+        break;
+      case 'loop': {
+        const dir = Math.random() < 0.5 ? 1 : -1;
+        const cy = Math.max(top + 70, H * rand(0.3, 0.42));
+        const R = rand(55, 75);
+        for (let i = 0; i < 6; i++) addEnemy('scout', { move: 'loop', t: -i * 0.25, dir, cy, R, fireAt: shotAt() });
+        break;
+      }
+      case 'bombers': {
+        const n = run.t > 420 ? 2 : 1;
+        for (let i = 0; i < n; i++) {
+          const dir = Math.random() < 0.5 ? 1 : -1;
+          addEnemy('bomber', { move: 'bomber', t: -i * 1.4, x: dir > 0 ? -30 : W + 30, y: Math.max(top + 10, H * rand(0.18, 0.4)), vx: dir * (70 + Math.min(40, run.t / 12)), dropT: 0.6 });
+        }
+        break;
+      }
+      case 'wall': { // a full row with one gap to slip through
+        const n = 9;
+        const gap = 1 + Math.floor(Math.random() * (n - 3));
+        const vy = 50 + Math.min(40, run.t / 12);
+        for (let i = 0; i < n; i++) {
+          if (i === gap || i === gap + 1) continue;
+          addEnemy('scout', { move: 'line', x0: 20 + i * ((W - 40) / (n - 1)), y0: -20, vy, fireAt: -1 });
+        }
+        break;
+      }
+      case 'minefield': {
+        const n = 5 + Math.min(4, Math.floor(run.t / 200));
+        for (let i = 0; i < n; i++) addEnemy('mine', { move: 'mine', t: -i * 0.35, x: rand(20, W - 20), y: -16, vy: rand(28, 45), phase: rand(0, TAU), armed: 0 });
+        break;
+      }
+      case 'phantoms': {
+        const n = run.t > 480 ? 3 : 2;
+        for (let i = 0; i < n; i++) {
+          addEnemy('phantom', { move: 'phantom', step: 'in', t: -i * 0.7, cycles: 4, x: rand(30, W - 30), y: rand(top, H * 0.45), alpha: 0, st: 0, ghost: true });
+        }
+        break;
+      }
+      case 'ambush': { // seekers from both edges at the ship's height, flagged a second ahead
+        const y = clamp(player.y - rand(60, 160), H * 0.3, H * 0.7);
+        for (const side of [-1, 1]) {
+          warn(side < 0 ? 12 : W - 12, y, 1);
+          for (let i = 0; i < 3; i++) {
+            addEnemy('seeker', { move: 'seek', t: -1 - i * 0.25, x: side < 0 ? -14 : W + 14, y: y + i * 16, vx: -side * 120, vy: 0, speed: 80 + Math.min(70, run.t / 8), angle: side < 0 ? 0 : Math.PI });
+          }
+        }
+        break;
+      }
+      case 'spinner':
+        addEnemy('spinner', { move: 'spinner', step: 'enter', x: rand(70, W - 70), y: -24, ty: Math.max(top + 20, H * rand(0.18, 0.32)), rounds: 2, spin: 0, cool: 0 });
+        break;
+      case 'lancers': {
+        const n = run.t > 480 ? 2 : 1;
+        for (let i = 0; i < n; i++) {
+          addEnemy('lancer', { move: 'lancer', step: 'enter', t: -i * 1.6, x: clamp(player.x + rand(-80, 80), 30, W - 30), y: -24, ty: top + rand(10, 40), shots: 3, fired: false, beam: null });
+        }
+        break;
+      }
+      case 'tank':
+        addEnemy('tank', { move: 'tank', x: rand(50, W - 50), y: -30, vy: 26, fireT: 1.5, volleyN: 0 });
+        break;
+      case 'shieldwall': {
+        const cx = rand(100, W - 100);
+        for (const dx of [-62, 0, 62]) addEnemy('shield', { move: 'slow', x: clamp(cx + dx, 24, W - 24), y: -26, vy: 30 + Math.min(20, run.t / 30), fireT: rand(1, 2.5) });
+        for (const dx of [-34, 34]) addEnemy('gunner', { ...gunnerProps(clamp(cx + dx, 40, W - 40)), t: -1.2 });
+        break;
+      }
+      case 'healers': {
+        const x = rand(60, W - 60);
+        addEnemy('healer', { move: 'healer', step: 'enter', x, y: -20, ty: top + rand(20, 60), healT: 1.5, life: 14, linkT: 0, links: [] });
+        for (const dx of [-50, 50]) {
+          const ex = clamp(x + dx, 40, W - 40);
+          addEnemy(run.t > 500 ? 'tank' : 'gunner', run.t > 500 ? { move: 'tank', x: ex, y: -40, vy: 24, fireT: 2, volleyN: 0 } : gunnerProps(ex));
+        }
+        break;
+      }
+      case 'carrier':
+        addEnemy('carrier', { move: 'carrier', step: 'enter', x: rand(80, W - 80), y: -40, ty: Math.max(top + 30, H * rand(0.18, 0.26)), launchT: 1.5, missileT: 3, life: 18 });
+        break;
+      case 'rocks': {
+        const count = 3 + Math.floor(Math.random() * 2);
+        for (let i = 0; i < count; i++) {
+          const size = rand(0.7, 1.5);
+          addEnemy('rock', {
+            move: 'rock', t: -i * 0.5, x: rand(20, W - 20), y: -24, vx: rand(-14, 14), vy: rand(38, 70), rot: rand(0, TAU), vr: rand(-1.2, 1.2),
+            r: 16 * size, hp: ENEMY.rock.hp * size * hpScale(), maxHp: ENEMY.rock.hp * size * hpScale(), size,
+          });
+        }
+        break;
+      }
+      case 'comets': {
+        const fromLeft = Math.random() < 0.5;
+        const n = 3 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < n; i++) {
+          const x = fromLeft ? rand(-10, W * 0.35) : rand(W * 0.65, W + 10);
+          const a = Math.PI / 2 + (fromLeft ? -1 : 1) * rand(0.35, 0.65);
+          const sp = rand(230, 320);
+          warn(clamp(x, 14, W - 14), top + 16, 0.9 + i * 0.35);
+          addEnemy('comet', { move: 'drift', t: -0.9 - i * 0.35, x, y: -20, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, angle: a });
+        }
+        break;
+      }
+      default:
+        break;
     }
   }
+
   function pickPattern() {
     const early = stage.early || 1;
     const avail = PATTERNS.filter((p) => run.t >= p.from * early && (!p.needs || stage[p.needs]));
-    const weight = (p) => p.w * (p.id === 'seekers' ? stage.seekers || 1 : 1) * (p.id === 'gunner' || p.id === 'tank' ? 1 + run.t / 300 : 1);
+    // heavier squads grow more common with time; the squad just sent is less likely to come again
+    const weight = (p) => p.w * (stage.bias[p.id] || 1) * (p.cost >= 8 ? 1 + run.t / 300 : 1) * (p.id === director.lastId ? 0.3 : 1);
     let total = 0;
     for (const p of avail) total += weight(p);
     let r = Math.random() * total;
@@ -1958,6 +2429,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     return avail[0];
   }
+
   // Ships arrive faster the longer you last; every region adds pressure on top.
   const spawnRate = () => (1 + run.t / 70 + (run.t / 300) ** 2) * (1 + 0.15 * stageIndex * stageRamp());
   function updateDirector(dt) {
@@ -1975,6 +2447,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (director.budget >= director.next.cost && enemies.length < MAX_ENEMIES) {
       director.budget -= director.next.cost;
       spawnPattern(director.next.id);
+      director.lastId = director.next.id;
       director.next = pickPattern();
     }
   }
@@ -2009,22 +2482,67 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
 
   // ---------- enemy behaviour ----------
-  function addShot(x, y, vx, vy, tone) {
-    if (eShots.length < MAX_ESHOTS) eShots.push({ x, y, vx, vy, r: 4, tone, dmg: 8 * hitScale() });
+  // Optional behaviours: home (seconds of homing, with turn and speed), wave (snaking), acc (speeds up to max),
+  // split (bursts into n bullets after that many seconds), r (size).
+  function addShot(x, y, vx, vy, tone, opt) {
+    if (eShots.length >= MAX_ESHOTS) return;
+    const b = { x, y, vx, vy, r: 4, tone, dmg: 8 * hitScale(), t: 0 };
+    if (opt) Object.assign(b, opt);
+    eShots.push(b);
   }
-  function shootAt(x, y, speed, count, spreadDeg, tone) {
+  function shootAt(x, y, speed, count, spreadDeg, tone, opt) {
     const base = Math.atan2(player.y - y, player.x - x);
     for (let i = 0; i < count; i++) {
       const a = base + ((i - (count - 1) / 2) * spreadDeg * Math.PI) / 180;
-      addShot(x, y, Math.cos(a) * speed, Math.sin(a) * speed, tone);
+      addShot(x, y, Math.cos(a) * speed, Math.sin(a) * speed, tone, opt);
     }
   }
-  function ringShot(x, y, speed, count, offset, tone) {
+  function ringShot(x, y, speed, count, offset, tone, opt) {
     for (let i = 0; i < count; i++) {
       const a = offset + (i / count) * TAU;
-      addShot(x, y, Math.cos(a) * speed, Math.sin(a) * speed, tone);
+      addShot(x, y, Math.cos(a) * speed, Math.sin(a) * speed, tone, opt);
     }
   }
+  // Enemy lasers: a warning stripe first, then the beam. Only the stripe's column is dangerous.
+  function addBeam(owner, x, y, width, warnFor, activeFor) {
+    const b = { owner, x, y, width, warn: warnFor, active: activeFor, full: activeFor, dmg: 16 * hitScale(), done: false };
+    beams.push(b);
+    sfx.play('charge');
+    return b;
+  }
+  // A few telegraphed beams across the field, always leaving lanes free between them.
+  function laserGate(owner, count) {
+    for (const lane of shuffle([0, 1, 2, 3, 4, 5]).slice(0, count)) addBeam(owner, 30 + lane * ((W - 60) / 5), owner.y + 24, 26, 1.1, 0.8);
+  }
+  function warn(x, y, life) {
+    warns.push({ x, y, life, max: life });
+  }
+  function updateHazards(dt) {
+    for (let i = beams.length - 1; i >= 0; i--) {
+      const b = beams[i];
+      if (b.owner && b.owner.dead && b.warn > 0) b.done = true; // its ship went down before firing
+      if (!b.done) {
+        if (b.warn > 0) {
+          b.warn -= dt;
+          if (b.owner && !b.owner.dead) b.y = b.owner.y + (b.owner.boss ? 24 : 14);
+          if (b.warn <= 0) sfx.play('beam');
+        } else {
+          b.active -= dt;
+          if (state === 'playing' && player.invuln <= 0 && Math.abs(player.x - b.x) < b.width / 2 + HITBOX && player.y > b.y) hurt(b.dmg);
+          if (b.active <= 0) b.done = true;
+        }
+      }
+      if (b.done) {
+        if (b.owner && b.owner.beam === b) b.owner.beam = null;
+        removeAt(beams, i);
+      }
+    }
+    for (let i = warns.length - 1; i >= 0; i--) {
+      warns[i].life -= dt;
+      if (warns[i].life <= 0) removeAt(warns, i);
+    }
+  }
+
   function updateEnemies(dt) {
     const speed = bulletSpeed();
     for (const e of enemies) {
@@ -2082,7 +2600,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           e.fireT -= dt;
           if (e.fireT <= 0 && e.y > 20 && e.y < H * 0.75) {
             e.fireT = Math.max(1.4, 2.6 - run.t / 600);
-            shootAt(e.x, e.y + 18, speed * 0.9, 3, 9, 'violet');
+            e.volleyN = (e.volleyN || 0) + 1;
+            if (run.t > 300 && e.volleyN % 2 === 0) {
+              for (const side of [-1, 1]) addShot(e.x + side * 14, e.y + 10, side * 70, 70, 'red', { home: 1.5, turn: 2.4, speed: speed * 0.8, r: 5 });
+            } else {
+              shootAt(e.x, e.y + 18, speed * 0.9, 3, 9, 'violet', run.t > 480 ? { acc: 0.9, max: speed * 1.6 } : null);
+            }
           }
           if (e.y > H + 40) e.dead = true;
           break;
@@ -2092,6 +2615,91 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           e.ox = e.oy = 0;
           e.rot += e.vr * dt;
           if (e.y > H + 40 || e.x < -50 || e.x > W + 50) e.dead = true;
+          break;
+        case 'zigzag': {
+          const u = (e.t / e.period) % 2;
+          const tri = u < 1 ? u : 2 - u;
+          e.x = clamp(e.x0 - e.span + tri * 2 * e.span, 12, W - 12) + e.ox;
+          e.y = e.y0 + e.vy * e.t + e.oy;
+          if (e.y > H + 30) e.dead = true;
+          break;
+        }
+        case 'drift':
+          e.x += e.vx * dt + e.ox;
+          e.y += e.vy * dt + e.oy;
+          e.ox = e.oy = 0;
+          if (e.y > H + 40 || e.y < -90 || e.x < -60 || e.x > W + 60) e.dead = true;
+          break;
+        case 'ring': {
+          const a = e.a0 + e.spin * e.t;
+          e.x = e.cx + e.R * Math.cos(a) + e.ox;
+          e.y = e.cy + e.vy * e.t + e.R * Math.sin(a) + e.oy;
+          if (e.y > H + 70) e.dead = true;
+          break;
+        }
+        case 'loop':
+          updateLoop(e);
+          break;
+        case 'follow':
+          if (e.lead && !e.lead.dead) {
+            e.x = e.lead.x + e.dx + e.ox;
+            e.y = e.lead.y + e.dy + e.oy;
+          } else {
+            Object.assign(e, { move: 'drift', vx: 0, vy: 90 });
+          }
+          break;
+        case 'hsine':
+          if (e.t > e.dropAt) { // breaks off the line and dives at the ship
+            const a = Math.atan2(player.y - e.y, player.x - e.x);
+            Object.assign(e, { move: 'drift', vx: Math.cos(a) * 170, vy: Math.sin(a) * 170 });
+            break;
+          }
+          e.x = e.x0 + e.vx * e.t + e.ox;
+          e.y = e.y0 + e.amp * Math.sin(e.freq * e.t) + e.oy;
+          if (e.x < -40 || e.x > W + 40) e.dead = true;
+          break;
+        case 'sniper':
+          updateSniper(e, dt);
+          break;
+        case 'phantom':
+          updatePhantom(e, dt, speed);
+          break;
+        case 'bomber':
+          e.x += e.vx * dt + e.ox;
+          e.y += e.oy;
+          e.ox = e.oy = 0;
+          e.dropT -= dt;
+          if (e.dropT <= 0 && e.x > 14 && e.x < W - 14) {
+            e.dropT = Math.max(0.55, 1 - run.t / 900);
+            addShot(e.x, e.y + 10, 0, 85, 'red', { r: 7, split: 1, n: 8 + stageIndex });
+          }
+          if (e.x < -50 || e.x > W + 50) e.dead = true;
+          break;
+        case 'mine':
+          updateMine(e, dt);
+          break;
+        case 'spinner':
+          updateSpinner(e, dt, speed);
+          break;
+        case 'lancer':
+          updateLancer(e, dt);
+          break;
+        case 'healer':
+          updateHealer(e, dt);
+          break;
+        case 'carrier':
+          updateCarrier(e, dt, speed);
+          break;
+        case 'slow': // shield ships: descend steadily behind their shield, firing now and then
+          e.y += e.vy * dt + e.oy;
+          e.x += e.ox;
+          e.ox = e.oy = 0;
+          e.fireT -= dt;
+          if (e.fireT <= 0 && e.y > 20 && e.y < H * 0.7) {
+            e.fireT = 2.2;
+            shootAt(e.x, e.y + 16, speed * 0.8, 1, 0, 'amber');
+          }
+          if (e.y > H + 40) e.dead = true;
           break;
         case 'cruiser':
           updateCruiser(e, dt, speed);
@@ -2103,7 +2711,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           break;
       }
       if (!e.dead && e.fireAt >= 0 && e.t >= e.fireAt && e.y > 10 && e.y < H * 0.7) {
-        shootAt(e.x, e.y + 8, speed, 1, 0, 'coral');
+        shootAt(e.x, e.y + 8, speed, 1, 0, 'coral', run.t > 420 && Math.random() < 0.4 ? { acc: 1.1, max: speed * 1.8 } : null);
         e.fireAt = e.fireAgain ? e.t + 1.4 : -1;
         e.fireAgain = false;
       }
@@ -2172,13 +2780,228 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       e.fireT -= dt;
       if (e.fireT <= 0) {
         e.fireT = e.volley;
-        shootAt(e.x, e.y + 16, speed * 0.85, e.spread, 13, 'amber');
+        const kind = run.t < 200 ? 0 : e.volleyN % 3; // aimed fan, snaking fan, or a ring
+        if (kind === 0) shootAt(e.x, e.y + 16, speed * 0.85, e.spread, 13, 'amber');
+        else if (kind === 1) shootAt(e.x, e.y + 16, speed * 0.7, e.spread, 16, 'amber', { wave: 2.6, wf: 6 });
+        else ringShot(e.x, e.y, speed * 0.65, 10 + stageIndex, rand(0, TAU), 'amber');
+        e.volleyN += 1;
       }
       if (e.st >= e.life) e.step = 'leave';
     } else {
       e.y -= 90 * dt;
       if (e.y < -40) e.dead = true;
     }
+  }
+  // In from one side, one full loop in the middle, out the other side.
+  function updateLoop(e) {
+    const L1 = W / 2 + 20;
+    const L2 = TAU * e.R;
+    const d = 150 * e.t;
+    const cx = W / 2;
+    let x;
+    let y;
+    if (d < L1) {
+      x = (e.dir > 0 ? -20 : W + 20) + e.dir * d;
+      y = e.cy - e.R;
+    } else if (d < L1 + L2) {
+      const th = (d - L1) / e.R;
+      x = cx + e.dir * e.R * Math.sin(th);
+      y = e.cy - e.R * Math.cos(th);
+    } else {
+      x = cx + e.dir * (d - L1 - L2);
+      y = e.cy - e.R;
+      if (x < -30 || x > W + 30) e.dead = true;
+    }
+    e.x = x + e.ox;
+    e.y = y + e.oy;
+  }
+  // Snipers track the ship with a red sight line, hold still for a moment, then fire one fast round.
+  function updateSniper(e, dt) {
+    if (e.step === 'enter') {
+      e.y += (e.ty - e.y) * Math.min(1, dt * 3);
+      if (Math.abs(e.y - e.ty) < 2) Object.assign(e, { step: 'aim', st: 0 });
+      return;
+    }
+    if (e.step === 'leave') {
+      e.y -= 120 * dt;
+      if (e.y < -30) e.dead = true;
+      return;
+    }
+    e.x += e.ox;
+    e.y += e.oy;
+    e.ox = e.oy = 0;
+    e.st += dt;
+    if (e.st < 1.2) {
+      e.aim = Math.atan2(player.y - e.y, player.x - e.x);
+    } else if (e.st >= 1.45) {
+      addShot(e.x, e.y + 8, Math.cos(e.aim) * 440, Math.sin(e.aim) * 440, 'red');
+      sfx.play('snipe');
+      e.shots -= 1;
+      e.st = 0;
+      if (e.shots <= 0) e.step = 'leave';
+    }
+  }
+  // Phantoms fade in, fire a burst, fade out and reappear elsewhere; while faded nothing hits them.
+  function updatePhantom(e, dt, speed) {
+    e.st += dt;
+    if (e.step === 'in') {
+      e.alpha = Math.min(1, e.st / 0.5);
+      if (e.st >= 0.5) Object.assign(e, { step: 'shoot', st: 0, fired: false });
+    } else if (e.step === 'shoot') {
+      if (!e.fired && e.st >= 0.35) {
+        e.fired = true;
+        shootAt(e.x, e.y + 6, speed, 3, 10, 'violet');
+      }
+      if (e.st >= 1.1) Object.assign(e, { step: 'out', st: 0 });
+    } else if (e.step === 'out') {
+      e.alpha = Math.max(0, 1 - e.st / 0.4);
+      if (e.st >= 0.4) {
+        e.cycles -= 1;
+        if (e.cycles <= 0) e.dead = true;
+        else Object.assign(e, { step: 'hide', st: 0 });
+      }
+    } else if (e.st >= 0.6) {
+      Object.assign(e, { step: 'in', st: 0, x: rand(30, W - 30), y: rand(bossTop() - 50, H * 0.45) });
+    }
+    e.x += e.ox;
+    e.y += e.oy;
+    e.ox = e.oy = 0;
+    e.ghost = e.alpha < 0.3;
+  }
+  // Mines drift down; if the ship comes close they arm, blink fast and burst into a ring.
+  function updateMine(e, dt) {
+    e.y += e.vy * dt + e.oy;
+    e.x += Math.sin(e.t * 1.5 + e.phase) * 10 * dt + e.ox;
+    e.ox = e.oy = 0;
+    if (!e.armed && state === 'playing' && (e.x - player.x) ** 2 + (e.y - player.y) ** 2 < 75 * 75) e.armed = 0.6;
+    if (e.armed) {
+      e.armed -= dt;
+      if (e.armed <= 0) {
+        e.dead = true;
+        ringShot(e.x, e.y, bulletSpeed() * 0.7, 10 + stageIndex * 2, rand(0, TAU), 'red');
+        explode(e.x, e.y, COLOR.danger, 'small');
+        return;
+      }
+    }
+    if (e.y > H + 30) e.dead = true;
+  }
+  function updateSpinner(e, dt, speed) {
+    e.spin += dt * 4;
+    if (e.step === 'enter') {
+      e.y += (e.ty - e.y) * Math.min(1, dt * 2.5);
+      if (Math.abs(e.y - e.ty) < 2) Object.assign(e, { step: 'fire', st: 0, cool: 0 });
+      return;
+    }
+    if (e.step === 'leave') {
+      e.y += 70 * dt;
+      if (e.y > H + 40) e.dead = true;
+      return;
+    }
+    e.st += dt;
+    if (e.step === 'fire') {
+      e.cool -= dt;
+      if (e.cool <= 0) {
+        e.cool = 0.13;
+        for (let k = 0; k < 3; k++) {
+          const a = e.spin * 0.6 + (k / 3) * TAU;
+          addShot(e.x, e.y, Math.cos(a) * speed * 0.62, Math.sin(a) * speed * 0.62, 'violet');
+        }
+      }
+      if (e.st >= 2.6) Object.assign(e, { step: 'rest', st: 0 });
+    } else if (e.st >= 1.4) {
+      e.rounds -= 1;
+      Object.assign(e, { step: e.rounds > 0 ? 'fire' : 'leave', st: 0 });
+    }
+    e.x += e.ox;
+    e.y += e.oy;
+    e.ox = e.oy = 0;
+  }
+  // Laser frigates slide over the ship, lock, warn with a red stripe and fire straight down.
+  function updateLancer(e, dt) {
+    if (e.step === 'enter') {
+      e.y += (e.ty - e.y) * Math.min(1, dt * 3);
+      if (Math.abs(e.y - e.ty) < 2) Object.assign(e, { step: 'aim', st: 0 });
+      return;
+    }
+    if (e.step === 'leave') {
+      e.y -= 110 * dt;
+      if (e.y < -40) e.dead = true;
+      return;
+    }
+    e.st += dt;
+    if (!e.fired && e.st < 0.8) e.x = clamp(e.x + clamp(player.x - e.x, -90 * dt, 90 * dt), 20, W - 20);
+    if (!e.fired && e.st >= 0.8) {
+      e.beam = addBeam(e, e.x, e.y + 14, 22, 1, 0.9);
+      e.fired = true;
+    }
+    if (e.fired && !e.beam) {
+      e.shots -= 1;
+      Object.assign(e, { fired: false, st: 0, step: e.shots > 0 ? 'aim' : 'leave' });
+    }
+    e.x += e.ox;
+    e.ox = e.oy = 0;
+  }
+  // Repair ships patch up the damaged ships around them; take them out first.
+  function updateHealer(e, dt) {
+    if (e.step === 'enter') {
+      e.y += (e.ty - e.y) * Math.min(1, dt * 2.5);
+      if (Math.abs(e.y - e.ty) < 2) Object.assign(e, { step: 'heal', st: 0 });
+      return;
+    }
+    if (e.step === 'leave') {
+      e.y -= 90 * dt;
+      if (e.y < -30) e.dead = true;
+      return;
+    }
+    e.st += dt;
+    e.x = clamp(e.x + Math.sin(e.st * 0.9) * 40 * dt + e.ox, 30, W - 30);
+    e.y += e.oy;
+    e.ox = e.oy = 0;
+    e.healT -= dt;
+    if (e.healT <= 0) {
+      e.healT = 2;
+      e.links = [];
+      for (const o of enemies) {
+        if (o === e || o.dead || o.boss || o.t < 0 || o.hp >= o.maxHp) continue;
+        if ((o.x - e.x) ** 2 + (o.y - e.y) ** 2 < 120 * 120) {
+          o.hp = Math.min(o.maxHp, o.hp + o.maxHp * 0.2);
+          e.links.push(o);
+        }
+      }
+      e.linkT = 0.5;
+    }
+    if (e.linkT > 0) e.linkT -= dt;
+    if (e.st > e.life) e.step = 'leave';
+  }
+  // Carriers park near the top, launch pairs of seekers and fire homing rockets.
+  function updateCarrier(e, dt, speed) {
+    if (e.step === 'enter') {
+      e.y += (e.ty - e.y) * Math.min(1, dt * 1.2);
+      if (Math.abs(e.y - e.ty) < 2) Object.assign(e, { step: 'hold', st: 0 });
+      return;
+    }
+    if (e.step === 'leave') {
+      e.y -= 50 * dt;
+      if (e.y < -50) e.dead = true;
+      return;
+    }
+    e.st += dt;
+    e.x = clamp(e.x + Math.sin(e.st * 0.5) * 25 * dt + e.ox, 50, W - 50);
+    e.y += e.oy;
+    e.ox = e.oy = 0;
+    e.launchT -= dt;
+    if (e.launchT <= 0) {
+      e.launchT = Math.max(1.6, 2.6 - run.t / 600);
+      for (const side of [-1, 1]) {
+        addEnemy('seeker', { move: 'seek', x: e.x + side * 20, y: e.y + 16, vx: side * 60, vy: 60, speed: 80 + Math.min(70, run.t / 8), angle: Math.PI / 2 });
+      }
+    }
+    e.missileT -= dt;
+    if (e.missileT <= 0) {
+      e.missileT = 3.5;
+      for (const side of [-1, 1]) addShot(e.x + side * 24, e.y + 10, side * 60, 80, 'red', { home: 1.6, turn: 2.2, speed: speed * 0.8, r: 5 });
+    }
+    if (e.st > e.life) e.step = 'leave';
   }
   function bossTop() {
     return Math.max(118, hudBottom + 50);
@@ -2197,20 +3020,25 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     b.cool -= dt;
     if (b.cool > 0) return;
     const v = speed * 0.95;
-    const m = b.mode % 3;
+    const m = b.mode % (b.tier === 0 ? 3 : b.tier === 1 ? 5 : 6); // later cruisers know more attacks
     if (m === 0) shootAt(b.x, b.y + 22, v, 5 + b.tier, 12, 'amber');
     else if (m === 1) ringShot(b.x, b.y, v * 0.8, 14 + b.tier * 2, b.st, 'coral');
-    else for (const side of [-1, 1]) shootAt(b.x + side * 34, b.y + 10, v * 1.1, 3, 8, 'violet');
+    else if (m === 2) for (const side of [-1, 1]) shootAt(b.x + side * 34, b.y + 10, v * 1.1, 3, 8, 'violet');
+    else if (m === 3) for (let k = 0; k < 4; k++) addShot(b.x + (k - 1.5) * 18, b.y + 12, (k - 1.5) * 50, 60, 'red', { home: 1.4, turn: 2.6, speed: v * 0.85, r: 5 });
+    else if (m === 4) for (const dx of [-60, 0, 60]) addShot(b.x + dx, b.y + 14, dx * 0.3, 80, 'red', { r: 7, split: 0.9, n: 8 });
+    else laserGate(b, 2);
     b.mode += 1;
-    b.cool = Math.max(0.65, 1.35 - b.tier * 0.15 - stageIndex * 0.06);
+    b.cool = Math.max(0.65, 1.35 - b.tier * 0.15 - stageIndex * 0.06) + (m === 5 ? 1.2 : 0);
   }
-  // The mothership changes its attack as its hull wears down: fans and rings, then a spiral, then everything at once.
+
+  // The mothership changes its attack as its hull wears down: fans, rings and snaking walls; then a spiral with bombs
+  // and rockets; then everything at once with laser gates and escorts.
   function updateMother(b, dt, speed) {
     const top = bossTop();
     if (b.step === 'enter') {
       b.x = W / 2;
       b.y = -90 + (top + 90) * easeOut(Math.min(1, b.t / 2.8));
-      if (b.t >= 2.8) Object.assign(b, { step: 'fight', st: 0, cool: 1, mode: 0, spin: 0, minion: 5 });
+      if (b.t >= 2.8) Object.assign(b, { step: 'fight', st: 0, cool: 1, mode: 0, spin: 0, minion: 5, gateT: 3 });
       return;
     }
     if (b.step === 'dying') {
@@ -2233,8 +3061,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     b.cool -= dt;
     if (hull > 0.66) {
       if (b.cool <= 0) {
-        if (b.mode % 2 === 0) shootAt(b.x, b.y + 24, v, 5 + Math.floor(stageIndex / 2), 13, 'violet');
-        else ringShot(b.x, b.y + 10, v * 0.8, 14 + stageIndex * 2, b.st, 'coral');
+        const m = b.mode % 3;
+        if (m === 0) shootAt(b.x, b.y + 24, v, 5 + Math.floor(stageIndex / 2), 13, 'violet');
+        else if (m === 1) ringShot(b.x, b.y + 10, v * 0.8, 14 + stageIndex * 2, b.st, 'coral');
+        else shootAt(b.x, b.y + 24, v * 0.75, 9, 12, 'violet', { wave: 2.2, wf: 5 });
         b.mode += 1;
         b.cool = 1.3 * quick;
       }
@@ -2250,8 +3080,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           b.cool = 0.085;
         }
       } else if (b.cool <= 0) {
-        shootAt(b.x, b.y + 24, v * 1.1, 3, 10, 'coral');
-        b.cool = 0.45 * quick;
+        const m = b.mode % 3;
+        if (m === 0) shootAt(b.x, b.y + 24, v * 1.1, 3, 10, 'coral');
+        else if (m === 1) for (const dx of [-70, -25, 25, 70]) addShot(b.x + dx, b.y + 16, dx * 0.4, 70, 'red', { r: 7, split: 1, n: 10 });
+        else for (let k = 0; k < 6; k++) addShot(b.x + (k - 2.5) * 16, b.y + 14, (k - 2.5) * 40, 50, 'red', { home: 1.5, turn: 2.4, speed: v * 0.8, r: 5 });
+        b.mode += 1;
+        b.cool = 0.6 * quick;
       }
     } else {
       if (b.cool <= 0) {
@@ -2259,6 +3093,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         else shootAt(b.x, b.y + 24, v * 1.05, 7, 11, 'coral');
         b.mode += 1;
         b.cool = 0.75 * quick;
+      }
+      b.gateT -= dt;
+      if (b.gateT <= 0) {
+        b.gateT = 4.5;
+        laserGate(b, 3);
       }
       b.minion -= dt;
       if (b.minion <= 0) {
@@ -2272,6 +3111,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
     }
   }
+
   function finishMother(b) {
     b.dead = true;
     explode(b.x, b.y, COLOR.violet, 'big');
@@ -2481,7 +3321,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const dmg = s.dps * 0.1 * stats.dmgMul;
     for (const e of enemies) {
       if (e.dead || e.t < 0) continue;
-      if (e.boss && e.step !== 'fight') continue;
+      if (e.ghost || (e.boss && e.step !== 'fight')) continue;
       const rx = e.x - g.x;
       const ry = e.y - g.y;
       if (rx * g.dx + ry * g.dy < -e.r) continue;
@@ -2525,7 +3365,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       let first = null;
       let seen = 0;
       for (const e of enemies) { // pick a random ship on screen
-        if (e.dead || e.t < 0 || e.boss || e.y < 0 || e.y > H) continue;
+        if (e.dead || e.t < 0 || e.boss || e.ghost || e.y < 0 || e.y > H) continue;
         seen += 1;
         if (Math.random() * seen < 1) first = e;
       }
@@ -2601,6 +3441,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
 
   // ---------- hits ----------
+  // Shield ships shrug off most shots that hit their front; drones, lasers, shockwaves and lightning get through.
+  function frontArmor(e, s) {
+    if (e.kind !== 'shield' || s.y <= e.y) return 1;
+    spark(s.x, s.y, COLOR.cyan, 1);
+    return 0.25;
+  }
   function updatePlayerShots(dt) {
     const b = liveBoss();
     for (let i = pShots.length - 1; i >= 0; i--) {
@@ -2628,12 +3474,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       if (!hit && b && b !== s.last && inBoss(b, s.x, s.y, hitR)) hit = b;
       if (!hit) continue;
       if (s.kind === 'missile') {
-        damage(hit, s.dmg, s.x, s.y);
+        damage(hit, s.dmg * frontArmor(hit, s), s.x, s.y);
         if (s.blast > 0) blastAt(s.x, s.y, s.blast, s.dmg * 0.6, hit);
         removeAt(pShots, i);
         continue;
       }
-      damage(hit, s.dmg, s.x, s.y);
+      damage(hit, s.dmg * frontArmor(hit, s), s.x, s.y);
       if (s.pierce > 0) {
         s.pierce -= 1;
         s.last = hit;
@@ -2646,8 +3492,36 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     let canHit = state === 'playing' && player.invuln <= 0;
     for (let i = eShots.length - 1; i >= 0; i--) {
       const b = eShots[i];
+      b.t += dt;
+      if (b.home > 0) { // homing rockets turn toward the ship for a while, then fly straight
+        b.home -= dt;
+        let a = Math.atan2(b.vy, b.vx);
+        let d = Math.atan2(player.y - b.y, player.x - b.x) - a;
+        while (d > Math.PI) d -= TAU;
+        while (d < -Math.PI) d += TAU;
+        a += clamp(d, -b.turn * dt, b.turn * dt);
+        const sp = Math.min(b.speed, Math.hypot(b.vx, b.vy) + 160 * dt);
+        b.vx = Math.cos(a) * sp;
+        b.vy = Math.sin(a) * sp;
+      } else if (b.wave) { // snaking bullets
+        const a = Math.atan2(b.vy, b.vx) + Math.cos(b.t * b.wf) * b.wave * dt;
+        const sp = Math.hypot(b.vx, b.vy);
+        b.vx = Math.cos(a) * sp;
+        b.vy = Math.sin(a) * sp;
+      }
+      if (b.acc && Math.hypot(b.vx, b.vy) < b.max) {
+        b.vx *= 1 + b.acc * dt;
+        b.vy *= 1 + b.acc * dt;
+      }
       b.x += b.vx * dt;
       b.y += b.vy * dt;
+      if (b.split && b.t >= b.split) { // bombs burst into a ring
+        const { x, y, n } = b;
+        removeAt(eShots, i);
+        ringShot(x, y, bulletSpeed() * 0.62, n, rand(0, TAU), 'coral');
+        spark(x, y, COLOR.danger, 4);
+        continue;
+      }
       if (b.y > H + 24 || b.y < -40 || b.x < -24 || b.x > W + 24) {
         removeAt(eShots, i);
         continue;
@@ -2662,6 +3536,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
     }
   }
+
   function checkContacts() {
     if (state !== 'playing' || player.invuln > 0) return;
     const b = liveBoss();
@@ -2678,7 +3553,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
   }
   function damage(e, amount, x, y) {
-    if (e.dead || e.t < 0) return;
+    if (e.dead || e.t < 0 || e.ghost) return;
     if (e.boss && e.step !== 'fight') return;
     e.hp -= amount;
     e.flash = 0.06;
@@ -2715,7 +3590,13 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     dropGem(e.x, e.y, e.xp);
     rollItem(e);
-    explode(e.x, e.y, KIND_COLOR[e.kind], e.kind === 'gunner' || e.kind === 'tank' ? 'mid' : 'small');
+    explode(e.x, e.y, KIND_COLOR[e.kind], e.r >= 18 ? 'mid' : 'small');
+    if (e.kind === 'splitter') { // breaks into three fragments that come after the ship
+      for (let k = 0; k < 3; k++) {
+        const a = Math.PI / 2 + (k - 1) * 0.9;
+        addEnemy('fragment', { move: 'seek', x: e.x, y: e.y, vx: Math.cos(a) * 120, vy: Math.sin(a) * 120, speed: 70 + Math.min(60, run.t / 10), angle: a });
+      }
+    }
   }
 
   // ---------- pickups ----------
@@ -2753,7 +3634,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
   }
   function rollItem(e) {
-    const big = e.kind === 'gunner' || e.kind === 'tank' ? 3 : 1;
+    const big = e.r >= 18 ? 3 : 1;
     for (const [kind, p] of DROPS) {
       if (Math.random() < p * big * (kind === 'mystery' ? 1 : stats.luck)) {
         items.push({ kind, x: e.x, y: e.y, t: 0 });
@@ -2766,17 +3647,24 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     for (let i = items.length - 1; i >= 0; i--) {
       const it = items[i];
       it.t += dt;
-      it.y += 34 * dt;
-      it.x = clamp(it.x + Math.sin(it.t * 2.2) * 14 * dt, 14, W - 14);
-      if (it.y > H + 24) {
-        removeAt(items, i);
+      const dx = player.x - it.x;
+      const dy = player.y - it.y;
+      // like experience, an item is pulled in when close or once it has fallen to the ship's height
+      if (!it.pulled && state === 'playing' && (dx * dx + dy * dy < reach * reach || it.y > player.y - 10)) it.pulled = true;
+      if (it.pulled && state === 'playing' && player.alive) {
+        const d = Math.hypot(dx, dy) || 1;
+        it.sp = Math.min(600, (it.sp || 120) + 900 * dt);
+        it.x += (dx / d) * it.sp * dt;
+        it.y += (dy / d) * it.sp * dt;
+        if (d < 16) {
+          removeAt(items, i);
+          collect(it.kind);
+        }
         continue;
       }
-      if (state !== 'playing') continue;
-      if ((it.x - player.x) ** 2 + (it.y - player.y) ** 2 < reach * reach) {
-        removeAt(items, i);
-        collect(it.kind);
-      }
+      it.y += 34 * dt;
+      it.x = clamp(it.x + Math.sin(it.t * 2.2) * 14 * dt, 14, W - 14);
+      if (it.y > H + 24) removeAt(items, i);
     }
   }
   function collect(kind) {
@@ -2820,7 +3708,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     eShots.length = 0;
     const dmg = 60 * stats.dmgMul * (1 + run.t / 300);
     for (const e of enemies) {
-      if (e.dead || e.t < 0 || e.y < -10 || e.y > H + 10) continue;
+      if (e.dead || e.t < 0 || e.ghost || e.y < -10 || e.y > H + 10) continue;
       damage(e, e.boss ? dmg * 2 : dmg, e.x, e.y);
     }
     flash = Math.max(flash, motionOK() ? 0.55 : 0.15);
@@ -2931,6 +3819,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     drawItems();
     drawPlayerShots();
     drawEnemies();
+    drawHazards();
     drawWeapons();
     drawPlayer();
     drawFx();
@@ -3022,6 +3911,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       ctx.fillRect(player.x - 16, player.y + 24, 32 * k, 4);
     }
   }
+  const BAR_KINDS = new Set(['gunner', 'tank', 'carrier', 'shield', 'spinner', 'lancer', 'healer', 'bomber', 'splitter']);
   function drawEnemies() {
     for (const e of enemies) {
       if (e.dead || e.t < 0) continue;
@@ -3036,16 +3926,23 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       const spr = SPR[e.kind];
       if (!spr) continue;
       const img = e.flash > 0 ? spr.flash : spr.img;
-      let size = spr.size;
-      if (e.kind === 'rock') size *= e.size;
+      const size = e.kind === 'rock' ? spr.size * e.size : spr.size;
       if (e.kind === 'diver' && e.step === 'hover') { // charging glow warns that a dash is coming
         const k = Math.min(1, e.st / e.hover);
         glow(ORB.amber, e.x, e.y, 44, 0.2 + 0.55 * k * (0.5 + 0.5 * Math.sin(e.st * 30)));
       }
+      if (e.kind === 'sniper' && e.step === 'aim') drawSight(e);
+      if (e.kind === 'healer' && e.linkT > 0) drawLinks(e);
+      if (e.kind === 'comet') drawTrail(e);
       let angle = 0;
-      if (e.kind === 'seeker') angle = e.angle;
+      if (e.kind === 'seeker' || e.kind === 'comet') angle = e.angle;
       else if (e.kind === 'diver' && e.step === 'dash') angle = e.angle - Math.PI / 2;
       else if (e.kind === 'rock') angle = e.rot;
+      else if (e.kind === 'spinner') angle = e.spin;
+      else if (e.kind === 'bomber') angle = e.vx > 0 ? 0.0001 : Math.PI;
+      const alpha = e.kind === 'phantom' ? e.alpha : 1;
+      if (alpha <= 0.02) continue;
+      ctx.globalAlpha = alpha;
       if (angle) {
         ctx.save();
         ctx.translate(e.x, e.y);
@@ -3060,7 +3957,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           ctx.lineTo(0, -38);
           ctx.closePath();
           ctx.fill();
-          ctx.globalAlpha = 1;
+          ctx.globalAlpha = alpha;
           ctx.globalCompositeOperation = 'source-over';
         }
         ctx.drawImage(img, -size / 2, -size / 2, size, size);
@@ -3068,7 +3965,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       } else {
         ctx.drawImage(img, e.x - size / 2, e.y - size / 2, size, size);
       }
-      if ((e.kind === 'gunner' || e.kind === 'tank') && e.hp < e.maxHp) {
+      ctx.globalAlpha = 1;
+      if (e.kind === 'mine') glow(ORB.red, e.x, e.y, e.armed ? 30 : 16, 0.5 + 0.5 * Math.sin(e.t * (e.armed ? 30 : 4)));
+      if (BAR_KINDS.has(e.kind) && e.hp < e.maxHp) {
         const top = e.y - e.r - 7;
         ctx.fillStyle = rgba(COLOR.void, 0.7);
         ctx.fillRect(e.x - 16, top, 32, 3);
@@ -3077,6 +3976,98 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
     }
   }
+  function drawSight(e) {
+    const locked = e.st >= 1.2;
+    ctx.save();
+    ctx.globalAlpha = locked ? 0.55 + 0.45 * Math.sin(clock * 60) : 0.18 + 0.3 * Math.min(1, e.st / 1.2);
+    ctx.strokeStyle = COLOR.danger;
+    ctx.lineWidth = locked ? 2 : 1;
+    ctx.beginPath();
+    ctx.moveTo(e.x, e.y);
+    ctx.lineTo(e.x + Math.cos(e.aim) * 900, e.y + Math.sin(e.aim) * 900);
+    ctx.stroke();
+    ctx.restore();
+  }
+  function drawLinks(e) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = Math.min(1, e.linkT * 2);
+    ctx.strokeStyle = COLOR.teal;
+    ctx.lineWidth = 2;
+    for (const o of e.links) {
+      if (o.dead) continue;
+      ctx.beginPath();
+      ctx.moveTo(e.x, e.y);
+      ctx.lineTo(o.x, o.y);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function drawTrail(e) {
+    const tx = e.x - Math.cos(e.angle) * 42;
+    const ty = e.y - Math.sin(e.angle) * 42;
+    const grd = ctx.createLinearGradient(e.x, e.y, tx, ty);
+    grd.addColorStop(0, rgba(COLOR.amber, 0.7));
+    grd.addColorStop(1, rgba(COLOR.orange, 0));
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.strokeStyle = grd;
+    ctx.lineWidth = 7;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(e.x, e.y);
+    ctx.lineTo(tx, ty);
+    ctx.stroke();
+    ctx.restore();
+  }
+  function drawHazards() {
+    for (const b of beams) {
+      const h = H - b.y;
+      if (b.warn > 0) {
+        const flick = 0.5 + 0.5 * Math.sin(clock * 30);
+        ctx.fillStyle = rgba(COLOR.danger, 0.1 + 0.1 * flick);
+        ctx.fillRect(b.x - b.width / 2, b.y, b.width, h);
+        ctx.strokeStyle = rgba(COLOR.danger, 0.45 + 0.4 * flick);
+        ctx.lineWidth = 1;
+        ctx.setLineDash([6, 6]);
+        ctx.beginPath();
+        ctx.moveTo(b.x - b.width / 2, b.y);
+        ctx.lineTo(b.x - b.width / 2, H);
+        ctx.moveTo(b.x + b.width / 2, b.y);
+        ctx.lineTo(b.x + b.width / 2, H);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      } else {
+        const k = Math.min(1, b.active / 0.15, (b.full - b.active) / 0.06 + 0.3);
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.fillStyle = COLOR.danger;
+        ctx.globalAlpha = 0.35 * k;
+        ctx.fillRect(b.x - b.width * 0.8, b.y, b.width * 1.6, h);
+        ctx.globalAlpha = 0.9 * k;
+        ctx.fillRect(b.x - b.width / 2, b.y, b.width, h);
+        ctx.fillStyle = '#ffffff';
+        ctx.globalAlpha = k;
+        ctx.fillRect(b.x - b.width * 0.15, b.y, b.width * 0.3, h);
+        ctx.restore();
+      }
+    }
+    for (const w of warns) { // blinking hazard marks where something is about to come in
+      ctx.globalAlpha = (Math.sin(clock * 20) > 0 ? 1 : 0.35) * Math.min(1, w.life / 0.2);
+      ctx.fillStyle = COLOR.danger;
+      ctx.beginPath();
+      ctx.moveTo(w.x, w.y - 9);
+      ctx.lineTo(w.x + 9, w.y + 7);
+      ctx.lineTo(w.x - 9, w.y + 7);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = COLOR.void;
+      ctx.fillRect(w.x - 1, w.y - 3, 2, 6);
+      ctx.fillRect(w.x - 1, w.y + 4, 2, 2);
+      ctx.globalAlpha = 1;
+    }
+  }
+
   function glow(img, x, y, size, alpha) {
     ctx.globalCompositeOperation = 'lighter';
     ctx.globalAlpha = alpha;
@@ -3233,9 +4224,13 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   function drawEnemyShots() {
     ctx.globalCompositeOperation = 'lighter';
-    for (const b of eShots) ctx.drawImage(ORB[b.tone], b.x - 12, b.y - 12, 24, 24);
+    for (const b of eShots) {
+      const s = 6 * b.r * (b.split ? 1 + 0.15 * Math.sin(b.t * 20) : 1);
+      ctx.drawImage(ORB[b.tone] || ORB.coral, b.x - s / 2, b.y - s / 2, s, s);
+    }
     ctx.globalCompositeOperation = 'source-over';
   }
+
   function drawGems() {
     if (!SPR.gem) return;
     for (const g of gems) {
@@ -3372,16 +4367,20 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   function renderSlots(el) {
     el.replaceChildren(chipsFor(build.weapons, 'weapon', WEAPON_SLOTS), chipsFor(build.passives, 'passive', PASSIVE_SLOTS));
   }
-  function renderRecipes() {
-    ui.recipes.replaceChildren(...Object.keys(EVOLVE).map((wid) => {
+  // Each recipe shows how far along it is; recipes touched by the cards on offer are highlighted.
+  function renderRecipes(listEl, offered = []) {
+    const hot = new Set(offered.map((o) => o.id).filter(Boolean));
+    listEl.replaceChildren(...Object.keys(EVOLVE).map((wid) => {
       const w = owned('weapon', wid);
-      const partner = PASSIVES[EVOLVE[wid].partner].name;
+      const pid = EVOLVE[wid].partner;
+      const ready = w && canEvolve(w);
       const li = document.createElement('li');
-      li.className = `recipe${w && w.evolved ? ' is-done' : w && canEvolve(w) ? ' is-ready' : ''}`;
+      li.className = `recipe${w && w.evolved ? ' is-done' : ready ? ' is-ready' : ''}${hot.has(wid) || hot.has(pid) ? ' is-hot' : ''}`;
       const left = document.createElement('span');
-      left.textContent = `${WEAPONS[wid].name} Lv 5 + ${partner}`;
+      const weaponPart = w && !w.evolved ? `${WEAPONS[wid].name} Lv ${w.lv}/5` : `${WEAPONS[wid].name} Lv 5`;
+      left.textContent = `${weaponPart} + ${PASSIVES[pid].name}${passiveLv(pid) ? ' ✓' : ''}`;
       const right = document.createElement('b');
-      right.textContent = WEAPONS[wid].evo.name;
+      right.textContent = `${WEAPONS[wid].evo.name}${w && w.evolved ? ' 완료' : ready ? ' 준비' : ''}`;
       li.append(left, right);
       return li;
     }));
@@ -3409,6 +4408,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     items.length = 0;
     texts.length = 0;
     zaps.length = 0;
+    beams.length = 0;
+    warns.length = 0;
     boss = null;
     clearRadius = 0;
   }
@@ -3462,7 +4463,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     stats = null;
     recompute();
     Object.assign(player, { x: W / 2, y: H - 90, hp: stats.maxHp, invuln: 1.2, bank: 0, prevX: W / 2, alive: true });
-    Object.assign(director, { budget: 5, next: null, mid: 0, final: false });
+    Object.assign(director, { budget: 5, next: null, lastId: '', mid: 0, final: false });
     pendingLevels = 0;
     pendingChests = 0;
     endT = 0;
@@ -3500,6 +4501,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       return b;
     }));
     renderSlots(ui.choiceSlots);
+    renderRecipes(ui.choiceRecipes, options);
     showScreen('choice');
     releasePointer();
     keys.clear();
@@ -3538,7 +4540,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     music.pause();
     ui.pauseInfo.textContent = `${stageIndex + 1}. ${stage.name} · ${clockText(run.t)} · Lv ${run.level} · 체력 ${Math.ceil(player.hp)}/${stats.maxHp}`;
     renderSlots(ui.pauseSlots);
-    renderRecipes();
+    renderRecipes(ui.recipes);
     showScreen('pause');
   }
   function resume() {
@@ -3815,6 +4817,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     updateEnemies(dt);
     updatePlayerShots(dt);
     updateEnemyShots(dt);
+    updateHazards(dt);
     checkContacts();
     applyClear();
     compact(enemies);
