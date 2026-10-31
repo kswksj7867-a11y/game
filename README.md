@@ -50,6 +50,8 @@
 
 ## 인터넷에 올리기 (GitHub Pages)
 
+무료 계정에서는 공개 저장소만 GitHub Pages를 쓸 수 있어요. 저장소가 비공개라면 먼저 **Settings → General** 맨 아래 **Change visibility**에서 공개(Public)로 바꿔요.
+
 1. GitHub 저장소의 **Settings → Pages**로 가요.
 2. **Source**를 `Deploy from a branch`로, 브랜치를 `main`, 폴더를 `/ (root)`로 고르고 저장해요.
 3. 몇 분 뒤 `https://<사용자 이름>.github.io/<저장소 이름>/` 주소에서 같은 그림 찾기가 열려요.
