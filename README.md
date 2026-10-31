@@ -141,6 +141,18 @@
 - 일시정지 화면의 **여기서 끝내고 점수 받기**를 누르면 지금까지 점수와 코인을 받고 끝낼 수 있어요.
 - 무한 모드 기록은 전체 순위의 **∞ 무한** 탭에 따로 모여요.
 
+### 친구와 같이 하기 (실시간 대결)
+
+처음 화면의 **친구와 같이 하기**에서 대결 방을 만들거나 방 번호로 들어가요. 한 방에 4명까지 들어갈 수 있어요.
+
+- **방 만들기**를 누르면 4자리 방 번호가 생겨요. **친구 초대하기**로 링크를 카톡 등에 보내면, 친구는 링크만 눌러도 바로 그 방에 들어와요.
+- 방장이 지역(자기가 연 지역이나 무한 모드)을 고르고 **출발**을 누르면, 모두 자기 폰에서 같은 지역을 동시에 시작해요.
+- 게임 중에는 오른쪽 위에 친구들의 순위, 체력, 점수가 실시간으로 보여요.
+- 적을 100대 잡을 때마다, 그리고 합체할 때 친구들 화면에 적을 보내요. 순양함이나 모선을 잡거나 궁극 합체를 하면 더 센 적을 보내요.
+- 판이 끝나면 대결 순위가 나오고, 모두 끝나면 우승자가 정해져요. **대결 방으로**를 누르면 같은 친구들과 다시 할 수 있어요.
+- 대결 판도 코인과 기록은 평소처럼 쌓여요. 일시정지 화면에서 끝내면 지금 점수로 순위에 남아요.
+- 방 기능은 아래 [전체 순위 켜기](#전체-순위-켜기-firebase)의 규칙(rooms가 들어간 규칙)이 게시되어 있어야 돼요.
+
 ### 적
 
 | 적 | 특징 |
@@ -258,7 +270,7 @@
 
 1. [Firebase 콘솔](https://console.firebase.google.com)에 구글 계정으로 들어가 **프로젝트 만들기**를 눌러요. 이름은 자유롭게 정하고, Google 애널리틱스는 꺼도 돼요.
 2. 왼쪽 메뉴(빌드 또는 모든 제품)에서 **Realtime Database**를 열고 **데이터베이스 만들기**를 눌러요. 위치는 **싱가포르(asia-southeast1)**, 보안 규칙은 **잠금 모드**로 시작해요.
-3. **규칙** 탭의 내용을 모두 지우고 아래 규칙을 붙여 넣은 뒤 **게시**를 눌러요. 누구나 순위를 읽고 새 기록을 올릴 수 있지만, 이미 올라간 기록은 바꾸거나 지울 수 없어요. 계정 자료는 열쇠를 아는 사람만 읽고 쓸 수 있고, 계정이나 이름 목록을 통째로 볼 수는 없어요.
+3. **규칙** 탭의 내용을 모두 지우고 아래 규칙을 붙여 넣은 뒤 **게시**를 눌러요. 누구나 순위를 읽고 새 기록을 올릴 수 있지만, 이미 올라간 기록은 바꾸거나 지울 수 없어요. 계정 자료는 열쇠를 아는 사람만 읽고 쓸 수 있고, 계정이나 이름 목록을 통째로 볼 수는 없어요. 대결 방(`rooms`)은 방 번호를 아는 사람만 읽고 쓸 수 있고, 방 목록은 볼 수 없어요.
 4. **데이터** 탭 위쪽 주소의 맨 앞부분이 데이터베이스 이름이에요(예: `https://galaxy-defense-5e34a-default-rtdb.…`이면 `galaxy-defense-5e34a-default-rtdb`).
    이 이름을 `space/index.html`의 `const BOARD_DB = '…';` 따옴표 안에 넣어요. 지역(싱가포르, 미국, 벨기에)에 맞는 주소는 게임이 알아서 찾아요.
 
@@ -352,6 +364,108 @@
             ".validate": false
           }
         }
+      },
+      "rooms": {
+        "$code": {
+          ".read": "$code.matches(/^[0-9]{4}$/)",
+          ".write": "$code.matches(/^[0-9]{4}$/)",
+          ".validate": "newData.hasChildren(['at', 'host', 'st', 'stage', 'go'])",
+          "at": {
+            ".validate": "newData.isNumber() && newData.val() <= now"
+          },
+          "host": {
+            ".validate": "newData.isString() && newData.val().length <= 24"
+          },
+          "st": {
+            ".validate": "newData.val() === 'lobby' || newData.val() === 'go'"
+          },
+          "mode": {
+            ".validate": "newData.val() === 'vs' || newData.val() === 'coop'"
+          },
+          "stage": {
+            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 6"
+          },
+          "go": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000"
+          },
+          "p": {
+            "$pid": {
+              ".validate": "$pid.matches(/^[a-z0-9]{8,24}$/) && newData.hasChildren(['n', 's'])",
+              "n": {
+                ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 12"
+              },
+              "s": {
+                ".validate": "newData.isString() && newData.val().length <= 12"
+              },
+              "j": {
+                ".validate": "newData.isNumber()"
+              },
+              "m": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000"
+              },
+              "sc": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999999999"
+              },
+              "hp": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+              },
+              "lv": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 9999"
+              },
+              "t": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 86400"
+              },
+              "k": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99999999"
+              },
+              "al": {
+                ".validate": "newData.isBoolean()"
+              },
+              "cl": {
+                ".validate": "newData.isBoolean()"
+              },
+              "a": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000"
+              },
+              "ak": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 9"
+              },
+              "up": {
+                ".validate": "newData.isNumber()"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          },
+          "sig": {
+            "$pid": {
+              ".validate": "$pid.matches(/^[a-z0-9]{8,24}$/)",
+              "to": {
+                ".validate": "newData.isString() && newData.val().length <= 24"
+              },
+              "d": {
+                ".validate": "newData.isString() && newData.val().length <= 20000"
+              },
+              "c": {
+                "$k": {
+                  ".validate": "newData.isString() && newData.val().length <= 1000"
+                }
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          },
+          "rl": {
+            "$pid": {
+              ".validate": "$pid.matches(/^[a-z0-9]{8,24}$/) && newData.isString() && newData.val().length <= 60000"
+            }
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
       }
     }
   }
@@ -360,7 +474,7 @@
 
 이상한 기록이 올라오면 Firebase 콘솔의 **데이터** 탭에서 직접 지울 수 있어요.
 
-예전 규칙(무한 모드 `s6`와 전투기 `ship` 칸이 없는 규칙)이 게시되어 있어도 게임은 돌아가요. 지역 기록은 전투기 이름만 빼고 올라가고, 무한 모드 순위는 "준비 중"으로 나와요. 위 규칙을 게시하면 둘 다 켜져요.
+예전 규칙이 게시되어 있어도 게임은 돌아가요. `rooms`가 없는 규칙이면 대결 방을 만들 때 "방 기능이 아직 꺼져 있어요"라고 나오고, 무한 모드 `s6`와 전투기 `ship` 칸이 없는 규칙이면 지역 기록은 전투기 이름만 빼고 올라가고 무한 모드 순위는 "준비 중"으로 나와요. 위 규칙을 게시하면 모두 켜져요.
 
 ## 구글 로그인 켜기
 

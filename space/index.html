@@ -726,6 +726,55 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .board .name-form { margin: 6px 0 10px; }
 .rank-name { margin-right: 8px; font-family: var(--font-ui); font-weight: 700; }
 
+/* ---------- playing with friends ---------- */
+.btn-friends { display: flex; align-items: center; justify-content: center; gap: 8px; border-color: rgba(127, 231, 255, 0.5); color: var(--cyan); }
+.btn-friends svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tg-entry, .tg-lobby { display: grid; gap: 10px; }
+#tg-code { font-family: var(--font-data); font-size: 1.25rem; letter-spacing: 0.35em; text-align: center; }
+#tg-code::placeholder { font-family: var(--font-ui); font-size: 0.9375rem; letter-spacing: 0; }
+.tg-code-box { display: grid; justify-items: center; gap: 4px; padding: 12px; border: 1px dashed rgba(127, 231, 255, 0.5); border-radius: 16px; background: rgba(127, 231, 255, 0.05); }
+.tg-code-box span { font-size: 0.8125rem; color: var(--muted); }
+.tg-code-box b { font-family: var(--font-data); font-size: 2.75rem; font-weight: 700; letter-spacing: 0.18em; line-height: 1.05; color: var(--cyan); text-shadow: 0 0 18px rgba(127, 231, 255, 0.55); }
+.tg-code-box .btn { min-height: 40px; padding-inline: 16px; }
+.tg-players { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.tg-player { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255, 255, 255, 0.04); }
+.tg-player.is-me { border-color: rgba(127, 231, 255, 0.55); }
+.tg-player.is-empty { border-style: dashed; color: var(--muted); }
+.tg-dot { width: 12px; height: 12px; justify-self: center; border-radius: 50%; background: var(--tone, var(--muted)); box-shadow: 0 0 8px var(--tone, transparent); }
+.tg-rank { justify-self: center; font-family: var(--font-data); font-weight: 700; color: var(--amber); }
+.tg-who { min-width: 0; }
+.tg-who b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+.tg-who small { display: block; font-size: 0.75rem; color: var(--muted); }
+.tg-side { display: flex; align-items: center; gap: 6px; font-family: var(--font-data); font-size: 0.875rem; white-space: nowrap; }
+.tg-tag { padding: 1px 7px; border-radius: 999px; background: rgba(255, 194, 75, 0.15); color: var(--amber); font-family: var(--font-ui); font-size: 0.6875rem; font-weight: 700; }
+.tg-tag.is-live { background: rgba(63, 224, 178, 0.15); color: var(--teal); }
+.tg-tag.is-out { background: rgba(255, 90, 110, 0.14); color: var(--danger); }
+.tg-label { font-size: 0.8125rem; color: var(--muted); margin-bottom: 6px; }
+.tg-note:empty { display: none; }
+.tg-note.is-error { color: var(--danger); }
+.vs-panel {
+  grid-column: 1 / -1;
+  justify-self: end;
+  display: grid;
+  gap: 3px;
+  min-width: 150px;
+  margin-top: 6px;
+  padding: 5px 8px;
+  border-radius: 10px;
+  background: rgba(7, 9, 24, 0.5);
+  font-size: 0.6875rem;
+}
+.vs-row { display: grid; grid-template-columns: 12px minmax(0, 1fr) 30px auto; align-items: center; gap: 5px; color: var(--muted); }
+.vs-row.is-me { color: var(--ink); }
+.vs-row.is-out { opacity: 0.45; }
+.vs-row em { font-style: normal; color: var(--amber); }
+.vs-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 70px; }
+.vs-hp { height: 4px; overflow: hidden; border-radius: 2px; background: rgba(255, 90, 110, 0.3); }
+.vs-hp i { display: block; height: 100%; background: var(--teal); }
+.vs-row b { text-align: right; font-weight: 600; color: var(--ink); }
+.vs-result { display: grid; gap: 8px; padding: 12px; border: 1px solid rgba(127, 231, 255, 0.4); border-radius: 16px; background: rgba(127, 231, 255, 0.05); }
+.vs-result-title { font-weight: 700; color: var(--cyan); }
+
 /* ---------- hangar ---------- */
 .ship-pill { font-family: var(--font-ui); font-size: 0.75rem; font-weight: 600; color: var(--cyan); }
 .ship-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
@@ -911,6 +960,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6v12M15 6v12" /></svg>
             </button>
           </div>
+          <div class="vs-panel" id="vs-panel" hidden aria-label="대결 순위"></div>
           <div class="bossbar" id="bossbar" hidden>
             <span id="boss-name">순양함</span>
             <span class="bossbar-track"><span class="bossbar-fill" id="bossfill"></span></span>
@@ -957,6 +1007,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           <button type="button" class="btn pilot-btn" id="pilot-edit">이름 정하기</button>
         </div>
         <button type="button" class="btn btn-primary btn-launch" id="start">출격</button>
+        <button type="button" class="btn btn-friends" id="open-together" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2" /><path d="M3.5 19a5.5 5.5 0 0 1 11 0" /><circle cx="17" cy="9" r="2.6" /><path d="M15.5 14.2A4.6 4.6 0 0 1 21 18.6" /></svg>
+          친구와 같이 하기
+        </button>
         <div class="row row-3">
           <button type="button" class="btn btn-tree" id="open-hangar">격납고<span class="ship-pill" id="title-ship">스타라이트</span></button>
           <button type="button" class="btn btn-tree" id="open-tree-1">스킬 트리<span class="coin-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5v9M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4" /></svg><span id="title-coins">0</span></span></button>
@@ -974,6 +1028,42 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         <h2 class="panel-title" id="stages-title">어디로 출격할까요?</h2>
         <div class="stage-list" id="stage-list"></div>
         <button type="button" class="btn btn-quiet" id="stages-back">처음 화면</button>
+      </section>
+
+      <section class="overlay" id="screen-together" aria-labelledby="together-title" hidden>
+        <p class="eyebrow">친구와 같이</p>
+        <h2 class="panel-title" id="together-title">대결 방</h2>
+        <div class="tabs" role="tablist" aria-label="같이 하는 방법">
+          <button type="button" class="tab" role="tab" aria-selected="true" data-tg-mode="vs">실시간 대결</button>
+          <button type="button" class="tab" role="tab" aria-selected="false" data-tg-mode="coop" disabled>협동 · 곧 나와요</button>
+        </div>
+        <div class="tg-entry" id="tg-entry">
+          <p class="lede">방을 만들어 친구를 부르거나, 친구가 알려 준 방 번호로 들어가요. 각자 자기 폰에서 같은 지역을 동시에 출발하고, 점수가 가장 높은 사람이 이겨요. 적을 많이 잡으면 친구 화면에 적을 보내 방해할 수 있어요.</p>
+          <button type="button" class="btn btn-primary" id="tg-create">방 만들기</button>
+          <form class="name-row" id="tg-join">
+            <input id="tg-code" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" enterkeyhint="go" placeholder="방 번호 4자리" aria-label="방 번호 4자리">
+            <button type="submit" class="btn">들어가기</button>
+          </form>
+        </div>
+        <div class="tg-lobby" id="tg-lobby" hidden>
+          <div class="tg-code-box">
+            <span>방 번호</span>
+            <b id="tg-room-code">0000</b>
+            <button type="button" class="btn" id="tg-invite">친구 초대하기</button>
+          </div>
+          <ol class="tg-players" id="tg-players"></ol>
+          <div class="tg-stage">
+            <p class="tg-label" id="tg-stage-label">지역</p>
+            <div class="stage-chips" id="tg-stages"></div>
+          </div>
+          <button type="button" class="btn btn-primary" id="tg-go">출발</button>
+          <div class="row">
+            <button type="button" class="btn" id="tg-hangar">전투기 바꾸기</button>
+            <button type="button" class="btn" id="tg-leave">방 나가기</button>
+          </div>
+        </div>
+        <p class="note tg-note" id="tg-note" aria-live="polite"></p>
+        <button type="button" class="btn" id="tg-back">돌아가기</button>
       </section>
 
       <section class="overlay is-tree" id="screen-hangar" aria-labelledby="hangar-title" hidden>
@@ -1064,6 +1154,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           <span class="seal" id="final-seal" hidden>신기록</span>
         </div>
         <p class="lede" id="final-note"></p>
+        <div class="vs-result" id="vs-result" hidden>
+          <p class="vs-result-title" id="vs-result-title">대결 순위</p>
+          <ol class="tg-players" id="vs-result-list"></ol>
+          <div class="row">
+            <button type="button" class="btn btn-primary" id="vs-lobby">대결 방으로</button>
+            <button type="button" class="btn" id="vs-leave">방 나가기</button>
+          </div>
+        </div>
         <dl class="stats">
           <div><dt>버틴 시간</dt><dd id="st-time"></dd></div>
           <div><dt>레벨</dt><dd id="st-level"></dd></div>
@@ -1088,7 +1186,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         </div>
         <p class="warn" id="result-warn" hidden>이 브라우저에서는 기록을 저장하지 못했어요. 시크릿 창이라면 일반 창에서 열어 주세요.</p>
         <button type="button" class="btn btn-primary btn-launch" id="again">다시 출격</button>
-        <div class="row row-3">
+        <div class="row row-3" id="result-row">
           <button type="button" class="btn" id="to-stages">지역 선택</button>
           <button type="button" class="btn" id="open-tree-2">스킬 트리</button>
           <button type="button" class="btn" id="open-records-2">순위·기록</button>
@@ -1203,11 +1301,16 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     banner: $('banner'), bannerTitle: $('banner-title'), bannerSub: $('banner-sub'),
     screens: {
       title: $('screen-title'), stages: $('screen-stages'), choice: $('screen-choice'), pause: $('screen-pause'), result: $('screen-result'),
-      tree: $('screen-tree'), hangar: $('screen-hangar'),
+      tree: $('screen-tree'), hangar: $('screen-hangar'), together: $('screen-together'),
     },
     openHangar: $('open-hangar'), titleShip: $('title-ship'), hangarCoins: $('hangar-coins'), shipGrid: $('ship-grid'),
     shipDetail: $('ship-detail'), hangarBack: $('hangar-back'),
     quitNote: $('quit-note'), ultNote: $('ult-note'),
+    openTogether: $('open-together'), tgEntry: $('tg-entry'), tgCreate: $('tg-create'), tgJoin: $('tg-join'), tgCode: $('tg-code'),
+    tgLobby: $('tg-lobby'), tgRoomCode: $('tg-room-code'), tgInvite: $('tg-invite'), tgPlayers: $('tg-players'), tgStageLabel: $('tg-stage-label'),
+    tgStages: $('tg-stages'), tgGo: $('tg-go'), tgLeave: $('tg-leave'), tgNote: $('tg-note'), tgBack: $('tg-back'), tgHangar: $('tg-hangar'),
+    vsPanel: $('vs-panel'), vsResult: $('vs-result'), vsResultTitle: $('vs-result-title'), vsResultList: $('vs-result-list'),
+    vsLobby: $('vs-lobby'), vsLeave: $('vs-leave'), resultRow: $('result-row'),
     coins: $('coins'), titleCoins: $('title-coins'), coinLine: $('coin-line'), reroll: $('reroll'),
     openTree1: $('open-tree-1'), openTree2: $('open-tree-2'), treeCoins: $('tree-coins'), treeTabs: $('tree-tabs'),
     tree: $('tree'), treeLinks: $('tree-links'), treeGrid: $('tree-grid'), treeDetail: $('tree-detail'), treeBack: $('tree-back'),
@@ -1975,6 +2078,17 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       put: (path, value, token) => call(`${path}.json${token ? `?auth=${encodeURIComponent(token)}` : ''}`, {
         method: 'PUT', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(value),
       }),
+      patch: (path, value) => call(`${path}.json`, { method: 'PATCH', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(value) }),
+      del: (path) => call(`${path}.json`, { method: 'DELETE' }),
+      // leaving as the page closes: no waiting for the answer
+      drop(path) {
+        if (!base) return;
+        try {
+          fetch(`${base}/${path}.json`, { method: 'DELETE', keepalive: true }).catch(() => {});
+        } catch {
+          /* the page is going away anyway */
+        }
+      },
     };
   })();
 
@@ -2324,6 +2438,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       levelup() { [523.25, 659.25, 783.99, 1046.5].forEach((f, k) => tone(b(), f, k * 0.06, 0.22, 'triangle', 0.08)); },
       item() { [660, 880, 1320].forEach((f, k) => tone(b(), f, k * 0.06, 0.16, 'sine', 0.08)); },
       dud() { tone(b(), 300, 0, 0.18, 'square', 0.04, 220); tone(b(), 220, 0.18, 0.3, 'square', 0.04, 140); },
+      incoming() { tone(b(), 990, 0, 0.09, 'square', 0.035); tone(b(), 740, 0.11, 0.14, 'square', 0.035); },
       evolve() { [523.25, 783.99, 1046.5, 1567.98, 2093].forEach((f, k) => tone(b(), f, k * 0.07, 0.4, 'triangle', 0.08)); },
       laser() { tone(b(), 220, 0, 0.5, 'sawtooth', 0.035, 880, 2000); },
       missile() { hiss(b(), 0, 0.18, 0.06, 900, 3000, 'bandpass'); },
@@ -3617,7 +3732,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   let scale = 1;
   let dpr = 1;
   let bgGrad = null;
-  let state = 'title'; // title | stages | tree | hangar | playing | choice | paused | dying | clearing | result
+  let state = 'title'; // title | stages | tree | hangar | together | playing | choice | paused | dying | clearing | result
   let stageIndex = 0;
   let stage = STAGES[0];
   let skyIdx = 0; // which region's sky is painted (endless mode cycles through them)
@@ -3893,6 +4008,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       w.evolved = true;
       w.cd = 0;
       sfx.play('evolve');
+      vsSend(1);
       const tone = toneOf(o.id, true);
       for (let k = 0; k < 3; k++) rings.push({ x: player.x, y: player.y, r: 6 + k * 8, max: 110 + k * 40, life: 0.7 + k * 0.1, full: 0.7 + k * 0.1, color: k === 1 ? '#ffffff' : tone, wide: true });
       blooms.push({ x: player.x, y: player.y, size: 180, life: 0.5, full: 0.5, color: tone });
@@ -4978,6 +5094,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     boss = null;
     for (const g of gems) g.pulled = true;
     hudDirty = true;
+    vsSend(2);
     if (run.endless) { // no clearing in endless mode: two crates, a repair kit, and back to the fight
       director.final = false;
       items.push({ kind: 'chest', x: b.x - 26, y: b.y, t: 0 }, { kind: 'chest', x: b.x + 26, y: b.y, t: 0 }, { kind: 'heal', x: b.x, y: b.y + 20, t: 0 });
@@ -5431,6 +5548,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     sfx.play('evolve');
     sfx.play('bigBoom');
     showBanner(u.name, '궁극 합체!', 'ult');
+    vsSend(2);
     announce(`궁극 합체! ${u.name}. ${u.about}.`);
   }
   function updateUlt(w, dt, cdMul0) {
@@ -6211,6 +6329,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     e.dead = true;
     run.kills += 1;
+    if (run.vs && run.kills - vs.killMark >= VS_KILL_STEP) { // a kill streak sends enemies to the others
+      vs.killMark = run.kills;
+      vsSend(1);
+    }
     if (run.endless) {
       run.combo += 1;
       run.comboT = COMBO_TIME;
@@ -6239,6 +6361,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       boss = null;
       music.play('calm');
       announce('순양함을 격추했어요. 보급 상자를 챙기세요.');
+      vsSend(2);
       return;
     }
     dropGem(e.x, e.y, e.xp);
@@ -7699,7 +7822,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   // ---------- screens ----------
   function showScreen(name, focus = true) {
     for (const [key, el] of Object.entries(ui.screens)) el.hidden = key !== name;
-    ui.hud.hidden = ['title', 'stages', 'result', 'pause', 'tree', 'hangar'].includes(name);
+    ui.hud.hidden = ['title', 'stages', 'result', 'pause', 'tree', 'hangar', 'together'].includes(name);
     ui.pause.hidden = name !== null;
     if (name !== null && name !== 'choice') ui.banner.classList.remove('show');
     const target = { title: ui.start, pause: ui.resume, result: ui.again, stages: ui.stageList.querySelector('button:not(:disabled)'), tree: ui.treeTabs.querySelector('[aria-pressed="true"]') }[name];
@@ -7743,6 +7866,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ui.titleBest.textContent = best ? `최고 기록 ${num(best.score)}점 · 클리어 ${cleared}/${STAGES.length}` : '아직 기록이 없어요';
     ui.titleCoins.textContent = fmt(saved.coins);
     ui.titleShip.textContent = shipOf(saved.ship).name;
+    ui.openTogether.hidden = !board.on;
     renderPilot();
     showScreen('title', focus);
   }
@@ -7870,6 +7994,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   function startStage(index) {
     audio.unlock();
     run.endless = index === ENDLESS;
+    run.vs = false; // a versus match turns this on right after
     stageIndex = run.endless ? 1 : index;
     stage = run.endless ? endlessStage(0) : STAGES[index];
     skyIdx = run.endless ? 0 : index;
@@ -8017,8 +8142,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     keys.clear();
     music.pause();
     ui.pauseInfo.textContent = `${run.endless ? `무한 모드 · 구역 ${run.sector + 1}` : `${stageIndex + 1}. ${stage.name}`} · ${clockText(run.t)} · Lv ${run.level} · 체력 ${Math.ceil(player.hp)}/${stats.maxHp}`;
-    ui.quit.textContent = run.endless ? '여기서 끝내고 점수 받기' : '그만하기';
-    ui.quitNote.textContent = run.endless ? '끝내면 지금까지 모은 점수와 코인을 받아요.' : '그만하면 이번 판의 기록과 코인은 남지 않아요.';
+    ui.quit.textContent = run.endless || run.vs ? '여기서 끝내고 점수 받기' : '그만하기';
+    ui.quitNote.textContent = run.vs ? '대결은 계속돼요. 끝내면 지금 점수로 대결 순위에 남아요.'
+      : run.endless ? '끝내면 지금까지 모은 점수와 코인을 받아요.' : '그만하면 이번 판의 기록과 코인은 남지 않아요.';
     ui.ultNote.textContent = `합체 스킬 2개를 가진 채 보급 상자를 열면 두 스킬을 하나의 궁극기로 합칠 수 있어요. ${run.endless ? '무한 모드에서는 몇 번이든 할 수 있어요.' : '한 판에 한 번이에요.'}`;
     renderSlots(ui.pauseSlots);
     renderRecipes(ui.recipes);
@@ -8032,6 +8158,13 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     music.resume();
     lastFrame = performance.now();
   }
+  // The run's score as it would end right now (the versus panel shows the same number the result screen will).
+  function scoreNow(cleared) {
+    const secs = run.endless ? run.t : Math.min(run.t, STAGE_TIME);
+    return run.endless
+      ? Math.round((run.score + secs * 10 + run.level * 200) * (1 + 0.05 * rank('score')) * (1 + 0.05 * rank('endscore')))
+      : Math.round((run.score + secs * 5 + run.level * 100 + (cleared ? 20000 * (stageIndex + 1) : 0)) * (1 + 0.05 * rank('score')));
+  }
   function endRun(cleared) {
     state = 'result';
     music.stop();
@@ -8040,9 +8173,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (endless) cleared = false;
     const secs = endless ? run.t : Math.min(run.t, STAGE_TIME);
     const timeMs = Math.round(secs * 1000);
-    const score = endless
-      ? Math.round((run.score + secs * 10 + run.level * 200) * (1 + 0.05 * rank('score')) * (1 + 0.05 * rank('endscore')))
-      : Math.round((run.score + secs * 5 + run.level * 100 + (cleared ? 20000 * (stageIndex + 1) : 0)) * (1 + 0.05 * rank('score')));
+    const score = scoreNow(cleared);
     const stageNo = endless ? ENDLESS + 1 : stageIndex + 1;
     const record = { id: uid(), stage: stageNo, cleared, timeMs, level: run.level, kills: run.kills, score, at: new Date().toISOString() };
     if (endless) Object.assign(record, { sector: run.sector + 1, combo: run.bestCombo });
@@ -8107,6 +8238,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     };
     if (board.on && lastRun.eligible && saved.name) submitRun();
     else renderBoardResult();
+    ui.again.hidden = run.vs;
+    ui.resultRow.hidden = run.vs;
+    if (run.vs) vsFinish(score, cleared);
+    else ui.vsResult.hidden = true;
   }
   function countUp(node, to) {
     if (!motionOK() || to <= 0) {
@@ -8131,6 +8266,398 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       { duration: 340, delay, easing: 'cubic-bezier(.2,1.3,.4,1)', fill: 'backwards' },
     );
     window.setTimeout(() => sfx.play('stamp'), delay + 200);
+  }
+
+  // ---------- playing with friends: live versus rooms ----------
+  // A room is a 4-digit code in the database. Everyone in it starts the same region at the same time on their own
+  // phone; each phone posts its score and health about once a second and reads everyone else's.
+  const ROOM_MAX = 4;
+  const VS_KILL_STEP = 100; // kills between attacks sent to the others
+  const VS_SILENT = 15000; // a player we have not heard from this long has dropped out
+  const vs = {
+    code: '', room: null, timer: 0, busy: false, fail: 0, joinedAt: 0, startedFor: 0, inMatch: false, match: 0, stage: 1,
+    sent: 0, kind: 0, killMark: 0, seen: {}, heard: {}, queue: [], queueT: 0, final: null, note: '', noteErr: false, pending: null,
+  };
+  const ATTACKS = { 1: ['divers', 'seekers', 'snipers', 'phantoms', 'bombers'], 2: ['lancers', 'tank', 'spinner', 'carrier', 'shieldwall'] };
+  const roomPath = (code = vs.code) => `v1/rooms/${code}`;
+  const isHost = () => !!vs.room && vs.room.host === saved.pid;
+  function tgNote(text, isError) {
+    vs.note = text || '';
+    vs.noteErr = !!isError;
+    ui.tgNote.textContent = vs.note;
+    ui.tgNote.classList.toggle('is-error', vs.noteErr);
+  }
+  function roomError(err) {
+    const msg = String(err && err.message);
+    if (/HTTP 40[13]/.test(msg)) return '방 기능이 아직 꺼져 있어요. 게임 주인이 Firebase 규칙을 새로 게시하면 켜져요.';
+    if (/HTTP/.test(msg)) return '서버에서 오류가 났어요. 잠시 뒤 다시 해 주세요.';
+    return '서버에 닿지 못했어요. 인터넷 연결을 확인해 주세요.';
+  }
+  function showTogether() {
+    state = 'together';
+    clearField();
+    music.stop();
+    renderTogether();
+    showScreen('together');
+  }
+  // what this phone tells the room about itself
+  function vsStatus() {
+    const live = run.vs && vs.inMatch;
+    const f = vs.final;
+    return {
+      n: saved.name || '조종사', s: run.vs ? run.ship : saved.ship, j: vs.joinedAt, m: vs.match,
+      sc: live ? scoreNow(false) : f ? f.sc : 0,
+      hp: live ? clamp(Math.round((player.hp / stats.maxHp) * 100), 0, 100) : 0,
+      lv: live || f ? run.level : 1, t: live || f ? Math.min(86400, Math.round(run.t)) : 0, k: live || f ? run.kills : 0,
+      al: live && player.alive, cl: !!(f && f.cl), a: vs.sent, ak: vs.kind, up: { '.sv': 'timestamp' },
+    };
+  }
+  function needName(action) {
+    if (saved.name) return false;
+    vs.pending = action;
+    openNameDialog(false);
+    tgNote('먼저 조종사 이름을 정해 주세요. 친구들에게 이 이름이 보여요.', false);
+    return true;
+  }
+  async function vsCreate() {
+    if (vs.busy || needName({ type: 'create' })) return;
+    vs.busy = true;
+    tgNote('방을 만드는 중…');
+    try {
+      for (let tries = 0; tries < 8; tries++) {
+        const code = String(Math.floor(1000 + Math.random() * 9000));
+        const cur = await board.get(roomPath(code));
+        if (cur && Number(cur.at) > Date.now() - 6 * 3600e3) continue; // someone is using that number
+        vs.joinedAt = Date.now();
+        vs.stage = Math.min(saved.unlocked, STAGES.length);
+        await board.put(roomPath(code), { at: { '.sv': 'timestamp' }, host: saved.pid, st: 'lobby', mode: 'vs', stage: vs.stage, go: 0, p: { [saved.pid]: vsStatus() } });
+        vsEnter(code, 0, { at: Date.now(), host: saved.pid, st: 'lobby', mode: 'vs', stage: vs.stage, go: 0, p: { [saved.pid]: vsStatus() } });
+        tgNote('방을 만들었어요! 친구 초대하기를 눌러 방 번호를 보내 주세요.');
+        return;
+      }
+      tgNote('빈 방 번호를 찾지 못했어요. 다시 눌러 주세요.', true);
+    } catch (err) {
+      tgNote(roomError(err), true);
+    } finally {
+      vs.busy = false;
+    }
+  }
+  async function vsJoin(code) {
+    if (!/^[0-9]{4}$/.test(code)) {
+      tgNote('방 번호 4자리를 넣어 주세요.', true);
+      return;
+    }
+    if (vs.busy || needName({ type: 'join', code })) return;
+    vs.busy = true;
+    tgNote(`${code}번 방에 들어가는 중…`);
+    try {
+      const room = await board.get(roomPath(code));
+      if (!room || !room.st || !room.p || typeof room.p !== 'object') {
+        tgNote(`${code}번 방이 없어요. 번호를 다시 확인해 주세요.`, true);
+        return;
+      }
+      const ids = Object.keys(room.p);
+      if (!ids.includes(saved.pid) && ids.length >= ROOM_MAX) {
+        tgNote(`${code}번 방이 꽉 찼어요 (${ROOM_MAX}명).`, true);
+        return;
+      }
+      vs.joinedAt = Date.now();
+      await board.put(`${roomPath(code)}/p/${saved.pid}`, vsStatus());
+      vsEnter(code, Number(room.go) || 0, null);
+      tgNote(room.st === 'go' && ids.length ? '친구들이 대결 중이에요. 이번 판이 끝나면 같이 출발해요.' : '방에 들어왔어요! 방장이 출발을 누르면 시작해요.');
+    } catch (err) {
+      tgNote(roomError(err), true);
+    } finally {
+      vs.busy = false;
+    }
+  }
+  function vsEnter(code, go, room) {
+    Object.assign(vs, { code, room, startedFor: go, inMatch: false, match: go, final: null, fail: 0, heard: {}, seen: {}, queue: [] });
+    ui.tgCode.value = '';
+    renderTogether();
+    vsTick();
+  }
+  async function vsLeave(note) {
+    const code = vs.code;
+    const alone = !vs.room || Object.keys(vs.room.p || {}).length <= 1;
+    window.clearTimeout(vs.timer);
+    Object.assign(vs, { code: '', room: null, inMatch: false, final: null, queue: [] });
+    if (code) board.del(alone ? roomPath(code) : `${roomPath(code)}/p/${saved.pid}`).catch(() => {});
+    tgNote(note || '');
+    if (state === 'together') renderTogether();
+    else if (state === 'result') showTogether();
+  }
+  function vsSchedule(ms) {
+    window.clearTimeout(vs.timer);
+    if (vs.code) vs.timer = window.setTimeout(vsTick, ms);
+  }
+  // read the room, react to it, then tell it how this phone is doing
+  async function vsTick() {
+    if (!vs.code) return;
+    const code = vs.code;
+    try {
+      const room = await board.get(roomPath(code));
+      if (vs.code !== code) return;
+      vsRoom(room);
+      if (vs.code === code) await board.put(`${roomPath(code)}/p/${saved.pid}`, vsStatus());
+      vs.fail = 0;
+    } catch (err) {
+      vs.fail += 1;
+      if (state === 'together' && vs.fail >= 3) tgNote('연결이 불안정해요. 다시 연결하는 중…', true);
+    } finally {
+      if (vs.code === code) vsSchedule(vs.inMatch ? 1000 : 1500);
+    }
+  }
+  const fighting = (p, id) => p.al === true && Date.now() - ((vs.heard[id] && vs.heard[id].at) || 0) < VS_SILENT;
+  function vsRoom(room) {
+    if (!room || !room.p || typeof room.p !== 'object' || (!room.p[saved.pid] && Object.keys(room.p).length >= ROOM_MAX)) {
+      vsLeave('방이 닫혔어요.');
+      return;
+    }
+    vs.room = room;
+    const now = Date.now();
+    const ids = Object.keys(room.p);
+    for (const id of ids) { // when each player's heartbeat last moved, by this phone's clock
+      const up = room.p[id] && room.p[id].up;
+      if (!vs.heard[id] || vs.heard[id].up !== up) vs.heard[id] = { up, at: now };
+    }
+    // the earliest arrival takes over when the host has gone
+    if (!room.p[room.host]) {
+      const next = ids.slice().sort((a, b) => (Number(room.p[a].j) || 0) - (Number(room.p[b].j) || 0))[0];
+      if (next === saved.pid) {
+        room.host = saved.pid;
+        board.patch(roomPath(), { host: saved.pid }).catch(() => {});
+      }
+    }
+    // between matches the host clears away phones that went quiet
+    if (room.host === saved.pid && !ids.some((id) => room.p[id].m === room.go && fighting(room.p[id], id))) {
+      for (const id of ids) {
+        if (id !== saved.pid && now - vs.heard[id].at > 45000) board.del(`${roomPath()}/p/${id}`).catch(() => {});
+      }
+    }
+    if (room.host !== saved.pid && Number(room.stage) >= 1) vs.stage = Number(room.stage);
+    const go = Number(room.go) || 0;
+    if (go > vs.startedFor) { // the host pressed start
+      vs.startedFor = go;
+      if (state === 'together' || state === 'hangar' || (state === 'result' && run.vs)) vsStart(room, go);
+    }
+    if (vs.inMatch) vsHear(room);
+    if (state === 'together') renderTogether();
+    if (state === 'result' && run.vs) renderVsResult();
+    renderVsPanel();
+  }
+  async function vsGo() {
+    const room = vs.room;
+    if (!room || !isHost() || vs.busy) return;
+    if (Object.keys(room.p).length < 2) {
+      tgNote('친구가 한 명 이상 들어와야 출발할 수 있어요.', true);
+      return;
+    }
+    vs.busy = true;
+    try {
+      await board.patch(roomPath(), { go: (Number(room.go) || 0) + 1, st: 'go', stage: vs.stage });
+      window.clearTimeout(vs.timer);
+      vsTick();
+    } catch (err) {
+      tgNote(roomError(err), true);
+    } finally {
+      vs.busy = false;
+    }
+  }
+  function vsStart(room, go) {
+    Object.assign(vs, { inMatch: true, match: go, sent: 0, kind: 0, killMark: 0, queue: [], queueT: 3, final: null });
+    const n = Object.keys(room.p).length;
+    tgNote('');
+    startStage(clamp((Number(room.stage) || 1) - 1, 0, ENDLESS));
+    run.vs = true;
+    showBanner('대결 시작!', `${n}명이 같은 지역에서 출발해요`, false);
+    announce(`대결 시작! ${n}명이 같은 지역에서 출발해요.`);
+    renderVsPanel();
+  }
+  // attacks: each phone counts the attacks it has sent; a rising count means new enemies for everyone else
+  function vsSend(kind) {
+    if (!run.vs || !vs.inMatch) return;
+    vs.sent += 1;
+    vs.kind = kind;
+    addText(player.x, player.y - 52, kind === 2 ? '친구들에게 큰 공격!' : '친구들에게 공격!', COLOR.cyan, 1.2, 12);
+  }
+  function vsHear(room) {
+    for (const [id, p] of Object.entries(room.p)) {
+      if (id === saved.pid || !p || p.m !== vs.match) continue;
+      const seen = vs.seen[id] && vs.seen[id].m === vs.match ? vs.seen[id] : (vs.seen[id] = { m: vs.match, a: 0 });
+      const a = Number(p.a) || 0;
+      for (let k = seen.a; k < a && k < seen.a + 3; k++) vs.queue.push({ kind: Number(p.ak) === 2 ? 2 : 1, name: cleanName(p.n) || '친구' });
+      seen.a = Math.max(seen.a, a);
+    }
+    if (vs.queue.length > 6) vs.queue.splice(0, vs.queue.length - 6);
+  }
+  function vsUpdate(dt) {
+    if (!run.vs || !vs.queue.length) return;
+    vs.queueT -= dt;
+    if (vs.queueT > 0) return;
+    vs.queueT = 2.5; // never more than one incoming squad every few seconds
+    const { kind, name } = vs.queue.shift();
+    spawnPattern(pick(ATTACKS[kind]));
+    if (kind === 2) spawnPattern(pick(ATTACKS[1]));
+    addText(W / 2, hudBottom + 64, `${name}님이 적을 보냈어요!`, COLOR.coral, 1.8, 14);
+    sfx.play(kind === 2 ? 'alarm' : 'incoming');
+    announce(`${name}님이 적을 보냈어요.`);
+  }
+  function vsFinish(score, cleared) {
+    vs.inMatch = false;
+    vs.final = { sc: score, cl: !!cleared };
+    vs.queue.length = 0;
+    renderVsResult();
+    if (vs.code) {
+      window.clearTimeout(vs.timer);
+      vsTick();
+    }
+  }
+  // everyone in this match, best score first; this phone's own row uses its live numbers
+  function vsStandings() {
+    const room = vs.room;
+    const rows = [];
+    for (const [id, p] of Object.entries((room && room.p) || {})) {
+      if (!p || p.m !== vs.match) continue;
+      const me = id === saved.pid;
+      const live = me ? vsStatus() : p;
+      rows.push({
+        id, me, name: cleanName(live.n) || '조종사', ship: live.s, sc: Number(live.sc) || 0, hp: Number(live.hp) || 0,
+        alive: me ? live.al : fighting(p, id), gone: !me && p.al === true && !fighting(p, id), cl: !!live.cl,
+      });
+    }
+    if (!rows.some((r) => r.me)) {
+      const live = vsStatus();
+      rows.push({ id: saved.pid, me: true, name: live.n, ship: live.s, sc: live.sc, hp: live.hp, alive: live.al, gone: false, cl: live.cl });
+    }
+    rows.sort((a, b) => b.sc - a.sc);
+    return rows;
+  }
+  function renderVsPanel() {
+    const show = run.vs && vs.inMatch && !!vs.code;
+    ui.vsPanel.hidden = !show;
+    if (!show) return;
+    ui.vsPanel.replaceChildren(...vsStandings().slice(0, ROOM_MAX).map((r, i) => {
+      const row = document.createElement('div');
+      row.className = `vs-row${r.me ? ' is-me' : ''}${r.alive ? '' : ' is-out'}`;
+      row.innerHTML = '<em></em><span></span><i class="vs-hp"><i></i></i><b></b>';
+      row.querySelector('em').textContent = String(i + 1);
+      row.querySelector('span').textContent = r.me ? '나' : r.name;
+      row.querySelector('.vs-hp i').style.width = `${r.alive ? r.hp : 0}%`;
+      row.querySelector('b').textContent = r.alive ? fmt(r.sc) : `${fmt(r.sc)}`;
+      return row;
+    }));
+    if (!ui.hud.hidden) hudBottom = ui.hud.offsetHeight / scale;
+  }
+  function renderVsResult() {
+    const show = run.vs && !!vs.code && state === 'result';
+    ui.vsResult.hidden = !show;
+    if (!show) return;
+    const rows = vsStandings();
+    const still = rows.some((r) => r.alive && !r.me);
+    const top = rows[0];
+    ui.vsResultTitle.textContent = still ? '대결 순위 · 친구들이 아직 싸우는 중이에요'
+      : top && top.me ? '대결 순위 · 내가 1등이에요!' : `대결 순위 · ${top ? top.name : ''} 우승!`;
+    ui.vsResultList.replaceChildren(...rows.map((r, i) => vsRow(r, i + 1)));
+  }
+  function vsRow(r, n) {
+    const li = document.createElement('li');
+    li.className = `tg-player${r.me ? ' is-me' : ''}`;
+    li.innerHTML = '<span class="tg-rank"></span><span class="tg-who"><b></b><small></small></span><span class="tg-side"></span>';
+    li.querySelector('.tg-rank').textContent = String(n);
+    li.querySelector('b').textContent = r.me ? `${r.name} (나)` : r.name;
+    li.querySelector('small').textContent = SHIPS.some((sd) => sd.id === r.ship) ? shipOf(r.ship).name : '';
+    const side = li.querySelector('.tg-side');
+    side.textContent = `${fmt(r.sc)}점`;
+    const tag = document.createElement('span');
+    tag.className = `tg-tag${r.alive ? ' is-live' : r.gone ? ' is-out' : r.cl ? '' : ' is-out'}`;
+    tag.textContent = r.alive ? '싸우는 중' : r.gone ? '연결 끊김' : r.cl ? '클리어' : '격추';
+    side.prepend(tag);
+    return li;
+  }
+  function renderTogether() {
+    const inRoom = !!vs.code;
+    ui.tgEntry.hidden = inRoom;
+    ui.tgLobby.hidden = !inRoom;
+    ui.tgBack.hidden = inRoom;
+    ui.tgNote.textContent = vs.note;
+    ui.tgNote.classList.toggle('is-error', vs.noteErr);
+    if (!inRoom) return;
+    const room = vs.room;
+    ui.tgRoomCode.textContent = vs.code;
+    const players = room ? Object.entries(room.p).sort((a, b) => (Number(a[1].j) || 0) - (Number(b[1].j) || 0)) : [[saved.pid, vsStatus()]];
+    const rows = players.map(([id, p]) => {
+      const li = document.createElement('li');
+      const me = id === saved.pid;
+      li.className = `tg-player${me ? ' is-me' : ''}`;
+      const ship = SHIPS.some((sd) => sd.id === p.s) ? shipOf(p.s) : shipOf('star');
+      li.style.setProperty('--tone', ship.tone);
+      li.innerHTML = '<span class="tg-dot"></span><span class="tg-who"><b></b><small></small></span><span class="tg-side"></span>';
+      li.querySelector('b').textContent = me ? `${cleanName(p.n) || saved.name} (나)` : cleanName(p.n) || '조종사';
+      li.querySelector('small').textContent = ship.name;
+      const side = li.querySelector('.tg-side');
+      const tags = [];
+      if (room && room.host === id) tags.push(['방장', '']);
+      if (room && p.m === room.go && room.go > 0 && fighting(p, id)) tags.push(['대결 중', ' is-live']);
+      else if (!me && Date.now() - ((vs.heard[id] && vs.heard[id].at) || Date.now()) > VS_SILENT) tags.push(['연결 끊김', ' is-out']);
+      for (const [text, cls] of tags) {
+        const t = document.createElement('span');
+        t.className = `tg-tag${cls}`;
+        t.textContent = text;
+        side.append(t);
+      }
+      return li;
+    });
+    for (let k = players.length; k < ROOM_MAX; k++) {
+      const li = document.createElement('li');
+      li.className = 'tg-player is-empty';
+      li.innerHTML = '<span class="tg-dot"></span><span class="tg-who">빈 자리</span><span></span>';
+      rows.push(li);
+    }
+    ui.tgPlayers.replaceChildren(...rows);
+    const host = isHost();
+    const stageNo = host ? vs.stage : Number(room && room.stage) || vs.stage;
+    ui.tgStageLabel.textContent = host ? '지역 고르기 (방장)' : `지역: ${stageNo === ENDLESS + 1 ? '무한 모드' : `${stageNo}. ${stageName(stageNo)}`}`;
+    ui.tgStages.hidden = !host;
+    if (host) {
+      const chips = STAGES.slice(0, saved.unlocked).map((st, i) => ({ no: i + 1, color: st.color, label: String(i + 1), name: `${i + 1}. ${st.name}` }));
+      chips.push({ no: ENDLESS + 1, color: '#ff4fd8', label: '∞ 무한', name: '무한 모드' });
+      ui.tgStages.replaceChildren(...chips.map((c) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = `stage-chip${c.no === ENDLESS + 1 ? ' is-endless' : ''}`;
+        b.dataset.tgStage = String(c.no);
+        b.style.setProperty('--stage-color', c.color);
+        b.setAttribute('aria-pressed', String(c.no === vs.stage));
+        b.setAttribute('aria-label', c.name);
+        b.textContent = c.label;
+        return b;
+      }));
+    }
+    const busy = !!room && players.some(([id, p]) => p.m === room.go && room.go > 0 && fighting(p, id));
+    ui.tgGo.hidden = !host;
+    ui.tgGo.disabled = !room || players.length < 2 || busy;
+    ui.tgGo.textContent = !room ? '방을 여는 중…' : busy ? '이번 판이 끝나길 기다리는 중' : players.length < 2 ? '친구를 기다리는 중' : `${players.length}명 출발`;
+    if (!host && !vs.noteErr) ui.tgNote.textContent = busy ? '친구들이 대결 중이에요. 이번 판이 끝나면 같이 출발해요.' : '방장이 출발을 누르면 바로 시작해요.';
+  }
+  async function vsInvite() {
+    const url = `${location.href.split(/[?#]/)[0]}?room=${vs.code}`;
+    const text = `전투의 미 대결 방 ${vs.code}번에서 같이 하자! 링크를 누르면 바로 들어와져.`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: '전투의 미 대결', text, url });
+        return;
+      }
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;
+    }
+    try {
+      await navigator.clipboard.writeText(`${text} ${url}`);
+      ui.tgInvite.textContent = '복사했어요! 카톡에 붙여 넣어요';
+      window.setTimeout(() => { ui.tgInvite.textContent = '친구 초대하기'; }, 2600);
+    } catch {
+      window.prompt('아래 글을 복사해서 친구에게 보내세요.', `${text} ${url}`);
+    }
   }
 
   // ---------- hangar ----------
@@ -8675,8 +9202,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       keys.add(e.code);
       if (state === 'playing') e.preventDefault();
     }
-    if (state === 'hangar' && e.code === 'Escape') {
+    if (state === 'together' && e.code === 'Escape' && !vs.code) {
       showTitle();
+      e.preventDefault();
+      return;
+    }
+    if (state === 'hangar' && e.code === 'Escape') {
+      if (vs.code) showTogether();
+      else showTitle();
       e.preventDefault();
       return;
     }
@@ -8900,14 +9433,51 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   ui.pause.addEventListener('click', pause);
   ui.resume.addEventListener('click', resume);
   ui.quit.addEventListener('click', () => {
-    if (run.endless && state === 'paused') endRun(false); // an endless run is banked, not thrown away
+    if ((run.endless || run.vs) && state === 'paused') endRun(false); // an endless or versus run is banked, not thrown away
     else showTitle();
   });
   ui.again.addEventListener('click', () => startStage(Number(ui.again.dataset.stage) || 0));
   ui.toStages.addEventListener('click', showStages);
   ui.openTree1.addEventListener('click', showTree);
   ui.openHangar.addEventListener('click', showHangar);
-  ui.hangarBack.addEventListener('click', () => showTitle());
+  ui.openTogether.addEventListener('click', () => {
+    audio.unlock();
+    showTogether();
+  });
+  ui.tgCreate.addEventListener('click', vsCreate);
+  ui.tgJoin.addEventListener('submit', (e) => {
+    e.preventDefault();
+    vsJoin(ui.tgCode.value.replace(/\D/g, ''));
+  });
+  ui.tgCode.addEventListener('input', () => {
+    const v = ui.tgCode.value.replace(/\D/g, '').slice(0, 4);
+    if (v !== ui.tgCode.value) ui.tgCode.value = v;
+  });
+  ui.tgInvite.addEventListener('click', vsInvite);
+  ui.tgGo.addEventListener('click', vsGo);
+  ui.tgLeave.addEventListener('click', () => vsLeave('방에서 나왔어요.'));
+  ui.tgHangar.addEventListener('click', showHangar);
+  ui.tgBack.addEventListener('click', () => showTitle());
+  ui.tgStages.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-tg-stage]');
+    if (!b || !isHost()) return;
+    vs.stage = Number(b.dataset.tgStage);
+    renderTogether();
+    board.patch(roomPath(), { stage: vs.stage }).catch(() => {});
+  });
+  ui.vsLobby.addEventListener('click', () => showTogether());
+  ui.vsLeave.addEventListener('click', () => vsLeave('방에서 나왔어요.'));
+  ui.nameDialog.addEventListener('close', () => { // a name was just set: carry on with what the player was doing
+    const next = vs.pending;
+    vs.pending = null;
+    if (!next || !saved.name || state !== 'together') return;
+    if (next.type === 'create') vsCreate();
+    else vsJoin(next.code);
+  });
+  window.addEventListener('pagehide', () => {
+    if (vs.code) board.drop(`${roomPath()}/p/${saved.pid}`);
+  });
+  ui.hangarBack.addEventListener('click', () => (vs.code ? showTogether() : showTitle()));
   ui.shipGrid.addEventListener('click', (e) => {
     const b = e.target.closest('[data-ship]');
     if (!b) return;
@@ -9072,6 +9642,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       run.t += dt;
       updatePlayer(dt);
       updateDirector(dt);
+      vsUpdate(dt);
       updateWeapons(dt);
       updateGun(dt, stats.cdMul * (liveBoss() ? stats.bossHaste : 1));
     }
@@ -9129,6 +9700,13 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   resize();
   showTitle(false);
   cloud.pull(true).then((changed) => changed && refreshMenus());
+  {
+    const code = new URLSearchParams(location.search).get('room');
+    if (board.on && code && /^[0-9]{4}$/.test(code)) {
+      showTogether();
+      vsJoin(code);
+    }
+  }
   window.requestAnimationFrame(tick);
 })();
 </script>
