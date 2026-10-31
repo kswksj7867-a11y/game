@@ -364,6 +364,29 @@ button { font: inherit; color: inherit; }
 @media (hover: hover) {
   .stage-card:not(:disabled):hover { border-color: var(--stage-color, var(--cyan)); background: rgba(255, 255, 255, 0.07); }
 }
+.stage-card.is-endless {
+  position: relative;
+  margin-top: 6px;
+  border: 2px solid transparent;
+  background:
+    linear-gradient(135deg, #2a1146, #0e1a3d) padding-box,
+    linear-gradient(120deg, #ff4fd8, #a88bff, #7fe7ff, #ffc24b) border-box;
+  box-shadow: 0 0 24px -6px rgba(255, 79, 216, 0.75);
+}
+.stage-card.is-endless .stage-no svg {
+  display: block;
+  width: 42px;
+  height: 22px;
+  fill: none;
+  stroke: url(#inf-g);
+  stroke-width: 3.4;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 4px rgba(255, 79, 216, 0.7));
+}
+.stage-card.is-endless .stage-name { font-size: 1.0625rem; }
+.stage-card.is-endless .stage-state { color: #ff8ae4; font-weight: 700; }
+.stage-card.is-endless .stage-best { color: #ffd27a; }
+.stage-chip.is-endless { color: #ff8ae4; }
 
 /* level-up and supply crate cards */
 .cards { display: grid; gap: 10px; }
@@ -685,9 +708,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .stage-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .stage-chip {
   appearance: none;
-  min-width: 44px;
+  min-width: 40px;
   min-height: 40px;
-  padding: 0 12px;
+  padding: 0 10px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.04);
@@ -1019,7 +1042,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         <details class="recipes-box">
           <summary>궁극 합체</summary>
           <ul class="recipes" id="ult-guide"></ul>
-          <p class="note">합체 스킬 2개를 가진 채 보급 상자를 열면 두 스킬을 하나의 궁극기로 합칠 수 있어요. 한 판에 한 번이에요.</p>
+          <p class="note" id="ult-note">합체 스킬 2개를 가진 채 보급 상자를 열면 두 스킬을 하나의 궁극기로 합칠 수 있어요. 한 판에 한 번이에요.</p>
         </details>
         <button type="button" class="btn btn-primary" id="resume">계속하기</button>
         <div class="row row-3">
@@ -1029,7 +1052,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         </div>
         <p class="note">'내 효과 흐리게'를 고르면 내 공격과 폭발이 옅어져서 적 총알이 더 잘 보여요.</p>
         <button type="button" class="btn" id="quit">그만하기</button>
-        <p class="note">그만하면 이번 판의 기록과 코인은 남지 않아요.</p>
+        <p class="note" id="quit-note">그만하면 이번 판의 기록과 코인은 남지 않아요.</p>
       </section>
 
       <section class="overlay" id="screen-result" aria-labelledby="result-title" hidden>
@@ -1183,6 +1206,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     },
     openHangar: $('open-hangar'), titleShip: $('title-ship'), hangarCoins: $('hangar-coins'), shipGrid: $('ship-grid'),
     shipDetail: $('ship-detail'), hangarBack: $('hangar-back'),
+    quitNote: $('quit-note'), ultNote: $('ult-note'),
     coins: $('coins'), titleCoins: $('title-coins'), coinLine: $('coin-line'), reroll: $('reroll'),
     openTree1: $('open-tree-1'), openTree2: $('open-tree-2'), treeCoins: $('tree-coins'), treeTabs: $('tree-tabs'),
     tree: $('tree'), treeLinks: $('tree-links'), treeGrid: $('tree-grid'), treeDetail: $('tree-detail'), treeBack: $('tree-back'),
@@ -1217,6 +1241,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   const TAU = Math.PI * 2;
   let hitbox = 4; // the radius of the glowing core that can be hit; depends on the fighter
   const STAGE_TIME = 780; // survive 13:00, then the final boss arrives
+  const ENDLESS = 5; // stage number 6 is endless mode, after the five regions
+  const SECTOR_TIME = 180; // endless: the region and its squads change every three minutes
+  const ENDLESS_HEAD = 60; // endless starts as hot as a region a minute in
+  const BOSS_EVERY = 150; // endless: a boss every two and a half minutes
+  const COMBO_TIME = 2.5; // endless: kills this close together keep the combo going
   const MIDBOSS_AT = [180, 390, 600];
   const MAX_LEVEL = 5;
   const WEAPON_SLOTS = 5; // five weapons and five gear: up to five combined skills in one run
@@ -1252,6 +1281,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     { name: '사건의 지평선', about: '광선함과 저격기가 길목을 막아요.', mul: 1.75, color: '#ff5a6e', sky: ['#2a0d1f', '#080409'], neb: ['#ff5a6e', '#a88bff', '#ffa94d'], rocks: true, early: 0.7, planet: '#ff7a45', bias: { lancers: 2, snipers: 2, spinner: 1.6, minefield: 1.5, wall: 1.4 } },
     { name: '은하 중심', about: '모함과 수리선을 앞세운 총공세예요.', mul: 2.1, color: '#ffc24b', sky: ['#2a2210', '#0a0805'], neb: ['#ffc24b', '#ff6f91', '#a88bff'], rocks: true, early: 0.55, planet: '#ffd27a', bias: { carrier: 1.7, healers: 1.7, shieldwall: 1.7, spinner: 1.3, lancers: 1.3 } },
   ];
+  // Endless mode borrows each region's sky and squads in turn and keeps getting tougher.
+  const endlessStage = (n) => ({ ...STAGES[n % STAGES.length], mul: 1.3 + 0.2 * n, early: 0.5, endless: true });
+  const stageName = (no) => (no === ENDLESS + 1 ? '무한 모드' : STAGES[no - 1] ? STAGES[no - 1].name : `${no}지역`);
   // kamikaze ships blow up when they ram you
   const ENEMY = {
     scout: { r: 11, hp: 14, xp: 1, pts: 10, touch: 8, kamikaze: true },
@@ -1716,7 +1748,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
 
   // ---------- saved data (this browser only) ----------
-  function isRecord(r) {
+  function isRecord(r) { // endless records may also carry the sector reached and the best combo
     return !!r && typeof r === 'object' && typeof r.id === 'string' && typeof r.at === 'string' &&
       Number.isFinite(r.score) && Number.isFinite(r.stage) && Number.isFinite(r.timeMs) &&
       Number.isFinite(r.level) && Number.isFinite(r.kills);
@@ -3250,7 +3282,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     nebula.width = nw;
     nebula.height = nh;
     const g = nebula.getContext('2d');
-    const rnd = seeded(stageIndex * 7919 + 11);
+    const rnd = seeded(skyIdx * 7919 + 11);
     const A = fbm(nw, nh, rnd);
     const B = fbm(nw, nh, rnd);
     const hexRgb = (hex) => {
@@ -3567,9 +3599,19 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   let state = 'title'; // title | stages | tree | hangar | playing | choice | paused | dying | clearing | result
   let stageIndex = 0;
   let stage = STAGES[0];
+  let skyIdx = 0; // which region's sky is painted (endless mode cycles through them)
   let stats = null;
   const player = { x: W / 2, y: 550, hp: 120, invuln: 0, bank: 0, prevX: W / 2, alive: true, shield: false, shieldT: 0 };
-  const run = { t: 0, score: 0, kills: 0, level: 1, xp: 0, need: 9, coins: 0, rerolls: 0, revives: 0, magT: 0, ults: 0, fused: [], ship: 'star' };
+  const run = {
+    t: 0, score: 0, kills: 0, level: 1, xp: 0, need: 9, coins: 0, rerolls: 0, revives: 0, magT: 0, ults: 0, fused: [], ship: 'star',
+    endless: false, sector: 0, combo: 0, comboT: 0, bestCombo: 0,
+  };
+  // endless mode has room for one more weapon and one more piece of gear
+  const weaponSlots = () => WEAPON_SLOTS + (run.endless ? 1 : 0);
+  const passiveSlots = () => PASSIVE_SLOTS + (run.endless ? 1 : 0);
+  // Endless mode: each sector raises the points per kill, and an unbroken combo doubles or triples them.
+  const comboMul = () => 1 + Math.min(2, run.combo / 150);
+  const scoreMul = () => (run.endless ? (1 + 0.25 * run.sector) * comboMul() : 1);
   const gun = { cd: 0.3, a: 0 }; // the fighter's built-in gun
   const rails = []; // railgun lines fading out
   let chestSkip = false; // the player passed on a combination: this crate gives an ordinary pick
@@ -3650,11 +3692,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     bgGrad.addColorStop(0, stage.sky[0]);
     bgGrad.addColorStop(1, stage.sky[1]);
     paintNebula();
-    const big = stageIndex >= 3;
+    const big = skyIdx >= 3;
     planet.size = big ? 250 : 210;
     const R = big ? 70 : 64;
-    planet.img = sprite(planet.size, Math.min(2.5, Math.max(1, scale * dpr)), (g) => paintPlanet(g, stageIndex, R));
-    planet.x = W * (stageIndex % 2 ? 0.2 : 0.82);
+    planet.img = sprite(planet.size, Math.min(2.5, Math.max(1, scale * dpr)), (g) => paintPlanet(g, skyIdx, R));
+    planet.x = W * (skyIdx % 2 ? 0.2 : 0.82);
     planet.y = H * 0.28;
     vignette = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.42, W / 2, H / 2, Math.hypot(W, H) * 0.62);
     vignette.addColorStop(0, rgba(COLOR.void, 0));
@@ -3805,11 +3847,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const out = [];
     const pool = [];
     for (const w of build.weapons) if (!w.evolved && w.lv < MAX_LEVEL) pool.push({ kind: 'weapon', id: w.id, lv: w.lv + 1 });
-    if (build.weapons.length < WEAPON_SLOTS) {
+    if (build.weapons.length < weaponSlots()) {
       for (const id of Object.keys(WEAPONS)) if (!owned('weapon', id) && !run.fused.includes(id)) pool.push({ kind: 'weapon', id, lv: 1 });
     }
     for (const p of build.passives) if (p.lv < MAX_LEVEL) pool.push({ kind: 'passive', id: p.id, lv: p.lv + 1 });
-    if (build.passives.length < PASSIVE_SLOTS) {
+    if (build.passives.length < passiveSlots()) {
       for (const id of Object.keys(PASSIVES)) if (!owned('passive', id)) pool.push({ kind: 'passive', id, lv: 1 });
     }
     // the lucky-card upgrade tilts the draw toward skills already owned
@@ -3905,11 +3947,15 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   // ---------- spawning ----------
   // Everything ramps with time survived: ship toughness grows faster than linearly so late builds still meet resistance.
   // Later regions start gentler and reach their full strength after about five minutes.
-  const stageRamp = () => Math.min(1, 0.25 + run.t / 400);
-  const hpScale = () => (1 + run.t / 200 + (run.t / 190) ** 2) * (1 + (stage.mul - 1) * stageRamp());
-  const bulletSpeed = () => Math.min(270, 125 + run.t * 0.14) * (1 + 0.05 * stageIndex * stageRamp());
-  const hitScale = () => (1 + 0.15 * stageIndex * stageRamp()) * (1 + run.t / 600);
-  const fireChance = () => (run.t < 30 ? 0 : Math.min(0.9, 0.1 + run.t / 650) + 0.05 * stageIndex * stageRamp());
+  // Endless mode has no gentle start: it opens like a region a minute in, at full strength.
+  const dT = () => run.t + (run.endless ? ENDLESS_HEAD : 0);
+  const stageRamp = () => (run.endless ? 1 : Math.min(1, 0.25 + run.t / 400));
+  // Past six minutes, endless ships also toughen by about a quarter every three minutes, so even a maxed ship meets its end.
+  const endlessHp = () => (run.endless ? 1.28 ** Math.max(0, (run.t - 360) / SECTOR_TIME) : 1);
+  const hpScale = () => (1 + dT() / 200 + (dT() / 190) ** 2) * (1 + (stage.mul - 1) * stageRamp()) * endlessHp();
+  const bulletSpeed = () => Math.min(270, 125 + dT() * 0.14) * (1 + 0.05 * stageIndex * stageRamp());
+  const hitScale = () => (1 + 0.15 * stageIndex * stageRamp()) * (1 + dT() / 600);
+  const fireChance = () => (dT() < 30 ? 0 : Math.min(0.9, 0.1 + dT() / 650) + 0.05 * stageIndex * stageRamp());
   function addEnemy(kind, props) {
     const def = ENEMY[kind];
     const hp = def.hp * (def.boss ? 1 : hpScale());
@@ -4165,9 +4211,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 
   function pickPattern() {
     const early = stage.early || 1;
-    const avail = PATTERNS.filter((p) => run.t >= p.from * early && (!p.needs || stage[p.needs]));
+    const avail = PATTERNS.filter((p) => dT() >= p.from * early && (!p.needs || stage[p.needs]));
     // heavier squads grow more common with time; the squad just sent is less likely to come again
-    const weight = (p) => p.w * (stage.bias[p.id] || 1) * (p.cost >= 8 ? 1 + run.t / 300 : 1) * (p.id === director.lastId ? 0.3 : 1);
+    const weight = (p) => p.w * (stage.bias[p.id] || 1) * (p.cost >= 8 ? 1 + dT() / 300 : 1) * (p.id === director.lastId ? 0.3 : 1);
     let total = 0;
     for (const p of avail) total += weight(p);
     let r = Math.random() * total;
@@ -4179,14 +4225,28 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
 
   // Ships arrive faster the longer you last; every region adds pressure on top.
-  const spawnRate = () => (1 + run.t / 70 + (run.t / 300) ** 2) * (1 + 0.15 * stageIndex * stageRamp());
+  const spawnRate = () => (1 + dT() / 70 + (dT() / 300) ** 2) * (1 + 0.15 * stageIndex * stageRamp());
   function updateDirector(dt) {
+    if (run.comboT > 0) {
+      run.comboT -= dt;
+      if (run.comboT <= 0) run.combo = 0;
+    }
     if (director.final) return;
-    if (run.t >= STAGE_TIME) {
+    if (run.endless) {
+      const sector = Math.floor(run.t / SECTOR_TIME);
+      if (sector !== run.sector) enterSector(sector);
+      if (run.t >= director.bossAt && !boss) { // every fourth boss is a mothership
+        const n = director.mid;
+        director.mid += 1;
+        director.bossAt = run.t + BOSS_EVERY;
+        if (n % 4 === 3) startFinal();
+        else spawnCruiser(Math.min(2, n));
+        if (director.final) return;
+      }
+    } else if (run.t >= STAGE_TIME) {
       startFinal();
       return;
-    }
-    if (director.mid < MIDBOSS_AT.length && run.t >= MIDBOSS_AT[director.mid] && !boss) {
+    } else if (director.mid < MIDBOSS_AT.length && run.t >= MIDBOSS_AT[director.mid] && !boss) {
       spawnCruiser(director.mid);
       director.mid += 1;
     }
@@ -4199,6 +4259,21 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       director.next = pickPattern();
     }
   }
+  // Endless mode: a new sector every three minutes, with another region's sky and squads and a higher score rate.
+  function enterSector(n) {
+    run.sector = n;
+    stageIndex = Math.min(6, 1 + n);
+    stage = endlessStage(n);
+    skyIdx = n % STAGES.length;
+    paintSky();
+    warp = motionOK() ? 1 : 0;
+    flash = Math.max(flash, motionOK() ? 0.3 : 0.1);
+    showBanner(`구역 ${n + 1}`, `${stage.name} · 점수 ×${fmtMul(1 + 0.25 * n)}`, false);
+    sfx.play('levelup');
+    announce(`구역 ${n + 1}, ${stage.name}. 적이 더 강해지고 점수가 더 많이 올라요.`);
+    hudDirty = true;
+  }
+  const fmtMul = (v) => (Math.round(v * 100) / 100).toString();
   function spawnCruiser(tier) {
     const hp = ENEMY.cruiser.hp * hpScale() * (0.7 + tier * 0.25);
     boss = addEnemy('cruiser', { move: 'cruiser', step: 'enter', tier, x: W / 2, y: -70, hp, maxHp: hp, xp: 90 + tier * 40 });
@@ -4220,12 +4295,13 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
     }
     eShots.length = 0;
-    const hp = ENEMY.mother.hp * stage.mul;
+    // in endless mode the mothership grows with the clock instead of the region
+    const hp = ENEMY.mother.hp * (run.endless ? Math.max(0.8, hpScale() / 26) : stage.mul);
     boss = addEnemy('mother', { move: 'mother', step: 'enter', x: W / 2, y: -90, hp, maxHp: hp });
-    showBanner('최종 보스', '모선 접근', true);
+    showBanner(run.endless ? '모선 출현' : '최종 보스', '모선 접근', true);
     sfx.play('alarm');
     music.play('final');
-    announce('13분을 버텼어요. 최종 보스 모선이 나타났어요.');
+    announce(run.endless ? '모선이 나타났어요. 격추하면 큰 점수를 받아요.' : '13분을 버텼어요. 최종 보스 모선이 나타났어요.');
     hudDirty = true;
   }
 
@@ -4865,22 +4941,31 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     explode(b.x, b.y, COLOR.violet, 'big');
     explode(b.x, b.y, COLOR.amber, 'big');
     sfx.play('bigBoom');
-    run.score += b.pts * (stageIndex + 1);
+    const pts = Math.round(b.pts * (stageIndex + 1) * scoreMul());
+    run.score += pts;
     run.kills += 1;
-    addText(b.x, b.y, `+${num(b.pts * (stageIndex + 1))}`, COLOR.amber, 1.6, 20);
+    addText(b.x, b.y, `+${num(pts)}`, COLOR.amber, 1.6, 20);
     const bounty = 150 * (1 + 0.3 * rank('bounty')) * stats.coinMul;
     run.coins += bounty;
+    addText(b.x, b.y + 26, `코인 +${num(bounty)}`, COLOR.amber, 1.8, 15);
+    boss = null;
+    for (const g of gems) g.pulled = true;
+    hudDirty = true;
+    if (run.endless) { // no clearing in endless mode: two crates, a repair kit, and back to the fight
+      director.final = false;
+      items.push({ kind: 'chest', x: b.x - 26, y: b.y, t: 0 }, { kind: 'chest', x: b.x + 26, y: b.y, t: 0 }, { kind: 'heal', x: b.x, y: b.y + 20, t: 0 });
+      music.play('calm');
+      showBanner('모선 격추!', '무한 모드는 계속돼요', false);
+      announce('모선을 격추했어요! 보급 상자 두 개를 챙기세요.');
+      return;
+    }
     for (let i = items.length - 1; i >= 0; i--) { // coins still on the field are banked too
       if (items[i].kind !== 'coin') continue;
       run.coins += items[i].v * stats.coinMul;
       removeAt(items, i);
     }
-    addText(b.x, b.y + 26, `코인 +${num(bounty)}`, COLOR.amber, 1.8, 15);
-    boss = null;
     state = 'clearing';
     endT = 2.2;
-    for (const g of gems) g.pulled = true;
-    hudDirty = true;
   }
 
   // ---------- player and weapons ----------
@@ -5335,7 +5420,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
   }
   function updatePhoenix(w, dt, K, A) {
-    const P = w.ph || (w.ph = { x: player.x, y: player.y - 90, mode: 'orbit', t: 0, a: -Math.PI / 2, ang: -Math.PI / 2, hitT: 0, dive: 2, trailT: 0 });
+    const P = w.ph || (w.ph = { x: player.x, y: player.y - 90, mode: 'orbit', t: 0, a: rand(0, TAU), ang: -Math.PI / 2, hitT: 0, dive: 2, trailT: 0 });
     P.t += dt;
     let nx;
     let ny;
@@ -5747,6 +5832,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     player.hp -= amount * stats.taken;
     player.invuln = stats.invuln;
+    if (run.endless && run.combo > 0) { // a hit breaks the combo
+      if (run.combo >= 30) addText(player.x, player.y - 40, `콤보 ${num(run.combo)} 끊김`, COLOR.coral, 1.2, 13);
+      run.combo = 0;
+      run.comboT = 0;
+    }
     if (player.hp > 0 && player.hp < stats.maxHp * 0.3 && run.panic > 0) {
       run.panic -= 1;
       bomb();
@@ -5985,7 +6075,13 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     e.dead = true;
     run.kills += 1;
-    run.score += e.pts;
+    if (run.endless) {
+      run.combo += 1;
+      run.comboT = COMBO_TIME;
+      if (run.combo > run.bestCombo) run.bestCombo = run.combo;
+    }
+    const pts = Math.round(e.pts * scoreMul());
+    run.score += pts;
     if (stats.leech) heal(stats.leech, true);
     if (!e.boss && stats.chain && Math.random() < stats.chain) blasts.push({ x: e.x, y: e.y });
     hudDirty = true;
@@ -6002,7 +6098,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         heal(20 * rank('secondwind'));
         addText(e.x, e.y + 16, `재정비! 체력 +${20 * rank('secondwind')}`, COLOR.teal, 1.6, 13);
       }
-      addText(e.x, e.y - 20, `+${num(e.pts)}`, COLOR.amber, 1.4, 16);
+      addText(e.x, e.y - 20, `+${num(pts)}`, COLOR.amber, 1.4, 16);
       eShots.length = 0;
       boss = null;
       music.play('calm');
@@ -6371,6 +6467,39 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       ctx.fillRect(0, 0, W, H);
       ctx.globalAlpha = 1;
     }
+    if (run.endless && run.combo >= 5 && (state === 'playing' || state === 'dying')) drawCombo();
+  }
+  // The combo counter under the instruments: it grows, warms up in colour and drains as the timer runs out.
+  const COMBO_TONES = ['#7fe7ff', '#b8f36b', '#ffc24b', '#ff8a3d', '#ff4fd8'];
+  function drawCombo() {
+    const lvl = Math.min(4, Math.floor(run.combo / 60));
+    const tone = COMBO_TONES[lvl];
+    const y = hudBottom + 22;
+    const pop = 1 + Math.max(0, run.comboT - COMBO_TIME + 0.15) * 2.4; // a little jump on every kill
+    ctx.save();
+    ctx.translate(W / 2, y);
+    ctx.scale(pop, pop);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.5;
+    ctx.drawImage(dot(tone), -70, -22, 140, 44);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+    ctx.font = `800 ${18 + lvl * 2}px ${FONT_DATA}`;
+    ctx.fillStyle = rgba(COLOR.void, 0.85);
+    ctx.fillText(`${num(run.combo)} 콤보`, 1, 1);
+    ctx.fillStyle = tone;
+    ctx.fillText(`${num(run.combo)} 콤보`, 0, 0);
+    ctx.font = `700 12px ${FONT_DATA}`;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(`점수 ×${fmtMul(scoreMul())}`, 0, 17);
+    const k = clamp(run.comboT / COMBO_TIME, 0, 1);
+    ctx.fillStyle = rgba(tone, 0.25);
+    ctx.fillRect(-40, 27, 80, 3);
+    ctx.fillStyle = tone;
+    ctx.fillRect(-40, 27, 80 * k, 3);
+    ctx.restore();
   }
   function drawBackground() {
     ctx.fillStyle = bgGrad || COLOR.void;
@@ -7143,9 +7272,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   function renderClock() {
     shownSec = Math.floor(run.t);
     const final = director.final;
-    ui.clock.textContent = clockText(Math.min(run.t, STAGE_TIME));
+    ui.clock.textContent = clockText(run.endless ? run.t : Math.min(run.t, STAGE_TIME));
     ui.clock.classList.toggle('is-final', final);
-    ui.stageLabel.textContent = final ? '최종 보스' : stage.name;
+    ui.stageLabel.textContent = run.endless ? `${fmt(run.score)}점` : final ? '최종 보스' : stage.name;
   }
   function renderHud() {
     hudDirty = false;
@@ -7223,7 +7352,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     return row;
   }
   function renderSlots(el) {
-    el.replaceChildren(chipsFor(build.weapons, 'weapon', WEAPON_SLOTS), chipsFor(build.passives, 'passive', PASSIVE_SLOTS));
+    el.replaceChildren(chipsFor(build.weapons, 'weapon', weaponSlots()), chipsFor(build.passives, 'passive', passiveSlots()));
   }
   // Each recipe shows how far along it is; recipes touched by the cards on offer are highlighted.
   // On the level-up screen the ones that have nothing to do with this run yet fold away.
@@ -7427,20 +7556,34 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       else st.textContent = saved.cleared[i] ? '클리어 ★' : '도전';
       b.setAttribute('aria-label', `${i + 1}. ${s.name}, ${open ? (saved.cleared[i] ? '클리어함' : '도전 가능') : '잠김'}`);
       return b;
-    }));
+    }), endlessCard());
     showScreen('stages');
+  }
+  function endlessCard() {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'stage-card is-endless';
+    b.dataset.stage = String(ENDLESS);
+    b.innerHTML = '<span class="stage-no"><svg viewBox="0 0 48 24" aria-hidden="true"><defs><linearGradient id="inf-g" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#ff4fd8" /><stop offset="0.55" stop-color="#a88bff" /><stop offset="1" stop-color="#7fe7ff" /></linearGradient></defs><path d="M24 12c-3.5-4.2-6.6-6.5-10-6.5a6.5 6.5 0 0 0 0 13c3.4 0 6.5-2.3 10-6.5s6.6-6.5 10-6.5a6.5 6.5 0 0 1 0 13c-3.4 0-6.5-2.3-10-6.5z" /></svg></span><span class="stage-body"><span class="stage-name">무한 모드</span><span class="stage-about"></span><span class="stage-best"></span></span><span class="stage-state">도전</span>';
+    b.querySelector('.stage-about').textContent = '처음부터 어렵고 끝이 없어요. 3분마다 구역이 바뀌며 더 세져요. 궁극 합체 무제한, 콤보로 점수를 쌓아요.';
+    const best = bestRecord(saved.records.filter((r) => r.stage === ENDLESS + 1));
+    b.querySelector('.stage-best').textContent = best ? `최고 ${fmt(best.score)}점 · ${clockText(best.timeMs / 1000)} 버팀` : '';
+    b.setAttribute('aria-label', '무한 모드, 도전 가능');
+    return b;
   }
   function startStage(index) {
     audio.unlock();
-    stageIndex = index;
-    stage = STAGES[index];
+    run.endless = index === ENDLESS;
+    stageIndex = run.endless ? 1 : index;
+    stage = run.endless ? endlessStage(0) : STAGES[index];
+    skyIdx = run.endless ? 0 : index;
     clearField();
     shake = 0;
     flash = 0;
     hurtFlash = 0;
-    const head = rank('headstart');
+    const head = rank('headstart') + (run.endless ? 2 * rank('endstart') : 0);
     Object.assign(run, {
-      t: 0, score: 0, kills: 0, level: 1 + head, xp: 0, need: xpNeed(1 + head), coins: 0, ults: 0, fused: [],
+      t: 0, score: 0, kills: 0, level: 1 + head, xp: 0, need: xpNeed(1 + head), coins: 0, ults: 0, fused: [], sector: 0, combo: 0, comboT: 0, bestCombo: 0,
       rerolls: rank('reroll'), revives: rank('revive'), magT: AUTOMAG_EVERY[rank('automag') - 1] || 0, guard: rank('guardian'), panic: rank('panic'),
     });
     run.ship = saved.ships.includes(saved.ship) ? saved.ship : 'star';
@@ -7451,7 +7594,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     stats = null;
     recompute();
     Object.assign(player, { x: W / 2, y: H - 90, hp: stats.maxHp, invuln: 1.2, bank: 0, prevX: W / 2, alive: true, shield: rank('barrier') > 0, shieldT: 0 });
-    Object.assign(director, { budget: 5, next: null, lastId: '', mid: 0, final: false });
+    Object.assign(director, { budget: run.endless ? 14 : 5, next: null, lastId: '', mid: 0, final: false, bossAt: 120 });
     pendingLevels = head;
     pendingChests = 0;
     pendingStart = rank('pick') > 0;
@@ -7461,10 +7604,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     paintSky();
     state = 'playing';
     showScreen(null);
-    showBanner(`지역 ${index + 1}`, stage.name, false);
+    if (run.endless) showBanner('무한 모드', `구역 1 · ${stage.name}`, false);
+    else showBanner(`지역 ${index + 1}`, stage.name, false);
     warp = motionOK() ? 1 : 0;
     music.play('calm');
-    announce(`${index + 1}번 지역 ${stage.name} 출격. 13분을 버티세요.`);
+    announce(run.endless ? '무한 모드 출격. 최대한 오래 버티며 점수를 모으세요.' : `${index + 1}번 지역 ${stage.name} 출격. 13분을 버티세요.`);
     lastFrame = performance.now();
     hudDirty = true;
   }
@@ -7542,7 +7686,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const b = pick(evolved.filter((w) => w !== a));
     return [a.id, b.id];
   }
-  const ultLimit = () => 1;
+  const ultLimit = () => (run.endless ? Infinity : 1);
   // Opens the next queued crate or level-up, or goes back to the fight.
   function proceed() {
     if (pendingStart) {
@@ -7576,7 +7720,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     releasePointer();
     keys.clear();
     music.pause();
-    ui.pauseInfo.textContent = `${stageIndex + 1}. ${stage.name} · ${clockText(run.t)} · Lv ${run.level} · 체력 ${Math.ceil(player.hp)}/${stats.maxHp}`;
+    ui.pauseInfo.textContent = `${run.endless ? `무한 모드 · 구역 ${run.sector + 1}` : `${stageIndex + 1}. ${stage.name}`} · ${clockText(run.t)} · Lv ${run.level} · 체력 ${Math.ceil(player.hp)}/${stats.maxHp}`;
+    ui.quit.textContent = run.endless ? '여기서 끝내고 점수 받기' : '그만하기';
+    ui.quitNote.textContent = run.endless ? '끝내면 지금까지 모은 점수와 코인을 받아요.' : '그만하면 이번 판의 기록과 코인은 남지 않아요.';
+    ui.ultNote.textContent = `합체 스킬 2개를 가진 채 보급 상자를 열면 두 스킬을 하나의 궁극기로 합칠 수 있어요. ${run.endless ? '무한 모드에서는 몇 번이든 할 수 있어요.' : '한 판에 한 번이에요.'}`;
     renderSlots(ui.pauseSlots);
     renderRecipes(ui.recipes);
     renderUltGuide();
@@ -7593,12 +7740,19 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     state = 'result';
     music.stop();
     releasePointer();
-    const timeMs = Math.round(Math.min(run.t, STAGE_TIME) * 1000);
-    const score = Math.round((run.score + Math.min(run.t, STAGE_TIME) * 5 + run.level * 100 + (cleared ? 20000 * (stageIndex + 1) : 0)) * (1 + 0.05 * rank('score')));
-    const record = { id: uid(), stage: stageIndex + 1, cleared, timeMs, level: run.level, kills: run.kills, score, at: new Date().toISOString() };
-    const prev = bestRecord();
+    const endless = run.endless;
+    if (endless) cleared = false;
+    const secs = endless ? run.t : Math.min(run.t, STAGE_TIME);
+    const timeMs = Math.round(secs * 1000);
+    const score = endless
+      ? Math.round((run.score + secs * 10 + run.level * 200) * (1 + 0.05 * rank('score')) * (1 + 0.05 * rank('endscore')))
+      : Math.round((run.score + secs * 5 + run.level * 100 + (cleared ? 20000 * (stageIndex + 1) : 0)) * (1 + 0.05 * rank('score')));
+    const stageNo = endless ? ENDLESS + 1 : stageIndex + 1;
+    const record = { id: uid(), stage: stageNo, cleared, timeMs, level: run.level, kills: run.kills, score, at: new Date().toISOString() };
+    if (endless) Object.assign(record, { sector: run.sector + 1, combo: run.bestCombo });
+    const prev = bestRecord(saved.records.filter((r) => r.stage === stageNo));
     const unlockedBefore = saved.unlocked;
-    const timeCoins = Math.floor(Math.min(run.t, STAGE_TIME) / 10) * stats.coinMul;
+    const timeCoins = Math.floor(secs / 10) * stats.coinMul;
     const interest = Math.min(200 * rank('interest'), Math.floor(saved.coins * 0.01 * rank('interest')));
     const earned = Math.floor(run.coins + timeCoins + (cleared ? 100 * (stageIndex + 1) : 0) + interest);
     saved.coins += earned;
@@ -7615,12 +7769,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     clearField();
     const isBest = !prev || score > prev.score;
     const nextOpened = cleared && saved.unlocked > unlockedBefore;
-    ui.resultEyebrow.textContent = cleared ? '작전 성공' : '작전 실패';
-    ui.resultTitle.textContent = cleared ? `${stage.name} 클리어!` : '격추당했어요';
+    ui.resultEyebrow.textContent = endless ? '무한 모드' : cleared ? '작전 성공' : '작전 실패';
+    ui.resultTitle.textContent = endless ? `구역 ${run.sector + 1}까지 버텼어요` : cleared ? `${stage.name} 클리어!` : '격추당했어요';
     ui.finalSeal.textContent = cleared ? '클리어' : prev ? '신기록' : '첫 기록';
     ui.finalSeal.hidden = !(cleared || isBest);
     let note;
-    if (cleared && stageIndex === STAGES.length - 1) note = '다섯 지역을 모두 지켜냈어요!';
+    if (endless) {
+      note = isBest && prev ? `무한 모드 최고 기록이에요! 이전 ${fmt(prev.score)}점.` : `최고 콤보 ${fmt(run.bestCombo)} · 궁극기 ${run.ults}개${prev ? ` · 최고 ${fmt(prev.score)}점` : ''}`;
+    } else if (cleared && stageIndex === STAGES.length - 1) note = '다섯 지역을 모두 지켜냈어요!';
     else if (nextOpened) {
       const next = STAGES[stageIndex + 1].name;
       note = `다음 지역 '${next}'${particle(next, '이', '가')} 열렸어요.`;
@@ -7633,7 +7789,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ui.stTime.textContent = clockText(timeMs / 1000);
     ui.stLevel.textContent = `Lv ${record.level}`;
     ui.stKills.textContent = `${num(record.kills)}대`;
-    ui.stStage.textContent = `${stageIndex + 1}. ${stage.name}`;
+    ui.stStage.textContent = endless ? `무한 · 구역 ${run.sector + 1}` : `${stageIndex + 1}. ${stage.name}`;
     ui.coinLine.innerHTML = svgIcon('coin');
     const coinText = document.createElement('b');
     coinText.textContent = `코인 +${fmt(earned)}`;
@@ -7643,14 +7799,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ui.resultWarn.hidden = stored;
     const hasNext = cleared && stageIndex < STAGES.length - 1;
     ui.again.textContent = hasNext ? '다음 지역 출격' : '다시 출격';
-    ui.again.dataset.stage = String(hasNext ? stageIndex + 1 : stageIndex);
+    ui.again.dataset.stage = String(endless ? ENDLESS : hasNext ? stageIndex + 1 : stageIndex);
     showScreen('result');
     sfx.play(cleared ? 'clear' : 'over');
-    announce(cleared ? `${stage.name} 클리어! ${fmt(score)}점.` : `작전 실패. ${fmt(score)}점, ${clockText(timeMs / 1000)} 버텼어요.`);
+    announce(endless ? `무한 모드 끝. ${fmt(score)}점, 구역 ${run.sector + 1}까지 ${clockText(timeMs / 1000)} 버텼어요.` : cleared ? `${stage.name} 클리어! ${fmt(score)}점.` : `작전 실패. ${fmt(score)}점, ${clockText(timeMs / 1000)} 버텼어요.`);
     const dur = countUp(ui.finalScore, score);
     if (!ui.finalSeal.hidden) stampSeal(dur + 80);
     lastRun = {
-      stage: stageIndex + 1, score, time: Math.round(timeMs / 1000), level: run.level, kills: run.kills, clear: cleared, ship: run.ship,
+      stage: stageNo, score, time: Math.round(timeMs / 1000), level: run.level, kills: run.kills, clear: cleared, ship: run.ship,
       eligible: timeMs >= 15000, status: 'idle', key: null, rank: 0, total: 0,
     };
     if (board.on && lastRun.eligible && saved.name) submitRun();
@@ -7959,11 +8115,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (!show) return;
     if (!ui.resultNameForm.hidden) ui.resultNameNote.textContent = '이름은 이 기기에 저장되고 다음 판부터 저절로 올라가요.';
     if (r.status === 'sending') ui.boardStatus.textContent = '전체 순위에 올리는 중…';
+    else if (r.status === 'closed') ui.boardStatus.textContent = '무한 모드 전체 순위는 아직 준비 중이에요. 기록은 내 기록에 남았어요.';
     else if (r.status === 'error') ui.boardStatus.textContent = '전체 순위에 올리지 못했어요. 잠시 뒤 다시 올리기를 눌러 주세요.';
     else if (r.status === 'done') {
       ui.boardStatus.textContent = '';
       const lead = document.createElement('span');
-      lead.textContent = `${saved.name} · ${r.stage}지역 전체`;
+      lead.textContent = `${saved.name} · ${r.stage === ENDLESS + 1 ? '무한 모드' : `${r.stage}지역`} 전체`;
       const rankEl = document.createElement('b');
       rankEl.textContent = r.rank ? `${r.rank}위` : '200위 밖';
       const tail = document.createElement('span');
@@ -7986,8 +8143,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       r.best = i >= 0 && list[i].key === r.key;
       r.status = 'done';
       if (r.rank) announce(`전체 순위 ${r.rank}위예요.`);
-    } catch {
-      r.status = 'error';
+    } catch (err) {
+      r.status = refused(err) && r.stage === ENDLESS + 1 ? 'closed' : 'error';
     }
     if (lastRun === r) renderBoardResult();
   }
@@ -8021,26 +8178,29 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   async function renderBoard(fresh) {
     const stage = boardStage;
-    ui.boardStages.replaceChildren(...STAGES.map((st, i) => {
+    const chips = STAGES.map((st, i) => ({ no: i + 1, color: st.color, label: String(i + 1), name: `${i + 1}. ${st.name}` }));
+    chips.push({ no: ENDLESS + 1, color: '#ff4fd8', label: '∞ 무한', name: '무한 모드' });
+    ui.boardStages.replaceChildren(...chips.map((c) => {
       const b = document.createElement('button');
       b.type = 'button';
-      b.className = 'stage-chip';
-      b.dataset.boardStage = String(i + 1);
-      b.style.setProperty('--stage-color', st.color);
-      b.setAttribute('aria-pressed', String(i + 1 === stage));
-      b.setAttribute('aria-label', `${i + 1}. ${st.name}`);
-      b.textContent = String(i + 1);
+      b.className = `stage-chip${c.no === ENDLESS + 1 ? ' is-endless' : ''}`;
+      b.dataset.boardStage = String(c.no);
+      b.style.setProperty('--stage-color', c.color);
+      b.setAttribute('aria-pressed', String(c.no === stage));
+      b.setAttribute('aria-label', c.name);
+      b.textContent = c.label;
       return b;
     }));
     renderBoardMe();
     ui.boardList.replaceChildren();
     ui.boardEmpty.hidden = false;
-    ui.boardEmpty.textContent = `${stage}. ${STAGES[stage - 1].name} 순위를 불러오는 중…`;
+    const title = stage === ENDLESS + 1 ? '무한 모드' : `${stage}. ${stageName(stage)}`;
+    ui.boardEmpty.textContent = `${title} 순위를 불러오는 중…`;
     try {
       const list = bestPerPlayer(await board.top(stage, fresh));
       if (boardStage !== stage || recordsView !== 'board') return;
       if (!list.length) {
-        ui.boardEmpty.textContent = `${stage}. ${STAGES[stage - 1].name}에는 아직 올라온 기록이 없어요. 첫 번째 주인공이 되어 보세요!`;
+        ui.boardEmpty.textContent = `${title}에는 아직 올라온 기록이 없어요. 첫 번째 주인공이 되어 보세요!`;
         return;
       }
       ui.boardEmpty.hidden = true;
@@ -8048,11 +8208,15 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       const mine = list.findIndex((r) => r.pid === saved.pid);
       if (mine >= 50) rows.push(boardRow(list[mine], mine + 1));
       ui.boardList.replaceChildren(...rows);
-    } catch {
+    } catch (err) {
       if (boardStage !== stage || recordsView !== 'board') return;
-      ui.boardEmpty.textContent = '순위를 불러오지 못했어요. 인터넷 연결을 확인하고 새로 고침을 눌러 주세요.';
+      ui.boardEmpty.textContent = refused(err) && stage === ENDLESS + 1
+        ? '무한 모드 순위는 아직 준비 중이에요. 조금만 기다려 주세요!'
+        : '순위를 불러오지 못했어요. 인터넷 연결을 확인하고 새로 고침을 눌러 주세요.';
     }
   }
+  // the database said no (its rules are older than this part of the game), as opposed to a network problem
+  const refused = (err) => /HTTP 40[13]/.test(String(err && err.message));
   function boardRow(r, n) {
     const li = document.createElement('li');
     const me = r.pid === saved.pid;
@@ -8091,7 +8255,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const url = location.href.split(/[?#]/)[0];
     const r = lastRun;
     const text = r
-      ? `은하수 방어선 ${r.stage}지역 '${STAGES[r.stage - 1].name}'에서 ${fmt(r.score)}점${r.rank ? `, 전체 ${r.rank}위` : ''}! 너도 도전해 봐.`
+      ? `은하수 방어선 ${r.stage === ENDLESS + 1 ? '무한 모드' : `${r.stage}지역 '${stageName(r.stage)}'`}에서 ${fmt(r.score)}점${r.rank ? `, 전체 ${r.rank}위` : ''}! 너도 도전해 봐.`
       : '은하수 방어선, 같이 해 보자!';
     try {
       if (navigator.share) {
@@ -8132,8 +8296,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       scoreEl.append(tag);
     }
     li.querySelector('.rank-date').textContent = fmtDate(r.at);
-    const name = STAGES[r.stage - 1] ? STAGES[r.stage - 1].name : `${r.stage}지역`;
-    li.querySelector('.rank-meta').textContent = `${r.stage}. ${name} · ${clockText(r.timeMs / 1000)} · Lv ${r.level} · 격추 ${fmt(r.kills)}대`;
+    const where = r.stage === ENDLESS + 1 ? `무한 모드${r.sector ? ` 구역 ${r.sector}` : ''}` : `${r.stage}. ${stageName(r.stage)}`;
+    li.querySelector('.rank-meta').textContent = `${where} · ${clockText(r.timeMs / 1000)} · Lv ${r.level} · 격추 ${fmt(r.kills)}대`;
     return li;
   }
   function renderRecords() {
@@ -8439,7 +8603,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   });
   ui.pause.addEventListener('click', pause);
   ui.resume.addEventListener('click', resume);
-  ui.quit.addEventListener('click', () => showTitle());
+  ui.quit.addEventListener('click', () => {
+    if (run.endless && state === 'paused') endRun(false); // an endless run is banked, not thrown away
+    else showTitle();
+  });
   ui.again.addEventListener('click', () => startStage(Number(ui.again.dataset.stage) || 0));
   ui.toStages.addEventListener('click', showStages);
   ui.openTree1.addEventListener('click', showTree);
