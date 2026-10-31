@@ -1039,9 +1039,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   const MAX_ENEMIES = 260;
   const MAX_ESHOTS = 560;
   const MAX_GEMS = 360;
-  // Shared leaderboard: the address of a Firebase Realtime Database (https://….firebasedatabase.app).
+  // Shared leaderboard: the name of a Firebase Realtime Database. Its web address depends on the region it was
+  // created in, so the game tries each region once and keeps the address that answers.
   // Left empty, the game keeps records on this device only and hides the shared ranking.
-  const BOARD_URL = '';
+  const BOARD_DB = 'galaxy-defense-5e34a-default-rtdb';
   const STORE_KEY = 'galaxy-defense:v2';
   const OLD_KEY = 'galaxy-defense:v1';
   const MAX_RECORDS = 200;
@@ -1447,6 +1448,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       tree: cleanTree(raw.tree),
       name: cleanName(raw.name),
       pid: typeof raw.pid === 'string' && /^[a-z0-9]{8,24}$/.test(raw.pid) ? raw.pid : newPid(),
+      boardHost: typeof raw.boardHost === 'string' ? raw.boardHost : '',
     };
   })();
   // Names show on the shared board: 1-10 characters, no control characters, single spaces.
@@ -1507,21 +1509,55 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 
   // ---------- shared leaderboard (one list per region, best run per player) ----------
   const board = (() => {
-    const base = BOARD_URL.trim().replace(/\/+$/, '');
+    const db = BOARD_DB.trim();
+    const hosts = /^[a-z0-9-]+$/.test(db)
+      ? [`https://${db}.asia-southeast1.firebasedatabase.app`, `https://${db}.firebaseio.com`, `https://${db}.europe-west1.firebasedatabase.app`]
+      : [];
     const cache = new Map();
-    async function call(path, opts = {}) {
+    let base = hosts.includes(saved.boardHost) ? saved.boardHost : '';
+    let finding = null;
+    async function request(url, opts = {}) {
       const ctl = 'AbortController' in window ? new AbortController() : null;
       const timer = ctl ? window.setTimeout(() => ctl.abort(), 9000) : 0;
       try {
-        const res = await fetch(`${base}/${path}`, { cache: 'no-store', ...opts, signal: ctl ? ctl.signal : undefined });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return await res.json();
+        return await fetch(url, { cache: 'no-store', ...opts, signal: ctl ? ctl.signal : undefined });
       } finally {
         window.clearTimeout(timer);
       }
     }
+    // Asks each region in turn; only the one holding the database answers with the (empty or filled) list.
+    function findHost() {
+      if (base) return Promise.resolve(base);
+      if (!finding) {
+        finding = (async () => {
+          for (const host of hosts) {
+            try {
+              const res = await request(`${host}/v1/scores/s1.json?shallow=true`);
+              if (res.ok) {
+                base = host;
+                saved.boardHost = host;
+                save();
+                return host;
+              }
+            } catch {
+              /* not in this region: try the next */
+            }
+          }
+          throw new Error('board unreachable');
+        })().finally(() => {
+          finding = null;
+        });
+      }
+      return finding;
+    }
+    async function call(path, opts) {
+      const host = await findHost();
+      const res = await request(`${host}/${path}`, opts);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    }
     return {
-      on: /^https:\/\//.test(base),
+      on: hosts.length > 0,
       // the top runs of a region, highest first
       async top(stage, fresh) {
         const hit = cache.get(stage);
