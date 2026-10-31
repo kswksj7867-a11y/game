@@ -562,6 +562,40 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .confirm { margin-top: 12px; padding: 14px; border: 1px solid rgba(255, 90, 110, 0.4); border-radius: 14px; background: rgba(255, 90, 110, 0.08); }
 .confirm p { margin: 0 0 12px; }
 
+/* ---------- pilot name ---------- */
+.pilot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 6px 8px 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.pilot svg { width: 18px; height: 18px; fill: none; stroke: var(--cyan); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pilot b { min-width: 0; color: var(--ink); font-weight: 700; overflow-wrap: anywhere; }
+.pilot b.is-empty { color: var(--muted); font-weight: 400; }
+.pilot .link-btn { margin-left: auto; padding-inline: 4px; }
+.name-sheet { display: grid; gap: 12px; }
+.name-sheet .sheet-head { margin-bottom: 0; }
+.name-sheet .lede, .name-sheet .note { margin: 0; }
+.name-input {
+  width: 100%;
+  min-height: 54px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ink);
+  font: inherit;
+  font-size: 18px;
+}
+.name-input::placeholder { color: rgba(163, 169, 214, 0.6); }
+.note.is-error { color: var(--danger); }
+
 /* ---------- shared board ---------- */
 .board-box { display: grid; gap: 10px; }
 .board-actions { display: flex; gap: 10px; }
@@ -811,6 +845,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         </ul>
         <p class="note rotate-hint">폰을 세로로 돌리면 화면이 더 커져요.</p>
         <p class="best-line" id="title-best">아직 기록이 없어요</p>
+        <div class="pilot" id="pilot" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0" /></svg>
+          <span>조종사</span>
+          <b id="pilot-name">이름 없음</b>
+          <button type="button" class="link-btn" id="pilot-edit">이름 정하기</button>
+        </div>
         <button type="button" class="btn btn-primary btn-launch" id="start">출격</button>
         <div class="row">
           <button type="button" class="btn btn-tree" id="open-tree-1">스킬 트리<span class="coin-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5v9M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4" /></svg><span id="title-coins">0</span></span></button>
@@ -935,6 +975,23 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 
 <p class="sr-only" id="live" aria-live="polite"></p>
 
+<dialog id="dlg-name" aria-labelledby="name-title">
+  <form class="sheet name-sheet" id="name-dialog-form">
+    <div class="sheet-head">
+      <h2 class="panel-title" id="name-title">조종사 이름</h2>
+      <button type="button" class="icon-btn" id="name-close" aria-label="닫기">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+      </button>
+    </div>
+    <p class="lede">전체 순위표에 이 이름으로 올라가요. 친구들이 알아볼 수 있게 정해 주세요.</p>
+    <label class="sr-only" for="name-dialog-input">조종사 이름</label>
+    <input class="name-input" id="name-dialog-input" type="text" maxlength="10" autocomplete="nickname" enterkeyhint="done" placeholder="예: 우주 고양이">
+    <p class="note" id="name-dialog-note">10자까지 쓸 수 있고, 나중에 처음 화면에서 바꿀 수 있어요.</p>
+    <button type="submit" class="btn btn-primary" id="name-dialog-save">저장</button>
+    <button type="button" class="btn btn-quiet" id="name-dialog-skip" hidden>이름 없이 출격</button>
+  </form>
+</dialog>
+
 <dialog id="dlg-records" aria-labelledby="records-title">
   <div class="sheet">
     <div class="sheet-head">
@@ -1017,6 +1074,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     finalNote: $('final-note'), stTime: $('st-time'), stLevel: $('st-level'), stKills: $('st-kills'), stStage: $('st-stage'),
     resultWarn: $('result-warn'), again: $('again'), toStages: $('to-stages'),
     openRecords1: $('open-records-1'), openRecords2: $('open-records-2'),
+    pilot: $('pilot'), pilotName: $('pilot-name'), pilotEdit: $('pilot-edit'), nameDialog: $('dlg-name'), nameDialogForm: $('name-dialog-form'),
+    nameDialogInput: $('name-dialog-input'), nameDialogNote: $('name-dialog-note'), nameDialogSave: $('name-dialog-save'),
+    nameDialogSkip: $('name-dialog-skip'), nameClose: $('name-close'),
     records: $('dlg-records'), recordsClose: $('records-close'), sumPlays: $('sum-plays'), sumBest: $('sum-best'),
     sumClear: $('sum-clear'), recordsList: $('records-list'), recordsEmpty: $('records-empty'), oldNote: $('old-note'),
     recordsClear: $('records-clear'), clearConfirm: $('clear-confirm'), clearCancel: $('clear-cancel'), clearOk: $('clear-ok'),
@@ -5593,7 +5653,31 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const cleared = saved.cleared.filter(Boolean).length;
     ui.titleBest.textContent = best ? `최고 기록 ${num(best.score)}점 · 클리어 ${cleared}/${STAGES.length}` : '아직 기록이 없어요';
     ui.titleCoins.textContent = fmt(saved.coins);
+    renderPilot();
     showScreen('title', focus);
+  }
+  function renderPilot() {
+    ui.pilot.hidden = !board.on;
+    ui.pilotName.textContent = saved.name || '이름 없음';
+    ui.pilotName.classList.toggle('is-empty', !saved.name);
+    ui.pilotEdit.textContent = saved.name ? '바꾸기' : '이름 정하기';
+  }
+  let nameThenStart = false;
+  let skippedName = false;
+  function openNameDialog(thenStart) {
+    nameThenStart = thenStart;
+    ui.nameDialogInput.value = saved.name;
+    ui.nameDialogNote.classList.remove('is-error');
+    ui.nameDialogNote.textContent = '10자까지 쓸 수 있고, 나중에 처음 화면에서 바꿀 수 있어요.';
+    ui.nameDialogSave.textContent = thenStart ? '저장하고 출격' : '저장';
+    ui.nameDialogSkip.hidden = !thenStart;
+    if (!ui.nameDialog.open) ui.nameDialog.showModal();
+    ui.nameDialogInput.focus();
+  }
+  function launch() {
+    audio.unlock();
+    if (board.on && !saved.name && !skippedName) openNameDialog(true);
+    else showStages();
   }
   function showStages() {
     state = 'stages';
@@ -6269,7 +6353,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 
   const MOVE_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyA', 'KeyD', 'KeyW', 'KeyS', 'ShiftLeft', 'ShiftRight']);
   window.addEventListener('keydown', (e) => {
-    if (ui.records.open || (e.target && e.target.tagName === 'INPUT')) return;
+    if (ui.records.open || ui.nameDialog.open || (e.target && e.target.tagName === 'INPUT')) return;
     if (state === 'choice' && /^Digit[1-9]$/.test(e.code)) {
       choose(Number(e.code.slice(5)) - 1);
       e.preventDefault();
@@ -6303,9 +6387,34 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (document.hidden) pause();
   });
 
-  ui.start.addEventListener('click', () => {
-    audio.unlock();
-    showStages();
+  ui.start.addEventListener('click', launch);
+  ui.pilotEdit.addEventListener('click', () => openNameDialog(false));
+  ui.nameDialogForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!saveName(ui.nameDialogInput.value)) {
+      ui.nameDialogNote.textContent = '이름을 1~10자로 적어 주세요.';
+      ui.nameDialogNote.classList.add('is-error');
+      ui.nameDialogInput.focus();
+      return;
+    }
+    ui.nameDialog.close();
+    renderPilot();
+    announce(`조종사 이름을 정했어요: ${saved.name}`);
+    if (nameThenStart && state === 'title') showStages();
+  });
+  ui.nameDialogSkip.addEventListener('click', () => {
+    skippedName = true;
+    ui.nameDialog.close();
+    if (state === 'title') showStages();
+  });
+  ui.nameDialogInput.addEventListener('input', () => {
+    if (!ui.nameDialogNote.classList.contains('is-error')) return;
+    ui.nameDialogNote.classList.remove('is-error');
+    ui.nameDialogNote.textContent = '10자까지 쓸 수 있고, 나중에 처음 화면에서 바꿀 수 있어요.';
+  });
+  ui.nameClose.addEventListener('click', () => ui.nameDialog.close());
+  ui.nameDialog.addEventListener('click', (e) => {
+    if (e.target === ui.nameDialog) ui.nameDialog.close();
   });
   ui.stagesBack.addEventListener('click', () => showTitle());
   ui.stageList.addEventListener('click', (e) => {
@@ -6387,6 +6496,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     ui.nameForm.hidden = true;
     renderBoardMe();
+    renderPilot();
     if (lastRun && lastRun.status === 'idle' && board.on && lastRun.eligible) submitRun();
   });
   ui.resultNameForm.addEventListener('submit', (e) => {
