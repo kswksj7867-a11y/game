@@ -159,6 +159,12 @@
 - 같은 이름은 한 계정만 쓸 수 있어요. 비밀번호가 틀리면 "이미 다른 사람이 쓰는 이름이에요"라고 나와요.
 - 비밀번호는 기기에서 긴 열쇠로 바꾼 뒤 그 열쇠로만 서버에 접근해서, 비밀번호 자체는 서버에 올라가지 않아요. 그래도 다른 곳에 쓰는 비밀번호와는 다르게 정해 주세요.
 - 비밀번호를 비우면 이름은 그 기기에만 저장돼요.
+
+**구글로 로그인**도 할 수 있어요(아래 [구글 로그인 켜기](#구글-로그인-켜기)를 마친 뒤).
+
+- 처음 구글로 로그인하면 게임에서 쓸 이름을 정해요. 이름과 비밀번호로 만든 계정이 이미 있으면 그 비밀번호도 넣어서 같은 계정에 구글을 붙여요.
+- 이름과 비밀번호 계정에 연결된 상태에서 **Google 로그인도 연결하기**를 누르면, 그다음부터 다른 곳에서는 구글 로그인만으로 들어올 수 있어요.
+- 카카오톡 같은 앱 안의 브라우저에서는 구글이 로그인을 막아요. 이때는 **Safari·크롬에서 열기**를 누르거나, 이름과 비밀번호로 들어오면 돼요.
 **순위·기록** 화면의 **전체 순위** 탭에서 지역마다 한 사람의 가장 좋은 기록을 순서대로 볼 수 있어요. 결과 화면의 **친구에게 도전장 보내기**로 점수와 주소를 카톡 등으로 보낼 수 있어요.
 
 전체 순위는 무료 Firebase 데이터베이스(`galaxy-defense-5e34a-default-rtdb`)에 연결되어 있어요. `BOARD_DB`를 비우면 기록이 각자의 기기에만 남아요.
@@ -264,6 +270,25 @@
           ".write": "!data.exists() && $name.matches(/^[0-9a-f]{64}$/)",
           ".validate": "newData.isString() && newData.val().matches(/^[0-9a-f]{64}$/)"
         }
+      },
+      "users": {
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid",
+          ".write": "auth != null && auth.uid === $uid",
+          ".validate": "newData.hasChildren(['key', 'owner', 'name'])",
+          "key": {
+            ".validate": "newData.isString() && newData.val().matches(/^[0-9a-f]{64}$/)"
+          },
+          "owner": {
+            ".validate": "newData.isString() && newData.val().matches(/^[0-9a-f]{64}$/)"
+          },
+          "name": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 12"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
       }
     }
   }
@@ -271,3 +296,12 @@
 ```
 
 이상한 기록이 올라오면 Firebase 콘솔의 **데이터** 탭에서 직접 지울 수 있어요.
+
+## 구글 로그인 켜기
+
+1. Firebase 콘솔 왼쪽 메뉴 **보안 → Authentication**에서 **시작하기**를 눌러요.
+2. **로그인 방법** 탭에서 **Google**을 고르고 **사용 설정**을 켠 뒤, 프로젝트 지원 이메일을 골라 **저장**해요.
+3. **설정** 탭의 **승인된 도메인**에서 **도메인 추가**를 눌러 `kswksj7867-a11y.github.io`를 넣어요.
+4. **프로젝트 설정**(톱니바퀴) → **내 앱**에서 웹 아이콘(`</>`)을 눌러 앱을 등록하고, 나오는 `firebaseConfig` 값을 `space/index.html`의 `const FIREBASE_CONFIG = null;` 자리에 넣어요. 예: `const FIREBASE_CONFIG = { apiKey: '…', authDomain: '…', projectId: '…', appId: '…' };`
+
+구글 계정과 게임 계정의 연결은 `v1/users/<구글 사용자 번호>`에 저장되고, 위 규칙에 따라 본인만 읽고 쓸 수 있어요.

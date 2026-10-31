@@ -606,6 +606,15 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .linked-name { margin: 0; font-family: var(--font-display); font-size: 1.75rem; line-height: 1.2; overflow-wrap: anywhere; }
 .linked-sum { margin: 0; font-family: var(--font-data); font-size: 0.9375rem; color: var(--amber); }
 #pilot-state { color: var(--muted); }
+.btn-google { gap: 10px; border-color: #dadce0; background: #ffffff; color: #1f1f1f; font-weight: 600; }
+.btn-google svg { width: 20px; height: 20px; flex: none; }
+@media (hover: hover) {
+  .btn-google:not(:disabled):hover { border-color: #c6c9cc; background: #f4f6f8; }
+}
+.or-line { display: flex; align-items: center; gap: 10px; margin: 2px 0 -4px; font-size: 0.8125rem; color: var(--muted); }
+.or-line::before, .or-line::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.linked-google { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 0.9375rem; color: var(--ink); }
+.linked-google svg { width: 18px; height: 18px; flex: none; }
 #pilot-state.is-linked { color: var(--cyan); }
 
 /* ---------- shared board ---------- */
@@ -996,7 +1005,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       </button>
     </div>
     <div class="name-fields" id="name-fields">
-      <p class="lede">전체 순위표에 이 이름으로 올라가요. 비밀번호도 정하면 다른 폰이나 앱(카톡, 크롬)에서도 이어서 할 수 있어요.</p>
+      <button type="button" class="btn btn-google" id="google-btn" hidden><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span id="google-label">Google 계정으로 로그인</span></button>
+      <button type="button" class="btn" id="open-outside" hidden>Safari·크롬에서 열기</button>
+      <p class="or-line" id="or-line" hidden><span>또는 이름과 비밀번호로</span></p>
+      <p class="lede" id="name-lede">전체 순위표에 이 이름으로 올라가요. 비밀번호도 정하면 다른 폰이나 앱(카톡, 크롬)에서도 이어서 할 수 있어요.</p>
       <label class="field-label" for="name-dialog-input">이름 <span>10자까지</span></label>
       <input class="name-input" id="name-dialog-input" type="text" maxlength="10" autocomplete="username" enterkeyhint="next" placeholder="예: 우주 고양이">
       <label class="field-label" for="name-dialog-pass">비밀번호 <span>4자 이상 · 비우면 이 기기에만 저장</span></label>
@@ -1009,7 +1021,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       <p class="linked-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18h10.5a4.5 4.5 0 0 0 .6-8.96A6 6 0 0 0 6.6 10.2 4 4 0 0 0 7 18z" /></svg><span id="linked-title">계정에 연결되어 있어요</span></p>
       <p class="linked-name" id="linked-name"></p>
       <p class="linked-sum" id="linked-sum"></p>
-      <p class="lede">코인, 스킬 트리, 열린 지역, 기록이 저절로 저장돼요. 다른 폰이나 앱에서도 같은 이름과 비밀번호를 넣으면 이어서 할 수 있어요.</p>
+      <p class="lede" id="linked-lede">코인, 스킬 트리, 열린 지역, 기록이 저절로 저장돼요. 다른 폰이나 앱에서도 같은 이름과 비밀번호를 넣으면 이어서 할 수 있어요.</p>
+      <p class="linked-google" id="linked-google" hidden><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>구글 로그인으로도 들어올 수 있어요</p>
+      <button type="button" class="btn btn-google" id="google-link-btn" hidden>Google 로그인도 연결하기</button>
+      <p class="note is-error" id="linked-note" hidden></p>
       <button type="button" class="btn btn-primary" id="linked-ok">확인</button>
       <button type="button" class="btn btn-quiet" id="linked-out">이 기기에서 연결 끊기</button>
     </div>
@@ -1103,6 +1118,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     nameDialogSkip: $('name-dialog-skip'), nameClose: $('name-close'), nameDialogPass: $('name-dialog-pass'),
     nameFields: $('name-fields'), nameLinked: $('name-linked'), linkedTitle: $('linked-title'), linkedName: $('linked-name'),
     linkedSum: $('linked-sum'), linkedOk: $('linked-ok'), linkedOut: $('linked-out'), pilotState: $('pilot-state'),
+    googleBtn: $('google-btn'), googleLabel: $('google-label'), openOutside: $('open-outside'), orLine: $('or-line'), nameLede: $('name-lede'),
+    linkedLede: $('linked-lede'), linkedGoogle: $('linked-google'), googleLinkBtn: $('google-link-btn'), linkedNote: $('linked-note'),
     records: $('dlg-records'), recordsClose: $('records-close'), sumPlays: $('sum-plays'), sumBest: $('sum-best'),
     sumClear: $('sum-clear'), recordsList: $('records-list'), recordsEmpty: $('records-empty'), oldNote: $('old-note'),
     recordsClear: $('records-clear'), clearConfirm: $('clear-confirm'), clearCancel: $('clear-cancel'), clearOk: $('clear-ok'),
@@ -1129,6 +1146,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   // created in, so the game tries each region once and keeps the address that answers.
   // Left empty, the game keeps records on this device only and hides the shared ranking.
   const BOARD_DB = 'galaxy-defense-5e34a-default-rtdb';
+  // Google sign-in: the web app settings from the Firebase console (프로젝트 설정 → 내 앱). Left null, the Google button stays hidden.
+  const FIREBASE_CONFIG = null;
+  const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/10.12.2';
   const STORE_KEY = 'galaxy-defense:v2';
   const OLD_KEY = 'galaxy-defense:v1';
   const MAX_RECORDS = 200;
@@ -1541,7 +1561,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   })();
   function cleanAccount(a) {
     const hex64 = (v) => typeof v === 'string' && /^[0-9a-f]{64}$/.test(v);
-    return a && typeof a === 'object' && hex64(a.key) && hex64(a.owner) ? { key: a.key, owner: a.owner } : null;
+    return a && typeof a === 'object' && hex64(a.key) && hex64(a.owner) ? { key: a.key, owner: a.owner, google: a.google === true } : null;
   }
   // Names show on the shared board: 1-10 characters, no control characters, single spaces.
   function cleanName(v) {
@@ -1682,8 +1702,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         cache.delete(stage);
         return res && typeof res.name === 'string' ? res.name : null;
       },
-      get: (path) => call(`${path}.json`),
-      put: (path, value) => call(`${path}.json`, { method: 'PUT', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(value) }),
+      get: (path, token) => call(`${path}.json${token ? `?auth=${encodeURIComponent(token)}` : ''}`),
+      put: (path, value, token) => call(`${path}.json${token ? `?auth=${encodeURIComponent(token)}` : ''}`, {
+        method: 'PUT', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(value),
+      }),
     };
   })();
 
@@ -1694,6 +1716,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   const utf8 = (text) => new TextEncoder().encode(text);
   const sha256 = async (text) => hexOf(await window.crypto.subtle.digest('SHA-256', utf8(text)));
   const canAccount = () => board.on && !!(window.crypto && window.crypto.subtle && window.TextEncoder);
+  const nameKeyOf = (name) => sha256(`gd-name:${name.normalize('NFC').toLowerCase()}`);
   async function accountKeys(name, password) {
     const norm = name.normalize('NFC').toLowerCase();
     const base = await window.crypto.subtle.importKey('raw', utf8(password), 'PBKDF2', false, ['deriveBits']);
@@ -1801,6 +1824,103 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       },
     };
   })();
+  // An account opened through Google needs no password: its key is random and Google keeps it.
+  async function createKeyAccount(name) {
+    const key = hexOf(window.crypto.getRandomValues(new Uint8Array(32)));
+    const owner = await sha256(`gd-owner:${key}`);
+    const nameKey = await nameKeyOf(name);
+    if (await board.get(`v1/names/${nameKey}`)) return false;
+    await board.put(`v1/names/${nameKey}`, owner);
+    saved.account = { key, owner, google: false };
+    saved.name = name;
+    save();
+    return true;
+  }
+
+  // ---------- Google sign-in ----------
+  // Google can't sign in inside app browsers such as KakaoTalk's; those get a way out to Safari or Chrome instead.
+  const UA = navigator.userAgent || '';
+  const inKakao = /KAKAOTALK/i.test(UA);
+  const inAppBrowser = inKakao || /Instagram|FBAN|FBAV|Line\/|NAVER\(|DaumApps|everytimeApp|BAND\//i.test(UA);
+  const googleReady = () => !!FIREBASE_CONFIG && canAccount();
+  let fb = null;
+  let fbLoading = null;
+  function loadFirebase() {
+    if (fb) return Promise.resolve(fb);
+    if (!fbLoading) {
+      fbLoading = Promise.all([import(`${FIREBASE_SDK}/firebase-app.js`), import(`${FIREBASE_SDK}/firebase-auth.js`)])
+        .then(([app, auth]) => {
+          fb = { auth: auth.getAuth(app.initializeApp(FIREBASE_CONFIG)), api: auth };
+          return fb;
+        })
+        .catch((err) => {
+          fbLoading = null;
+          throw err;
+        });
+    }
+    return fbLoading;
+  }
+  // Opens Google's window; it has to start right from the tap, so the library is loaded beforehand.
+  function googlePopup() {
+    const provider = new fb.api.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    return fb.api.signInWithPopup(fb.auth, provider).then((cred) => cred.user);
+  }
+  let pendingGoogle = null; // a Google sign-in that has no game account yet: { uid, token }
+  // After signing in: open the game account this Google account points at, or ask for a name to make one.
+  async function afterGoogle(user) {
+    const token = await user.getIdToken();
+    const link = await board.get(`v1/users/${user.uid}`, token);
+    if (!link || !link.key) {
+      pendingGoogle = { uid: user.uid, token };
+      return 'new';
+    }
+    const doc = await board.get(`v1/accounts/${link.key}`);
+    saved.account = { key: link.key, owner: link.owner, google: true };
+    if (doc && typeof doc.data === 'string') {
+      const p = readProgress(doc.data);
+      if (p) mergeProgress(p);
+      saved.rev = Math.max(saved.rev, Number(doc.rev) || 0);
+    }
+    saved.name = cleanName(link.name) || saved.name;
+    save();
+    return 'loaded';
+  }
+  async function rememberWithGoogle(uid, token) {
+    await board.put(`v1/users/${uid}`, { key: saved.account.key, owner: saved.account.owner, name: saved.name }, token);
+    saved.account.google = true;
+    save();
+  }
+  // The name step after a first Google sign-in: a password joins an account made earlier with a password.
+  async function finishGoogle(name, pass) {
+    const g = pendingGoogle;
+    if (pass) {
+      if ((await connectAccount(name, pass)) === 'taken') return 'taken';
+    } else if (!(await createKeyAccount(name))) return 'taken-free';
+    await rememberWithGoogle(g.uid, g.token);
+    pendingGoogle = null;
+    return pass ? 'joined' : 'created';
+  }
+  // Signed in with a password account already: let Google remember it too.
+  async function linkGoogle(user) {
+    const token = await user.getIdToken();
+    const link = await board.get(`v1/users/${user.uid}`, token);
+    if (link && link.key && link.key !== saved.account.key) return cleanName(link.name) || '다른';
+    await rememberWithGoogle(user.uid, token);
+    return '';
+  }
+  function googleError(err) {
+    const code = String((err && err.code) || '');
+    const http = Number((/HTTP (\d+)/.exec(String(err && err.message)) || [])[1]) || 0;
+    if (/popup-closed-by-user|cancelled-popup-request|user-cancelled/.test(code)) return '';
+    if (/popup-blocked/.test(code)) return '구글 창이 막혔어요. 버튼을 다시 한 번 눌러 주세요.';
+    if (/unauthorized-domain/.test(code)) return 'Firebase에 이 사이트 주소가 승인된 도메인으로 등록되지 않았어요.';
+    if (/operation-not-allowed/.test(code)) return 'Firebase에서 구글 로그인이 아직 켜지지 않았어요.';
+    if (http === 401 || http === 403) return '서버가 허락하지 않았어요. Firebase 규칙에 users가 들어간 새 규칙이 게시됐는지 확인해 주세요. (오류 401)';
+    if (/network/.test(code) || !http) return '구글에 연결하지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.';
+    return `구글 로그인에서 오류가 났어요. (${code || `오류 ${http}`})`;
+  }
+
   // Creates the account, or opens it when the name is already taken by these same keys.
   async function connectAccount(name, password) {
     const keys = await accountKeys(name, password);
@@ -5852,7 +5972,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ui.pilot.hidden = !board.on;
     ui.pilotName.textContent = saved.name || '순위표에 쓸 이름을 정해 주세요';
     ui.pilotName.classList.toggle('is-empty', !saved.name);
-    ui.pilotState.textContent = saved.account ? '· 계정 연결됨' : saved.name ? '· 이 기기에만 저장' : '';
+    ui.pilotState.textContent = saved.account ? (saved.account.google ? '· 구글 계정' : '· 계정 연결됨') : saved.name ? '· 이 기기에만 저장' : '';
     ui.pilotState.className = saved.account ? 'is-linked' : '';
     ui.pilotEdit.textContent = saved.account ? '계정' : saved.name ? '이어하기' : '이름 정하기';
   }
@@ -5866,23 +5986,54 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   function openNameDialog(thenStart) {
     nameThenStart = thenStart;
+    pendingGoogle = null;
     if (saved.account) showLinked('계정에 연결되어 있어요');
-    else {
-      ui.nameFields.hidden = false;
-      ui.nameLinked.hidden = true;
-      ui.nameDialogInput.value = saved.name;
-      ui.nameDialogPass.value = '';
-      setNameNote(canAccount() ? NAME_HINT : '이 브라우저에서는 이 기기에만 저장돼요.', false);
-      ui.nameDialogPass.disabled = !canAccount();
-      ui.nameDialogSave.textContent = thenStart ? '저장하고 출격' : '저장';
-      ui.nameDialogSkip.hidden = !thenStart;
-    }
+    else showNameForm();
+    if (googleReady() && !inAppBrowser) loadFirebase().catch(() => {});
     if (!ui.nameDialog.open) ui.nameDialog.showModal();
-    if (!saved.account) (saved.name ? ui.nameDialogPass : ui.nameDialogInput).focus();
+    if (!saved.account && !touchInput()) (saved.name ? ui.nameDialogPass : ui.nameDialogInput).focus();
+  }
+  function showNameForm() {
+    ui.nameFields.hidden = false;
+    ui.nameLinked.hidden = true;
+    const google = googleReady();
+    ui.googleBtn.hidden = !google || !!pendingGoogle;
+    ui.googleLabel.textContent = 'Google 계정으로 로그인';
+    ui.openOutside.hidden = true;
+    ui.orLine.hidden = !google || !!pendingGoogle;
+    ui.nameDialogInput.value = saved.name;
+    ui.nameDialogPass.value = '';
+    ui.nameDialogPass.disabled = !canAccount();
+    if (pendingGoogle) {
+      ui.nameLede.textContent = '구글 로그인 완료! 게임에서 쓸 이름을 정해 주세요. 이름과 비밀번호로 만든 계정이 이미 있으면 비밀번호도 넣어 주세요. 그 계정에 구글이 연결돼요.';
+      ui.nameDialogSave.textContent = '시작하기';
+      ui.nameDialogSkip.hidden = true;
+      setNameNote('비밀번호는 비워 둬도 돼요. 구글 로그인만으로 어디서나 이어할 수 있어요.', false);
+    } else {
+      ui.nameLede.textContent = '전체 순위표에 이 이름으로 올라가요. 비밀번호도 정하면 다른 폰이나 앱(카톡, 크롬)에서도 이어서 할 수 있어요.';
+      ui.nameDialogSave.textContent = nameThenStart ? '저장하고 출격' : '저장';
+      ui.nameDialogSkip.hidden = !nameThenStart;
+      setNameNote(canAccount() ? NAME_HINT : '이 브라우저에서는 이 기기에만 저장돼요.', false);
+    }
+  }
+  // Inside an app browser Google refuses to sign in: offer the way out instead.
+  function showOutside() {
+    ui.openOutside.hidden = false;
+    ui.openOutside.textContent = inKakao ? 'Safari·크롬에서 열기' : '다른 브라우저로 열기';
+    setNameNote(inKakao
+      ? '카카오톡 안에서는 구글 로그인이 막혀 있어요. 아래 버튼으로 Safari나 크롬에서 열어 주세요. 이름과 비밀번호로는 여기서도 돼요.'
+      : '이 앱 안에서는 구글 로그인이 막혀 있어요. 오른쪽 위 메뉴에서 "다른 브라우저로 열기"를 눌러 주세요.', true);
   }
   function showLinked(title) {
     ui.nameFields.hidden = true;
     ui.nameLinked.hidden = false;
+    ui.linkedNote.hidden = true;
+    const viaGoogle = !!(saved.account && saved.account.google);
+    ui.linkedGoogle.hidden = !viaGoogle;
+    ui.googleLinkBtn.hidden = viaGoogle || !googleReady();
+    ui.linkedLede.textContent = viaGoogle
+      ? '코인, 스킬 트리, 열린 지역, 기록이 저절로 저장돼요. 다른 폰이나 앱에서도 구글 로그인(또는 이름과 비밀번호)으로 이어서 할 수 있어요.'
+      : '코인, 스킬 트리, 열린 지역, 기록이 저절로 저장돼요. 다른 폰이나 앱에서도 같은 이름과 비밀번호를 넣으면 이어서 할 수 있어요.';
     ui.linkedTitle.textContent = title;
     ui.linkedName.textContent = saved.name;
     ui.linkedSum.textContent = `열린 지역 ${saved.unlocked}/${STAGES.length} · 코인 ${fmt(saved.coins)} · 기록 ${saved.records.length}판`;
@@ -6629,6 +6780,32 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       ui.nameDialogInput.focus();
       return;
     }
+    if (pendingGoogle) {
+      if (pass && Array.from(pass).length < 4) {
+        setNameNote('비밀번호는 4자 이상이에요. 없으면 비워 두세요.', true);
+        return;
+      }
+      accountBusy = true;
+      ui.nameDialogSave.disabled = true;
+      ui.nameDialogSave.textContent = '연결하는 중…';
+      try {
+        const result = await finishGoogle(name, pass);
+        if (result === 'taken') setNameNote('이 이름의 비밀번호가 맞지 않아요. 다시 확인하거나 다른 이름을 써 주세요.', true);
+        else if (result === 'taken-free') setNameNote('이미 다른 사람이 쓰는 이름이에요. 내 계정이면 비밀번호도 넣고, 아니면 다른 이름을 써 주세요.', true);
+        else {
+          refreshMenus();
+          showLinked(result === 'joined' ? '구글 로그인을 연결했어요!' : '구글 계정을 만들었어요!');
+          announce('구글 계정을 연결했어요.');
+        }
+      } catch (err) {
+        setNameNote(googleError(err) || '연결하지 못했어요. 다시 눌러 주세요.', true);
+      } finally {
+        accountBusy = false;
+        ui.nameDialogSave.disabled = false;
+        if (pendingGoogle) ui.nameDialogSave.textContent = '시작하기';
+      }
+      return;
+    }
     if (!pass) { // a name for this device only
       saveName(name);
       ui.nameDialog.close();
@@ -6673,7 +6850,79 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ui.nameDialog.close();
     if (nameThenStart && state === 'title') showStages();
   });
+  ui.googleBtn.addEventListener('click', () => {
+    if (accountBusy) return;
+    if (inAppBrowser) {
+      showOutside();
+      return;
+    }
+    if (!fb) {
+      setNameNote('구글 로그인을 준비하는 중이에요. 잠시 뒤 다시 눌러 주세요.', false);
+      loadFirebase().then(() => setNameNote(NAME_HINT, false)).catch(() => setNameNote('구글 로그인을 불러오지 못했어요. 인터넷 연결을 확인해 주세요.', true));
+      return;
+    }
+    accountBusy = true;
+    ui.googleLabel.textContent = '구글 로그인 중…';
+    googlePopup()
+      .then(afterGoogle)
+      .then((result) => {
+        if (result === 'loaded') {
+          refreshMenus();
+          showLinked('구글 계정으로 불러왔어요!');
+          announce('구글 계정으로 불러왔어요.');
+        } else showNameForm();
+      })
+      .catch((err) => {
+        const text = googleError(err);
+        if (text) setNameNote(text, true);
+      })
+      .finally(() => {
+        accountBusy = false;
+        ui.googleLabel.textContent = 'Google 계정으로 로그인';
+      });
+  });
+  ui.openOutside.addEventListener('click', () => {
+    if (inKakao) window.location.href = `kakaotalk://web/openExternal?url=${encodeURIComponent(window.location.href)}`;
+  });
+  ui.googleLinkBtn.addEventListener('click', () => {
+    if (accountBusy || !saved.account) return;
+    ui.linkedNote.hidden = true;
+    if (inAppBrowser) {
+      ui.linkedNote.hidden = false;
+      ui.linkedNote.textContent = inKakao ? '카카오톡 안에서는 구글 로그인이 막혀 있어요. Safari나 크롬에서 연결해 주세요.' : '이 앱 안에서는 구글 로그인이 막혀 있어요. 다른 브라우저에서 연결해 주세요.';
+      return;
+    }
+    if (!fb) {
+      ui.linkedNote.hidden = false;
+      ui.linkedNote.textContent = '구글 로그인을 준비하는 중이에요. 잠시 뒤 다시 눌러 주세요.';
+      loadFirebase().then(() => { ui.linkedNote.hidden = true; }).catch(() => {});
+      return;
+    }
+    accountBusy = true;
+    googlePopup()
+      .then(linkGoogle)
+      .then((other) => {
+        if (other) {
+          ui.linkedNote.hidden = false;
+          ui.linkedNote.textContent = `이 구글 계정은 이미 '${other}' 게임 계정에 연결되어 있어요.`;
+        } else {
+          renderPilot();
+          showLinked('구글 로그인을 연결했어요!');
+        }
+      })
+      .catch((err) => {
+        const text = googleError(err);
+        if (text) {
+          ui.linkedNote.hidden = false;
+          ui.linkedNote.textContent = text;
+        }
+      })
+      .finally(() => {
+        accountBusy = false;
+      });
+  });
   ui.linkedOut.addEventListener('click', () => {
+    if (fb) fb.api.signOut(fb.auth).catch(() => {});
     saved.account = null;
     save();
     ui.nameDialog.close();
