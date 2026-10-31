@@ -6116,7 +6116,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (!show) return;
     if (!ui.resultNameForm.hidden) ui.resultNameNote.textContent = '이름은 이 기기에 저장되고 다음 판부터 저절로 올라가요.';
     if (r.status === 'sending') ui.boardStatus.textContent = '전체 순위에 올리는 중…';
-    else if (r.status === 'error') ui.boardStatus.textContent = '전체 순위에 올리지 못했어요. 인터넷 연결을 확인해 주세요.';
+    else if (r.status === 'error') ui.boardStatus.textContent = '전체 순위에 올리지 못했어요. 잠시 뒤 다시 올리기를 눌러 주세요.';
     else if (r.status === 'done') {
       ui.boardStatus.textContent = '';
       const lead = document.createElement('span');

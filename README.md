@@ -192,11 +192,39 @@
       "scores": {
         "$stage": {
           ".read": "$stage.matches(/^s[1-5]$/)",
-          ".indexOn": ["score"],
+          ".indexOn": [
+            "score"
+          ],
           "$id": {
             ".write": "!data.exists() && $stage.matches(/^s[1-5]$/)",
-            ".validate": "newData.hasChildren(['name', 'score', 'time', 'level', 'kills', 'clear', 'pid', 'at']) && newData.child('name').isString() && newData.child('name').val().length >= 1 && newData.child('name').val().length <= 12 && newData.child('score').isNumber() && newData.child('score').val() >= 0 && newData.child('score').val() <= 9999999 && newData.child('time').isNumber() && newData.child('time').val() >= 0 && newData.child('time').val() <= 900 && newData.child('level').isNumber() && newData.child('level').val() <= 999 && newData.child('kills').isNumber() && newData.child('kills').val() <= 999999 && newData.child('clear').isBoolean() && newData.child('pid').isString() && newData.child('pid').val().length <= 24 && newData.child('at').val() === now",
-            "$other": { ".validate": false }
+            ".validate": "newData.hasChildren(['name', 'score', 'time', 'level', 'kills', 'clear', 'pid', 'at'])",
+            "name": {
+              ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 12"
+            },
+            "score": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 9999999"
+            },
+            "time": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 900"
+            },
+            "level": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999"
+            },
+            "kills": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999999"
+            },
+            "clear": {
+              ".validate": "newData.isBoolean()"
+            },
+            "pid": {
+              ".validate": "newData.isString() && newData.val().length <= 24"
+            },
+            "at": {
+              ".validate": "newData.val() === now"
+            },
+            "$other": {
+              ".validate": false
+            }
           }
         }
       }
