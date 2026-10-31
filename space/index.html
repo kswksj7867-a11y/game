@@ -1580,6 +1580,26 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const r = rank(MASTERY[id]);
     return r >= 5 ? 3 : r >= 4 ? 2 : r >= 2 ? 1 : 0;
   };
+  const TIER_TONES = {
+    cannon: ['#7fe7ff', '#5cf2c0', '#7a9bff', '#fff3b0'],
+    missile: ['#ffa94d', '#ff6f5c', '#ff4fd8', '#ffe08a'],
+    drones: ['#7fe7ff', '#5cf2c0', '#a88bff', '#ffe08a'],
+    laser: ['#7fe7ff', '#5cf2c0', '#c38bff', '#fff3b0'],
+    nova: ['#7fe7ff', '#5cf2c0', '#7a9bff', '#ffe08a'],
+    lightning: ['#7fe7ff', '#b39dff', '#ff8ae4', '#fff3b0'],
+    aura: ['#3fe0b2', '#7fe7ff', '#a88bff', '#ffe08a'],
+    saw: ['#7fe7ff', '#5cf2c0', '#ff6f91', '#ffe08a'],
+    flame: ['#ff7a3d', '#ff4d6d', '#5ab8ff', '#bff4ff'],
+  };
+  // combined skills keep a signature colour; mastery still adds the shapes
+  const EVO_TONES = { cannon: '#a88bff', missile: '#ff5a3d', drones: '#ffc24b', laser: '#ffc24b', nova: '#3fe0b2', lightning: '#9ad8ff', aura: '#a88bff', saw: '#ffe08a', flame: '#ffffff' };
+  const toneOf = (id, evolved) => (evolved ? EVO_TONES[id] : TIER_TONES[id][tierOf(id)]);
+  // with the rainbow upgrade, ultimates cycle through the rainbow instead of their own colour
+  const rb = (base, k = 0) => {
+    if (!rank('ultform')) return base;
+    const n = RAINBOW.length;
+    return RAINBOW[(((Math.floor(clock * 6) + Math.round(k)) % n) + n) % n]; // k may be negative (off-screen positions)
+  };
   // Prices from the earlier, cheaper tree, to refund old purchases fairly.
   const OLD_BASE = { might: 30, haste: 35, reach: 35, crit: 50, bossdmg: 45, critdmg: 70, pierce: 120, fury: 60, extra: 800, hull: 30, regen: 40, plating: 40, medic: 45, evade: 50, vital: 70, barrier: 150, thorns: 90, revive: 900, study: 30, pull: 30, greed: 40, fortune: 45, reroll: 80, supply: 60, headstart: 90, automag: 100, choice4: 700, cannonM: 40, missileM: 40, dronesM: 40, laserM: 45, novaM: 45, lightningM: 50, auraM: 50, evoM: 150, pick: 500, timewarp: 40, bombplus: 45, chain: 55, lucky: 50, execute: 90, bounty: 70, overclock: 90, secondwind: 80, crate: 100 };
   const COIN_DROP = 0.05; // chance per kill; bigger ships drop two
@@ -3646,6 +3666,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   let flash = 0;
   let hurtFlash = 0;
   let warp = 0;
+  const shooting = []; // a streak across the sky now and then
+  let shootT = 3;
   let nebulaY = 0;
   let endT = 0;
   let clearRadius = 0;
@@ -3870,6 +3892,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       w.evolved = true;
       w.cd = 0;
       sfx.play('evolve');
+      const tone = toneOf(o.id, true);
+      for (let k = 0; k < 3; k++) rings.push({ x: player.x, y: player.y, r: 6 + k * 8, max: 110 + k * 40, life: 0.7 + k * 0.1, full: 0.7 + k * 0.1, color: k === 1 ? '#ffffff' : tone, wide: true });
+      blooms.push({ x: player.x, y: player.y, size: 180, life: 0.5, full: 0.5, color: tone });
       flash = Math.max(flash, motionOK() ? 0.35 : 0.1);
       addText(player.x, player.y - 34, `합체! ${WEAPONS[o.id].evo.name}`, COLOR.amber, 1.6, 15);
       announce(`합체! ${WEAPONS[o.id].evo.name}`);
@@ -3934,6 +3959,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       run.level += 1;
       run.need = xpNeed(run.level);
       pendingLevels += 1;
+      if (stats && rings.length < 60) rings.push({ x: player.x, y: player.y, r: 8, max: 64, life: 0.5, full: 0.5, color: COLOR.cyan, wide: true });
       if (rank('vital') && stats) heal(1.5 * rank('vital'), true);
     }
     hudDirty = true;
@@ -5019,7 +5045,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       } else if (w.id === 'missile') {
         w.cd -= dt;
         if (w.cd <= 0) {
-          fireMissiles(s);
+          fireMissiles(s, w.evolved);
           w.cd = s.cd * cdMul;
         }
       } else if (w.id === 'drones') {
@@ -5053,7 +5079,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       } else if (w.id === 'lightning') {
         w.cd -= dt;
         if (w.cd <= 0) {
-          lightning(s);
+          lightning(s, '', w.evolved);
           w.cd = s.cd * cdMul;
         }
       } else if (w.id === 'aura') {
@@ -5100,8 +5126,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (gun.cd > 0) return;
     const bolt = (x, ang, dmg, size, spr, speed = 640, pierce = 0, extra = {}) => pShots.push({
       kind: 'bolt', x, y: player.y - 16, vx: Math.sin(ang) * speed * sp, vy: -Math.cos(ang) * speed * sp, a: ang,
-      dmg, pierce: pierce + rank('pierce'), size: size * stats.area, plasma: false, spr, last: null, ...extra,
+      dmg, pierce: pierce + rank('pierce'), size: size * stats.area, plasma: false, spr, last: null, trail: tier >= 2, ...extra,
     });
+    if (sd.gun !== 'rail' && sd.gun !== 'homing') muzzle(player.x, player.y - 22, sd.tone, 20 + 4 * tier);
     if (sd.gun === 'twin') {
       gun.cd += 0.18 * cdMul;
       const n = 2 + tier;
@@ -5159,7 +5186,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       const reach = e.boss ? 40 : e.r;
       if ((x1 + vx * u - e.x) ** 2 + (y1 + vy * u - e.y) ** 2 < (reach + 5) ** 2) damage(e, dmg, e.x, e.y);
     }
-    rails.push({ x1, y1, x2, y2, life: 0.28, full: 0.28 });
+    rails.push({ x1, y1, x2, y2, life: 0.3, full: 0.3 });
+    muzzle(x1, y1, '#c9b6ff', 40);
+    for (let k = 0; k < 10 && sparks.length < 420; k++) { // sparks shed along the line
+      const u = Math.random() * 0.8;
+      sparks.push({ x: x1 + (x2 - x1) * u, y: y1 + (y2 - y1) * u, vx: rand(-60, 60), vy: rand(-60, 60), life: 0.3, max: 0.3, color: '#c9b6ff', w: 1.6 });
+    }
     sfx.play('snipe');
   }
   function dragonOrbs(dt, tier, D) {
@@ -5183,15 +5215,88 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (!BOLTS.has(color)) BOLTS.set(color, boltSprite(color));
     return BOLTS.get(color);
   }
+  // A longer bolt with a white diamond head: the look of a gun mastered to Lv 4.
+  const LANCES = new Map();
+  function lanceOf(color) {
+    if (!LANCES.has(color)) {
+      LANCES.set(color, sprite(48, 2, (g) => {
+        g.globalCompositeOperation = 'lighter';
+        g.fillStyle = rgba(color, 0.26);
+        capsule(g, 7.5, 40);
+        g.fill();
+        const core = g.createLinearGradient(0, -20, 0, 20);
+        core.addColorStop(0, 'rgba(255, 255, 255, 1)');
+        core.addColorStop(0.22, rgba(color, 1));
+        core.addColorStop(0.7, rgba(color, 0.6));
+        core.addColorStop(1, rgba(color, 0));
+        g.fillStyle = core;
+        capsule(g, 3.8, 38);
+        g.fill();
+        g.fillStyle = '#ffffff';
+        g.beginPath();
+        g.moveTo(0, -22);
+        g.lineTo(4.6, -13);
+        g.lineTo(0, -6);
+        g.lineTo(-4.6, -13);
+        g.closePath();
+        g.fill();
+      }));
+    }
+    return LANCES.get(color);
+  }
+  const FLAMES = new Map();
+  function flameOf(color) {
+    if (!FLAMES.has(color)) FLAMES.set(color, flameSprite(color));
+    return FLAMES.get(color);
+  }
+  const AURAS = new Map();
+  function auraOf(color) {
+    if (!AURAS.has(color)) AURAS.set(color, auraSprite(color));
+    return AURAS.get(color);
+  }
+  // Blades in the mastery colour, with a glowing edge.
+  const SAWS = new Map();
+  function sawOf(color) {
+    if (!SAWS.has(color)) {
+      const teeth = (p) => {
+        p.beginPath();
+        for (let i = 0; i < 24; i++) {
+          const a = (i / 24) * TAU;
+          const r = i % 2 ? 11 : 16;
+          p.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+        }
+        p.closePath();
+      };
+      SAWS.set(color, sprite(40, 3, (g) => {
+        lamp(g, 0, 0, 20, color);
+        hull(g, COLOR.steel, teeth, 16);
+        g.save();
+        g.globalCompositeOperation = 'lighter';
+        g.strokeStyle = rgba(color, 0.95);
+        g.lineWidth = 1.3;
+        teeth(g);
+        g.stroke();
+        g.restore();
+        hull(g, shade(color, -0.35), circlePathAt(0, 0, 5), 6);
+        lamp(g, 0, 0, 5, '#ffffff');
+      }));
+    }
+    return SAWS.get(color);
+  }
+  function muzzle(x, y, color, size) { // a quick flash where a shot leaves the ship
+    if (blooms.length < 64) blooms.push({ x, y, size, life: 0.07, full: 0.07, color });
+  }
 
   // Rotating blades fly out in a fan and come back to the ship, cutting through everything on the way.
   function throwSaws(s, evolved) {
     const spread = evolved ? TAU / s.n : 0.32;
+    const t = tierOf('saw');
+    const tone = toneOf('saw', evolved);
     for (let k = 0; k < s.n; k++) {
       const a = evolved ? (k / s.n) * TAU + rand(-0.1, 0.1) : -Math.PI / 2 + (k - (s.n - 1) / 2) * spread;
       pShots.push({
         kind: 'saw', x: player.x, y: player.y, a, t: 0, T: s.time / stats.speedMul, range: s.range * stats.reachMul,
-        size: s.size * stats.area, dmg: s.dmg * stats.dmgMul, spin: rand(0, TAU), spiral: !!evolved, life: 9, trail: [],
+        size: s.size * stats.area, dmg: s.dmg * stats.dmgMul, spin: rand(0, TAU), spiral: !!evolved, life: 9, trail: [], tone, tier: t,
       });
     }
     sfx.play('missile');
@@ -5202,7 +5307,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const out = Math.sin(Math.PI * Math.min(1, u)) * b.range;
     const a = b.spiral ? b.a + u * 3.2 : b.a + Math.sin(Math.PI * u) * 0.35;
     b.trail.unshift(b.x, b.y);
-    if (b.trail.length > 8) b.trail.length = 8;
+    if (b.trail.length > 14) b.trail.length = 14;
+    if (b.tier >= 3 && sparks.length < 420 && Math.random() < 0.35) { // sparks thrown off the rim
+      const a = rand(0, TAU);
+      sparks.push({ x: b.x + Math.cos(a) * b.size, y: b.y + Math.sin(a) * b.size, vx: Math.cos(a) * 120, vy: Math.sin(a) * 120, life: 0.2, max: 0.2, color: b.tone, w: 1.4 });
+    }
     b.x = player.x + Math.cos(a) * out;
     b.y = player.y + Math.sin(a) * out;
     b.spin += dt * (b.spiral ? 16 : 22);
@@ -5459,7 +5568,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     P.hitT -= dt;
     if (P.hitT <= 0) {
       P.hitT = 0.12;
-      const n = hitArea(P.x, P.y, 26 * A, 58 * K);
+      const n = hitArea(P.x, P.y, 34 * A, 58 * K);
       if (n) heal(Math.min(1.2, 0.35 * n), true);
     }
   }
@@ -5574,17 +5683,23 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   function fireCannon(s, plasma) {
     const size = (s.size || 1) * stats.area;
+    const t = tierOf('cannon');
+    const tone = toneOf('cannon', plasma);
+    const spr = t >= 2 ? lanceOf(tone) : t === 1 ? boltOf(tone) : null;
     for (const [ox, deg] of s.shots) {
       const a = (deg * Math.PI) / 180;
       pShots.push({
         kind: 'bolt', x: player.x + ox, y: player.y - 14, vx: Math.sin(a) * 660 * stats.speedMul, vy: -Math.cos(a) * 660 * stats.speedMul, a,
-        dmg: s.dmg * stats.dmgMul, pierce: (s.pierce || 0) + rank('pierce'), size, plasma, last: null,
+        dmg: s.dmg * stats.dmgMul, pierce: (s.pierce || 0) + rank('pierce'), size, plasma, last: null, spr, trail: t >= 3,
       });
     }
+    muzzle(player.x, player.y - 22, tone, 22 + 5 * t);
     sfx.play('shot');
   }
   // Each missile takes a different nearby target so a salvo spreads out.
-  function fireMissiles(s) {
+  function fireMissiles(s, evolved) {
+    const t = tierOf('missile');
+    const tone = toneOf('missile', evolved);
     const targets = [];
     const taken = new Set();
     for (let i = 0; i < s.count; i++) {
@@ -5605,7 +5720,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       const a = -Math.PI / 2 + (i - (s.count - 1) / 2) * 0.32;
       pShots.push({
         kind: 'missile', x: player.x, y: player.y - 8, vx: Math.cos(a) * 230, vy: Math.sin(a) * 230,
-        dmg: s.dmg * stats.dmgMul, blast: s.blast * stats.area, target: targets[i], life: 3, size: 1,
+        dmg: s.dmg * stats.dmgMul, blast: s.blast * stats.area, target: targets[i], life: 3, size: 1, tone, tier: t,
       });
     }
     sfx.play('missile');
@@ -5635,7 +5750,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     m.vx = Math.cos(a) * sp;
     m.vy = Math.sin(a) * sp;
   }
-  function blastAt(x, y, radius, dmg, skip) {
+  function blastAt(x, y, radius, dmg, skip, color = COLOR.orange) {
     for (const e of gather(x, y, radius + 30)) {
       if (e === skip) continue;
       const rr = e.r + radius;
@@ -5643,7 +5758,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     const b = liveBoss();
     if (b && b !== skip && inBoss(b, x, y, radius)) damage(b, dmg, x, y);
-    rings.push({ x, y, r: 3, max: radius, life: 0.3, full: 0.3, color: COLOR.orange });
+    rings.push({ x, y, r: 3, max: radius, life: 0.3, full: 0.3, color });
   }
   function dronePos(w, s, k) {
     const R = s.radius * stats.area;
@@ -5721,12 +5836,24 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       const sh = eShots[i];
       if ((sh.x - player.x) ** 2 + (sh.y - player.y) ** 2 < r2) removeAt(eShots, i);
     }
-    rings.push({ x: player.x, y: player.y, r: 6, max: R, life: 0.35, full: 0.35, color: s.heal ? COLOR.teal : COLOR.cyan, wide: true });
+    const t = tierOf('nova');
+    const tone = s.heal ? COLOR.teal : TIER_TONES.nova[t];
+    rings.push({ x: player.x, y: player.y, r: 6, max: R, life: 0.35, full: 0.35, color: tone, wide: true });
+    if (t >= 2) rings.push({ x: player.x, y: player.y, r: 2, max: R * 0.62, life: 0.5, full: 0.5, color: '#ffffff' }); // a second, slower wave
+    if (t >= 3 && sparks.length < 420) { // shards fly out with the wave
+      for (let k = 0; k < 16; k++) {
+        const a = (k / 16) * TAU + rand(-0.1, 0.1);
+        sparks.push({ x: player.x, y: player.y, vx: Math.cos(a) * R * 2.8, vy: Math.sin(a) * R * 2.8, life: 0.32, max: 0.32, color: tone, w: 2.6 });
+      }
+    }
     if (healed) hudDirty = true;
     sfx.play('nova');
   }
-  function lightning(s, style) {
+  function lightning(s, style, evolved) {
     const dmg = s.dmg * stats.dmgMul;
+    const t = style === 'ult' ? 3 : tierOf('lightning');
+    const tone = style === 'ult' ? rb('#9ad8ff') : toneOf('lightning', evolved);
+    const look = style || (t >= 2 ? 'fork' : '');
     const b = liveBoss();
     for (let k = 0; k < s.strikes; k++) {
       let first = null;
@@ -5738,7 +5865,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
       if (!first && b) first = b;
       if (!first) return;
-      zaps.push(zigzag(first.x + rand(-20, 20), -10, first.x, first.y, style));
+      zaps.push(zigzag(first.x + rand(-20, 20), -10, first.x, first.y, look, tone, t >= 3));
       damage(first, dmg, first.x, first.y);
       const hit = new Set([first]);
       let cur = first;
@@ -5754,7 +5881,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           }
         }
         if (!next) break;
-        zaps.push(zigzag(cur.x, cur.y, next.x, next.y, style));
+        zaps.push(zigzag(cur.x, cur.y, next.x, next.y, look, tone, t >= 3));
         damage(next, dmg * 0.8, next.x, next.y);
         hit.add(next);
         cur = next;
@@ -5794,7 +5921,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const R = weaponStats(w).radius * stats.area;
     return R * R;
   }
-  function zigzag(x0, y0, x1, y1, style) {
+  function zigzag(x0, y0, x1, y1, style, tone, flare) {
     const pts = [[x0, y0]];
     const steps = 6;
     const j = style === 'ult' ? 11 : 7;
@@ -5804,7 +5931,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     pts.push([x1, y1]);
     const forks = [];
-    if (style === 'ult') { // short branches off the main bolt
+    if (style === 'ult' || style === 'fork') { // short branches off the main bolt
       for (let k = 1; k < steps; k += 2) {
         const [fx, fy] = pts[k];
         const a = Math.atan2(y1 - y0, x1 - x0) + rand(-1.2, 1.2);
@@ -5812,7 +5939,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         forks.push([[fx, fy], [fx + Math.cos(a) * L * 0.5 + rand(-4, 4), fy + Math.sin(a) * L * 0.5 + rand(-4, 4)], [fx + Math.cos(a) * L, fy + Math.sin(a) * L]]);
       }
     }
-    return { pts, forks, style: style || '', life: style === 'ult' ? 0.26 : 0.18, max: style === 'ult' ? 0.26 : 0.18 };
+    const life = style === 'ult' ? 0.26 : style === 'fork' ? 0.22 : 0.18;
+    return { pts, forks, style: style || '', life, max: life, tone: tone || '', flare: !!flare };
   }
   function hurt(amount) {
     if (state !== 'playing' || player.invuln > 0) return;
@@ -5927,6 +6055,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       if (s.kind === 'missile') {
         steerMissile(s, dt);
         s.life -= dt;
+        if (s.tier >= 2 && sparks.length < 420 && Math.random() < 0.7) { // a glowing exhaust trail
+          sparks.push({ x: s.x, y: s.y, vx: rand(-14, 14) - s.vx * 0.08, vy: rand(-14, 14) - s.vy * 0.08, life: 0.32, max: 0.32, color: s.tone, w: s.tier >= 3 ? 2 : 1.5 });
+        }
       } else if (s.kind === 'orb') {
         s.life -= dt;
         if (!s.target || s.target.dead) s.target = randomTarget();
@@ -5961,7 +6092,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       if (!hit) continue;
       if (s.kind === 'missile' || s.kind === 'orb') {
         damage(hit, s.dmg * frontArmor(hit, s), s.x, s.y);
-        if (s.blast > 0) blastAt(s.x, s.y, s.blast, s.dmg * 0.6, hit);
+        if (s.blast > 0) blastAt(s.x, s.y, s.blast, s.dmg * 0.6, hit, s.tone);
+        if (s.tier >= 3 && blooms.length < 64) blooms.push({ x: s.x, y: s.y, size: s.blast * 2.4, life: 0.22, full: 0.22, color: s.tone });
         if (s.kind === 'orb') spark(s.x, s.y, '#ff6f91', 3);
         removeAt(pShots, i);
         continue;
@@ -6061,7 +6193,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (e.boss) hudDirty = true;
     if (e.hp <= 0 || (!e.boss && e.hp < e.maxHp * stats.execute)) kill(e);
     else sfx.play('hit');
-    if (crit) spark(x, y, COLOR.amber, 2);
+    if (crit) {
+      spark(x, y, COLOR.amber, 2);
+      if (blooms.length < 64) blooms.push({ x, y, size: 30, life: 0.1, full: 0.1, color: '#fff3b0' });
+    }
     else if (Math.random() < 0.3) spark(x, y, KIND_COLOR[e.kind], 1);
   }
   function kill(e) {
@@ -6275,6 +6410,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (blooms.length < 70) {
       const life = big ? 0.5 : mid ? 0.3 : 0.2;
       blooms.push({ x, y, size: big ? 200 : mid ? 84 : 42, life, full: life, color });
+      if (big || mid) blooms.push({ x, y, size: big ? 110 : 46, life: 0.12, full: 0.12, color: '#ffffff' }); // a white-hot core
     }
     if ((big || mid) && !lite) {
       for (let i = 0; i < (big ? 8 : 3) && smokes.length < 90; i++) {
@@ -6316,11 +6452,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   function emitFlames(s, evolved, dt) {
     const R = s.range * stats.reachMul;
-    const n = Math.min(6, Math.round((evolved ? 70 : 42) * dt * 60 / 60 + Math.random()));
+    const n = Math.min(7, Math.round((evolved ? 90 : 60) * dt + Math.random()));
     for (let k = 0; k < n && flames.length < 220; k++) {
       const a = -Math.PI / 2 + rand(-1, 1) * s.angle * (evolved ? 1 : stats.area);
       const sp = R * rand(2.4, 3.2);
-      flames.push({ x: player.x + rand(-3, 3), y: player.y - 18, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0.34, full: 0.34, size: evolved ? 15 : 11, hot: evolved ? 1 : 0 });
+      flames.push({ x: player.x + rand(-3, 3), y: player.y - 18, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0.34, full: 0.34, size: evolved ? 17 : 13, hot: evolved ? 1 : 0, pal: evolved ? 4 : tierOf('flame') });
     }
   }
   function updateRails(dt) {
@@ -6418,6 +6554,20 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
     }
     if (warp > 0) warp = Math.max(0, warp - dt * 0.9);
+    shootT -= dt;
+    if (shootT <= 0 && motionOK()) {
+      shootT = rand(4, 9);
+      const fromLeft = Math.random() < 0.5;
+      const a = Math.PI / 2 + (fromLeft ? -1 : 1) * rand(0.5, 0.9);
+      shooting.push({ x: fromLeft ? rand(-20, W * 0.4) : rand(W * 0.6, W + 20), y: rand(-20, H * 0.3), vx: Math.cos(a) * 520, vy: Math.sin(a) * 520, life: 0.9, full: 0.9 });
+    }
+    for (let i = shooting.length - 1; i >= 0; i--) {
+      const m = shooting[i];
+      m.x += m.vx * dt;
+      m.y += m.vy * dt;
+      m.life -= dt;
+      if (m.life <= 0) removeAt(shooting, i);
+    }
     nebulaY = (nebulaY + 5 * dt) % H;
     planet.y += 2.2 * boost * dt; // drifts past very slowly, then comes round again
     if (planet.y - planet.size / 2 > H) planet.y = -planet.size / 2 - rand(0, H);
@@ -6474,31 +6624,35 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   function drawCombo() {
     const lvl = Math.min(4, Math.floor(run.combo / 60));
     const tone = COMBO_TONES[lvl];
-    const y = hudBottom + 22;
+    const y = hudBottom + 18;
     const pop = 1 + Math.max(0, run.comboT - COMBO_TIME + 0.15) * 2.4; // a little jump on every kill
     ctx.save();
-    ctx.translate(W / 2, y);
-    ctx.scale(pop, pop);
-    ctx.textAlign = 'center';
+    ctx.translate(14, y); // top left, under the health bar, clear of the bosses in the middle
+    ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.globalCompositeOperation = 'lighter';
-    ctx.globalAlpha = 0.5;
-    ctx.drawImage(dot(tone), -70, -22, 140, 44);
+    ctx.globalAlpha = 0.4;
+    ctx.drawImage(dot(tone), -20, -20, 120, 40);
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
-    ctx.font = `800 ${18 + lvl * 2}px ${FONT_DATA}`;
+    ctx.save();
+    ctx.scale(pop, pop);
+    ctx.font = `800 ${16 + lvl * 2}px ${FONT_DATA}`;
     ctx.fillStyle = rgba(COLOR.void, 0.85);
     ctx.fillText(`${num(run.combo)} 콤보`, 1, 1);
     ctx.fillStyle = tone;
     ctx.fillText(`${num(run.combo)} 콤보`, 0, 0);
-    ctx.font = `700 12px ${FONT_DATA}`;
+    ctx.restore();
+    ctx.font = `700 11px ${FONT_DATA}`;
+    ctx.fillStyle = rgba(COLOR.void, 0.85);
+    ctx.fillText(`점수 ×${fmtMul(scoreMul())}`, 1, 18);
     ctx.fillStyle = '#ffffff';
     ctx.fillText(`점수 ×${fmtMul(scoreMul())}`, 0, 17);
     const k = clamp(run.comboT / COMBO_TIME, 0, 1);
     ctx.fillStyle = rgba(tone, 0.25);
-    ctx.fillRect(-40, 27, 80, 3);
+    ctx.fillRect(0, 27, 72, 3);
     ctx.fillStyle = tone;
-    ctx.fillRect(-40, 27, 80 * k, 3);
+    ctx.fillRect(0, 27, 72 * k, 3);
     ctx.restore();
   }
   function drawBackground() {
@@ -6518,6 +6672,20 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         const len = warp * s.v * 0.35;
         ctx.fillRect(s.x - s.s * 0.2, s.y - len, s.s * 0.4, len);
       }
+    }
+    for (const m of shooting) {
+      const k = Math.sin(Math.PI * (m.life / m.full));
+      const g = ctx.createLinearGradient(m.x, m.y, m.x - m.vx * 0.16, m.y - m.vy * 0.16);
+      g.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+      g.addColorStop(1, 'rgba(160, 200, 255, 0)');
+      ctx.globalAlpha = k * 0.8;
+      ctx.strokeStyle = g;
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(m.x, m.y);
+      ctx.lineTo(m.x - m.vx * 0.16, m.y - m.vy * 0.16);
+      ctx.stroke();
+      ctx.drawImage(STAR_SPR[3], m.x - 5, m.y - 5, 10, 10);
     }
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
@@ -6778,16 +6946,41 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       const s = weaponStats(w);
       if (w.id === 'drones') {
         const size = s.size * stats.area;
+        const t = tierOf('drones');
+        const tone = toneOf('drones', w.evolved);
+        const fx = fxAlpha();
+        const pts = [];
+        const back = Math.sign(s.spin || 1);
         for (let k = 0; k < s.n; k++) {
           const [x, y] = dronePos(w, s, k);
-          glow(w.evolved ? ORB.amber : ORB.cyan, x, y, size * 4, 0.9 * fxAlpha());
-          if (w.evolved) {
-            ctx.strokeStyle = rgba(COLOR.amber, 0.7);
+          pts.push([x, y]);
+          if (t >= 2) { // after-images along the orbit
+            for (let j = 1; j <= 3; j++) {
+              const [tx, ty] = dronePos({ angle: w.angle - j * 0.17 * back }, s, k);
+              glow(dot(tone), tx, ty, size * (3.4 - j * 0.6), (0.45 - j * 0.12) * fx);
+            }
+          }
+          glow(dot(tone), x, y, size * 4.2, 0.9 * fx);
+          glow(dot('#ffffff'), x, y, size * 1.5, 0.85 * fx);
+          if (w.evolved || t >= 1) {
+            ctx.strokeStyle = rgba(tone, 0.75);
             ctx.lineWidth = 1.5;
             ctx.beginPath();
             ctx.arc(x, y, size, 0, TAU);
             ctx.stroke();
           }
+        }
+        if (t >= 3 && pts.length > 2) { // an energy net strung between the drones
+          ctx.save();
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.globalAlpha = (0.3 + 0.1 * Math.sin(clock * 9)) * fx;
+          ctx.strokeStyle = tone;
+          ctx.lineWidth = 1.6;
+          ctx.beginPath();
+          pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+          ctx.closePath();
+          ctx.stroke();
+          ctx.restore();
         }
       } else if (w.id === 'aura') {
         drawAura(w, s);
@@ -6799,13 +6992,35 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         ctx.save();
         ctx.translate(g.x, g.y);
         ctx.rotate(g.a + Math.PI / 2);
-        const tone = w.evolved ? COLOR.amber : COLOR.cyan;
+        const tone = toneOf('laser', w.evolved);
+        const t = tierOf('laser');
         const half = g.half * (1 + 0.06 * Math.sin(clock * 50));
         ctx.globalCompositeOperation = 'lighter';
         ctx.globalAlpha = fade * fxAlpha();
         ctx.fillStyle = beamFill(-half * 1.7, half * 1.7, tone, 0.29);
         ctx.fillRect(-half * 1.7, -1000, half * 3.4, 1000);
         ctx.drawImage(dot(tone), -half * 2.2, -half * 2.2, half * 4.4, half * 4.4);
+        if (t >= 2) { // two bright strands twist around the beam
+          ctx.lineWidth = 1.6;
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+          for (const ph of [0, Math.PI]) {
+            ctx.beginPath();
+            for (let y = 0; y >= -980; y -= 16) {
+              const x = Math.sin(y * 0.05 + clock * 16 + ph) * half * 1.3;
+              if (y === 0) ctx.moveTo(x, y);
+              else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+          }
+        }
+        if (t >= 3) { // sparks race up the beam and a star burns at the muzzle
+          for (let k = 0; k < 7; k++) {
+            const y = -((clock * 1100 + k * 140) % 980);
+            ctx.drawImage(dot('#ffffff'), -half, y - half, half * 2, half * 2);
+          }
+          const st = half * (3.4 + 0.5 * Math.sin(clock * 30));
+          ctx.drawImage(GOLD_STAR, -st, -st, st * 2, st * 2);
+        }
         ctx.restore();
       }
     }
@@ -6817,6 +7032,16 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const fx = fxAlpha();
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
+    if (rank('ultform')) { // the rainbow upgrade: a crown of colours turning the other way
+      for (let k = 0; k < RAINBOW.length; k++) {
+        const a0 = -clock * 3 + (k / RAINBOW.length) * TAU;
+        ctx.strokeStyle = rgba(RAINBOW[k], 0.75 * fx);
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, 40 + 3 * Math.sin(clock * 6 + k), a0, a0 + 0.8);
+        ctx.stroke();
+      }
+    }
     // a halo of three bright arcs turning around the ship marks an ultimate at work
     for (let k = 0; k < 3; k++) {
       const a0 = clock * 2.2 + (k / 3) * TAU;
@@ -6841,7 +7066,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
       for (const [x, y] of nodes) {
         const tw = 1 + 0.15 * Math.sin(clock * 8 + x);
-        ctx.drawImage(dot('#ffe08a'), x - 16 * tw, y - 16 * tw, 32 * tw, 32 * tw);
+        ctx.drawImage(dot(rb('#ffe08a', Math.round(x))), x - 16 * tw, y - 16 * tw, 32 * tw, 32 * tw);
         ctx.drawImage(GOLD_STAR, x - 22 * tw, y - 22 * tw, 44 * tw, 44 * tw);
       }
     } else if (w.ult === 'supernova' && w.charge > 0) {
@@ -6867,8 +7092,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ctx.save();
     ctx.translate(P.x, P.y);
     ctx.rotate(P.ang + Math.PI / 2);
-    ctx.scale(A, A);
+    ctx.scale(A * 1.5, A * 1.5);
     ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.55;
+    ctx.drawImage(dot(rb('#ff9b4a')), -44, -40, 88, 80); // the bird burns inside its own glow
+    ctx.globalAlpha = 1;
     for (const k of [-1, 0, 1]) { // tail feathers
       const g = ctx.createLinearGradient(0, 6, 0, 46);
       g.addColorStop(0, 'rgba(255, 210, 122, 0.9)');
@@ -6927,7 +7155,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ctx.lineCap = 'round';
     for (const r of rails) {
       const k = r.life / r.full;
-      for (const [lw, col, al] of [[12 * k + 2, '#a88bff', 0.25], [4 * k + 1, '#c9b6ff', 0.8], [1.5, '#ffffff', 1]]) {
+      for (const [lw, col, al] of [[18 * k + 3, '#a88bff', 0.22], [6 * k + 1.5, '#c9b6ff', 0.8], [2, '#ffffff', 1]]) {
         ctx.globalAlpha = al * k * fxAlpha();
         ctx.strokeStyle = col;
         ctx.lineWidth = lw;
@@ -6951,7 +7179,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           ctx.globalCompositeOperation = 'lighter';
           ctx.globalAlpha = k * 0.8 * fx;
           const s = f.r * (1.6 + 0.2 * Math.sin(clock * 20 + f.x));
-          ctx.drawImage(dot('#ff7a3d'), f.x - s, f.y - s, s * 2, s * 2);
+          ctx.drawImage(dot(rb('#ff7a3d', Math.round(f.x))), f.x - s, f.y - s, s * 2, s * 2);
           ctx.drawImage(dot('#ffd27a'), f.x - s * 0.5, f.y - s * 0.7, s, s);
         }
         continue;
@@ -6977,7 +7205,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           ctx.lineTo(f.x - ux * 90, f.y - uy * 90);
           ctx.stroke();
         }
-        ctx.drawImage(dot('#ff9b4a'), f.x - 22, f.y - 22, 44, 44);
+        ctx.drawImage(dot(rb('#ff9b4a', Math.round(f.sx))), f.x - 26, f.y - 26, 52, 52);
         ctx.globalCompositeOperation = 'source-over';
         if (SPR.rock) {
           ctx.save();
@@ -6989,7 +7217,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       } else if (f.type === 'pillar') {
         const k = Math.min(1, f.t / 0.08, (f.T - f.t) / 0.15);
         ctx.globalAlpha = Math.max(0, k) * fx;
-        ctx.fillStyle = beamFill(f.x - f.w, f.x + f.w, '#7fe7ff', 0.25);
+        ctx.fillStyle = beamFill(f.x - f.w, f.x + f.w, rb('#7fe7ff'), 0.25);
         ctx.fillRect(f.x - f.w, 0, f.w * 2, H);
         ctx.lineJoin = 'round';
         for (const [lw, col] of [[4, 'rgba(191, 239, 255, 0.8)'], [1.6, '#ffffff']]) {
@@ -7028,7 +7256,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ctx.globalCompositeOperation = 'lighter';
     ctx.globalAlpha = 0.45 * k * fx;
     ctx.drawImage(dot('#8b5cf6'), f.x - f.R, f.y - f.R, f.R * 2, f.R * 2);
-    const cols = ['#b48cff', '#7fe7ff', '#ffc24b'];
+    const cols = rank('ultform') ? [rb('#b48cff'), rb('#7fe7ff', 2), rb('#ffc24b', 4)] : ['#b48cff', '#7fe7ff', '#ffc24b'];
     for (let i = 0; i < 3; i++) {
       ctx.globalAlpha = (0.85 - i * 0.2) * k * fx;
       ctx.strokeStyle = cols[i];
@@ -7061,6 +7289,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ctx.fill();
     ctx.globalAlpha = 1;
   }
+  // Fire by mastery: orange, deep red, blue, white-hot plasma; the combined flare burns white and gold.
+  const FLAME_PAL = [
+    ['#ffe08a', '#ff9b4a', '#ff4d2e'],
+    ['#ffd27a', '#ff6a3d', '#ff2d55'],
+    ['#e0f4ff', '#5ab8ff', '#3d5afe'],
+    ['#ffffff', '#bff4ff', '#7fe7ff'],
+    ['#ffffff', '#ffe08a', '#ff7a3d'],
+  ];
   function drawFlames() {
     if (!flames.length) return;
     const fx = fxAlpha();
@@ -7069,20 +7305,52 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     for (const f of flames) {
       const k = f.life / f.full;
       const s = f.size * (1.6 - k);
-      const col = f.hot ? (k > 0.6 ? '#ffffff' : k > 0.35 ? '#ffe08a' : '#ff7a3d') : (k > 0.65 ? '#ffe08a' : k > 0.35 ? '#ff9b4a' : '#ff4d2e');
-      ctx.globalAlpha = Math.min(1, k * 1.6) * 0.85 * fx;
+      const pal = FLAME_PAL[f.pal || 0];
+      const col = k > 0.62 ? pal[0] : k > 0.34 ? pal[1] : pal[2];
+      ctx.globalAlpha = Math.min(1, k * 1.7) * 0.92 * fx;
       ctx.drawImage(dot(col), f.x - s, f.y - s, s * 2, s * 2);
     }
     ctx.restore();
   }
   function drawAura(w, s) {
     const R = s.radius * stats.area;
-    const tone = w.evolved ? COLOR.violet : COLOR.teal;
+    const tone = toneOf('aura', w.evolved);
+    const t = tierOf('aura');
     const fx = fxAlpha();
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     ctx.globalAlpha = fx * (0.8 + 0.2 * Math.sin(clock * 5));
-    ctx.drawImage(w.evolved ? AURA_EVO : AURA, player.x - R, player.y - R, R * 2, R * 2);
+    ctx.drawImage(auraOf(tone), player.x - R, player.y - R, R * 2, R * 2);
+    if (t >= 2) { // runes circle the field, and a second ring turns the other way
+      ctx.globalAlpha = 0.85 * fx;
+      for (let k = 0; k < 6; k++) {
+        const a = clock * 1.4 + (k / 6) * TAU;
+        const x = player.x + Math.cos(a) * R * 0.9;
+        const y = player.y + Math.sin(a) * R * 0.9;
+        ctx.drawImage(dot(tone), x - 7, y - 7, 14, 14);
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(a);
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(0, -4);
+        ctx.lineTo(2.6, 0);
+        ctx.lineTo(0, 4);
+        ctx.lineTo(-2.6, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.globalAlpha = 0.35 * fx;
+      ctx.strokeStyle = tone;
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([3, 9]);
+      ctx.lineDashOffset = clock * 30;
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, R * 0.72, 0, TAU);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
     ctx.globalAlpha = 0.5 * fx;
     ctx.strokeStyle = tone;
     ctx.lineWidth = 1.5;
@@ -7092,13 +7360,13 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ctx.arc(player.x, player.y, R - 1, 0, TAU);
     ctx.stroke();
     ctx.setLineDash([]);
-    if (w.evolved) { // motes spiral in toward the ship
+    if (w.evolved || t >= 3) { // motes spiral in toward the ship
       for (let k = 0; k < 8; k++) {
         const u = (clock * 0.6 + k / 8) % 1;
         const a = k * 2.4 + clock * 2.2 + u * 3;
         const r = R * (1 - u);
         ctx.globalAlpha = fx * (1 - u) * 0.9;
-        ctx.drawImage(dot(COLOR.violet), player.x + Math.cos(a) * r - 5, player.y + Math.sin(a) * r - 5, 10, 10);
+        ctx.drawImage(dot(tone), player.x + Math.cos(a) * r - 5, player.y + Math.sin(a) * r - 5, 10, 10);
       }
     }
     ctx.restore();
@@ -7108,13 +7376,18 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ctx.globalAlpha = fxAlpha();
     for (const s of pShots) {
       if (s.kind === 'saw') {
-        const img = s.spiral ? DISC : SAW;
+        const tone = s.tone || COLOR.cyan;
+        const img = s.spiral ? DISC : sawOf(tone);
         const d = s.size * (s.spiral ? 2.9 : 2.5);
-        for (let k = s.trail.length - 2, n = 1; k >= 0; k -= 2, n++) { // fading after-images
-          ctx.globalAlpha = 0.12 * n * fxAlpha();
-          ctx.drawImage(img, s.trail[k] - d / 2, s.trail[k + 1] - d / 2, d, d);
+        const n = s.trail.length;
+        for (let k = 0; k < n; k += 2) { // a soft glowing streak where the blade has been
+          const u = 1 - k / n;
+          const r = d * (0.22 + 0.32 * u);
+          ctx.globalAlpha = 0.55 * u * fxAlpha();
+          ctx.drawImage(dot(tone), s.trail[k] - r, s.trail[k + 1] - r, r * 2, r * 2);
         }
         ctx.globalAlpha = fxAlpha();
+        if (s.tier >= 2 || s.spiral) ctx.drawImage(dot(tone), s.x - d * 0.9, s.y - d * 0.9, d * 1.8, d * 1.8);
         ctx.save();
         ctx.translate(s.x, s.y);
         ctx.rotate(s.spin);
@@ -7128,9 +7401,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         ctx.save();
         ctx.translate(s.x, s.y);
         ctx.rotate(a);
-        ctx.drawImage(dot(COLOR.orange), -19, -7, 14, 14);
+        const tone = s.tone || COLOR.orange;
+        const big = s.tier >= 2 ? 1.35 : 1;
+        ctx.drawImage(dot(tone), -19 * big, -7 * big, 14 * big, 14 * big);
         ctx.rotate(Math.PI / 2);
-        ctx.drawImage(FLAME_HOT, -3.5, 5, 7, 9 + Math.random() * 7);
+        ctx.drawImage(flameOf(tone), -3.5 * big, 5, 7 * big, (9 + Math.random() * 7) * big);
         ctx.rotate(-Math.PI / 2);
         ctx.globalCompositeOperation = 'source-over';
         ctx.drawImage(MISSILE, -8, -8, 16, 16);
@@ -7138,13 +7413,33 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         continue;
       }
       if (s.kind === 'orb') {
-        ctx.drawImage(dot('#ff6f91'), s.x - 11, s.y - 11, 22, 22);
+        for (const [k, r, al] of [[0.035, 8, 0.45], [0.07, 6, 0.22]]) { // a short comet tail
+          ctx.globalAlpha = al * fxAlpha();
+          ctx.drawImage(dot('#ff6f91'), s.x - s.vx * k - r, s.y - s.vy * k - r, r * 2, r * 2);
+        }
+        ctx.globalAlpha = fxAlpha();
+        ctx.drawImage(dot('#ff6f91'), s.x - 13, s.y - 13, 26, 26);
         ctx.drawImage(dot('#ffffff'), s.x - 4, s.y - 4, 8, 8);
         continue;
       }
       const img = s.spr || (s.plasma ? PLASMA : BOLT);
       const w = 8 * s.size;
       const h = 24 * s.size;
+      if (s.shell) { // the heavy shell glows hot
+        const r = 10 * s.size;
+        ctx.drawImage(dot('#ff9b4a'), s.x - r, s.y - r, r * 2, r * 2);
+      }
+      if (s.trail) { // mastered guns leave two fading after-images
+        for (const [k, al] of [[0.02, 0.42], [0.04, 0.18]]) {
+          ctx.globalAlpha = al * fxAlpha();
+          ctx.save();
+          ctx.translate(s.x - s.vx * k, s.y - s.vy * k);
+          ctx.rotate(s.a || 0);
+          ctx.drawImage(img, -w, -h / 2, w * 2, h);
+          ctx.restore();
+        }
+        ctx.globalAlpha = fxAlpha();
+      }
       if (s.a) {
         ctx.save();
         ctx.translate(s.x, s.y);
@@ -7221,7 +7516,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     for (const z of zaps) {
       const a = Math.max(0, z.life / z.max);
-      const tone = z.style === 'ult' ? '#9ad8ff' : COLOR.cyan;
+      const tone = z.tone || (z.style === 'ult' ? '#9ad8ff' : COLOR.cyan);
       const widths = z.style === 'ult' ? [[11, tone], [4.5, tone], [2, '#ffffff']] : [[7, tone], [3, tone], [1.4, '#ffffff']];
       for (const [width, color] of widths) {
         ctx.globalAlpha = a * (width > 5 ? 0.25 : width > 2.5 ? 0.6 : 1) * fx;
@@ -7234,10 +7529,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         }
         ctx.stroke();
       }
-      if (z.style === 'ult') {
+      if (z.style === 'ult' || z.flare) { // a bright flash where the bolt lands
         const [ex, ey] = z.pts[z.pts.length - 1];
         ctx.globalAlpha = a * fx;
-        ctx.drawImage(dot('#bfefff'), ex - 18, ey - 18, 36, 36);
+        ctx.drawImage(dot(z.style === 'ult' ? '#bfefff' : tone), ex - 18, ey - 18, 36, 36);
       }
     }
     ctx.globalCompositeOperation = 'source-over';
