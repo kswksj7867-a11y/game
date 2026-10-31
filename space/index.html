@@ -1035,10 +1035,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         <h2 class="panel-title" id="together-title">대결 방</h2>
         <div class="tabs" role="tablist" aria-label="같이 하는 방법">
           <button type="button" class="tab" role="tab" aria-selected="true" data-tg-mode="vs">실시간 대결</button>
-          <button type="button" class="tab" role="tab" aria-selected="false" data-tg-mode="coop" disabled>협동 · 곧 나와요</button>
+          <button type="button" class="tab" role="tab" aria-selected="false" data-tg-mode="coop">협동 (2명)</button>
         </div>
         <div class="tg-entry" id="tg-entry">
-          <p class="lede">방을 만들어 친구를 부르거나, 친구가 알려 준 방 번호로 들어가요. 각자 자기 폰에서 같은 지역을 동시에 출발하고, 점수가 가장 높은 사람이 이겨요. 적을 많이 잡으면 친구 화면에 적을 보내 방해할 수 있어요.</p>
+          <p class="lede" id="tg-lede">방을 만들어 친구를 부르거나, 친구가 알려 준 방 번호로 들어가요. 각자 자기 폰에서 같은 지역을 동시에 출발하고, 점수가 가장 높은 사람이 이겨요. 적을 많이 잡으면 친구 화면에 적을 보내 방해할 수 있어요.</p>
           <button type="button" class="btn btn-primary" id="tg-create">방 만들기</button>
           <form class="name-row" id="tg-join">
             <input id="tg-code" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" enterkeyhint="go" placeholder="방 번호 4자리" aria-label="방 번호 4자리">
@@ -1306,7 +1306,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     openHangar: $('open-hangar'), titleShip: $('title-ship'), hangarCoins: $('hangar-coins'), shipGrid: $('ship-grid'),
     shipDetail: $('ship-detail'), hangarBack: $('hangar-back'),
     quitNote: $('quit-note'), ultNote: $('ult-note'),
-    openTogether: $('open-together'), tgEntry: $('tg-entry'), tgCreate: $('tg-create'), tgJoin: $('tg-join'), tgCode: $('tg-code'),
+    openTogether: $('open-together'), tgLede: $('tg-lede'), tgTitle: $('together-title'), tgTabs: document.querySelectorAll('[data-tg-mode]'), tgEntry: $('tg-entry'), tgCreate: $('tg-create'), tgJoin: $('tg-join'), tgCode: $('tg-code'),
     tgLobby: $('tg-lobby'), tgRoomCode: $('tg-room-code'), tgInvite: $('tg-invite'), tgPlayers: $('tg-players'), tgStageLabel: $('tg-stage-label'),
     tgStages: $('tg-stages'), tgGo: $('tg-go'), tgLeave: $('tg-leave'), tgNote: $('tg-note'), tgBack: $('tg-back'), tgHangar: $('tg-hangar'),
     vsPanel: $('vs-panel'), vsResult: $('vs-result'), vsResultTitle: $('vs-result-title'), vsResultList: $('vs-result-list'),
@@ -1942,7 +1942,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     return out;
   }
-  const rank = (id) => saved.tree[id] || 0;
+  let treeCtx = null; // in co-op, the other ship's skill tree while that ship's turn runs
+  const rank = (id) => (treeCtx || saved.tree)[id] || 0;
   if (!saved.ships.includes(saved.ship)) saved.ship = 'star';
   if (saved.spent < 0) { // saved before refunds were tracked: count what the old prices were
     saved.spent = 0;
@@ -2460,6 +2461,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       beam() { tone(b(), 120, 0, 0.8, 'sawtooth', 0.05, 90, 900); hiss(b(), 0, 0.6, 0.06, 3000, 1500, 'bandpass'); },
     };
     function play(name) {
+      if (name !== 'hit' && name !== 'hurt') coopRec(['sf', name]);
       const ac = audio.ac;
       if (!ac || !saved.sfx) return;
       const gap = GAP[name];
@@ -2596,13 +2598,18 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     return {
       play(which) { // switch tracks from the top
+        coopRec(['mu', which]);
         if (name === which && timer) return;
         halt();
         name = which;
         step = 0;
         run();
       },
-      stop() { halt(); name = ''; },
+      stop() {
+        coopRec(['mu', '']);
+        halt();
+        name = '';
+      },
       pause: halt,
       resume: run,
     };
@@ -3737,7 +3744,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   let stage = STAGES[0];
   let skyIdx = 0; // which region's sky is painted (endless mode cycles through them)
   let stats = null;
-  const player = { x: W / 2, y: 550, hp: 120, invuln: 0, bank: 0, prevX: W / 2, alive: true, shield: false, shieldT: 0 };
+  let player = { x: W / 2, y: 550, hp: 120, invuln: 0, bank: 0, prevX: W / 2, alive: true, shield: false, shieldT: 0 };
   const run = {
     t: 0, score: 0, kills: 0, level: 1, xp: 0, need: 9, coins: 0, rerolls: 0, revives: 0, magT: 0, ults: 0, fused: [], ship: 'star',
     endless: false, sector: 0, combo: 0, comboT: 0, bestCombo: 0,
@@ -3748,11 +3755,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   // Endless mode: each sector raises the points per kill, and an unbroken combo doubles or triples them.
   const comboMul = () => 1 + Math.min(2, run.combo / 150);
   const scoreMul = () => (run.endless ? (1 + 0.25 * run.sector) * comboMul() : 1);
-  const gun = { cd: 0.3, a: 0 }; // the fighter's built-in gun
+  let gun = { cd: 0.3, a: 0 }; // the fighter's built-in gun
   const rails = []; // railgun lines fading out
   let chestSkip = false; // the player passed on a combination: this crate gives an ordinary pick
   let cine = 0; // seconds of slow motion left after an ultimate fusion
-  const build = { weapons: [], passives: [] };
+  let build = { weapons: [], passives: [] };
   const director = { budget: 0, next: null, mid: 0, final: false };
   const enemies = [];
   const pShots = [];
@@ -4076,6 +4083,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       run.level += 1;
       run.need = xpNeed(run.level);
       pendingLevels += 1;
+      if (coop.ally) coop.ally.levels += 1; // levels are shared: both ships pick
       if (stats && rings.length < 60) rings.push({ x: player.x, y: player.y, r: 8, max: 64, life: 0.5, full: 0.5, color: COLOR.cyan, wide: true });
       if (rank('vital') && stats) heal(1.5 * rank('vital'), true);
     }
@@ -4095,7 +4103,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   const stageRamp = () => (run.endless ? 1 : Math.min(1, 0.25 + run.t / 400));
   // Past six minutes, endless ships also toughen by about a quarter every three minutes, so even a maxed ship meets its end.
   const endlessHp = () => (run.endless ? 1.28 ** Math.max(0, (run.t - 360) / SECTOR_TIME) : 1);
-  const hpScale = () => (1 + dT() / 200 + (dT() / 190) ** 2) * (1 + (stage.mul - 1) * stageRamp()) * endlessHp();
+  const hpScale = () => (1 + dT() / 200 + (dT() / 190) ** 2) * (1 + (stage.mul - 1) * stageRamp()) * endlessHp() * (coop.ally ? 1.5 : 1);
   const bulletSpeed = () => Math.min(270, 125 + dT() * 0.14) * (1 + 0.05 * stageIndex * stageRamp());
   const hitScale = () => (1 + 0.15 * stageIndex * stageRamp()) * (1 + dT() / 600);
   const fireChance = () => (dT() < 30 ? 0 : Math.min(0.9, 0.1 + dT() / 650) + 0.05 * stageIndex * stageRamp());
@@ -4368,7 +4376,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
 
   // Ships arrive faster the longer you last; every region adds pressure on top.
-  const spawnRate = () => (1 + dT() / 70 + (dT() / 300) ** 2) * (1 + 0.15 * stageIndex * stageRamp());
+  const spawnRate = () => (1 + dT() / 70 + (dT() / 300) ** 2) * (1 + 0.15 * stageIndex * stageRamp()) * (coop.ally ? 1.3 : 1);
   function updateDirector(dt) {
     if (run.comboT > 0) {
       run.comboT -= dt;
@@ -4495,7 +4503,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           if (b.warn <= 0) sfx.play('beam');
         } else {
           b.active -= dt;
-          if (state === 'playing' && player.invuln <= 0 && Math.abs(player.x - b.x) < b.width / 2 + hitbox && player.y > b.y) hurt(b.dmg);
+          if (state === 'playing' && player.invuln <= 0 && player.alive && Math.abs(player.x - b.x) < b.width / 2 + hitbox && player.y > b.y) hurt(b.dmg);
           if (b.active <= 0) b.done = true;
         }
       }
@@ -4511,11 +4519,24 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
 
   function updateEnemies(dt) {
+    if (coop.ally) { // in co-op each ship is chased by whatever is nearest to it
+      const me = player;
+      try {
+        updateEnemiesAll(dt, true);
+      } finally {
+        player = me;
+      }
+      return;
+    }
+    updateEnemiesAll(dt, false);
+  }
+  function updateEnemiesAll(dt, two) {
     const speed = bulletSpeed();
     for (const e of enemies) {
       if (e.dead) continue;
       e.t += dt;
       if (e.t < 0) continue; // still waiting its turn in the squad
+      if (two) player = aimAt(e);
       if (e.flash > 0) e.flash -= dt;
       if (e.droneT > 0) e.droneT -= dt;
       if (e.kx || e.ky) { // knockback from shockwaves, fading out
@@ -5120,10 +5141,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   function updatePlayer(dt) {
     let kx = 0;
     let ky = 0;
-    if (keys.has('ArrowLeft') || keys.has('KeyA')) kx -= 1;
-    if (keys.has('ArrowRight') || keys.has('KeyD')) kx += 1;
-    if (keys.has('ArrowUp') || keys.has('KeyW')) ky -= 1;
-    if (keys.has('ArrowDown') || keys.has('KeyS')) ky += 1;
+    if (!ctxNow) { // the friend's ship moves by the friend's hand, not by this keyboard
+      if (keys.has('ArrowLeft') || keys.has('KeyA')) kx -= 1;
+      if (keys.has('ArrowRight') || keys.has('KeyD')) kx += 1;
+      if (keys.has('ArrowUp') || keys.has('KeyW')) ky -= 1;
+      if (keys.has('ArrowDown') || keys.has('KeyS')) ky += 1;
+    }
     if (kx || ky) {
       const speed = keys.has('ShiftLeft') || keys.has('ShiftRight') ? 140 : 280;
       const len = Math.hypot(kx, ky);
@@ -5133,6 +5156,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     player.prevX = player.x;
     player.bank += (clamp(vx / 420, -1, 1) - player.bank) * Math.min(1, dt * 10);
     if (player.invuln > 0) player.invuln -= dt;
+    if (coopGuest()) return; // on the friend's phone the host keeps health, shields and magnets
     if (!player.shield && rank('barrier')) {
       player.shieldT -= dt;
       if (player.shieldT <= 0) player.shield = true;
@@ -5330,14 +5354,18 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   const BOLTS = new Map();
   function boltOf(color) {
-    if (!BOLTS.has(color)) BOLTS.set(color, boltSprite(color));
+    if (!BOLTS.has(color)) {
+      const c = boltSprite(color);
+      c.look = [1, color];
+      BOLTS.set(color, c);
+    }
     return BOLTS.get(color);
   }
   // A longer bolt with a white diamond head: the look of a gun mastered to Lv 4.
   const LANCES = new Map();
   function lanceOf(color) {
     if (!LANCES.has(color)) {
-      LANCES.set(color, sprite(48, 2, (g) => {
+      LANCES.set(color, Object.assign(sprite(48, 2, (g) => {
         g.globalCompositeOperation = 'lighter';
         g.fillStyle = rgba(color, 0.26);
         capsule(g, 7.5, 40);
@@ -5358,7 +5386,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         g.lineTo(-4.6, -13);
         g.closePath();
         g.fill();
-      }));
+      }), { look: [2, color] }));
     }
     return LANCES.get(color);
   }
@@ -5413,7 +5441,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     for (let k = 0; k < s.n; k++) {
       const a = evolved ? (k / s.n) * TAU + rand(-0.1, 0.1) : -Math.PI / 2 + (k - (s.n - 1) / 2) * spread;
       pShots.push({
-        kind: 'saw', x: player.x, y: player.y, a, t: 0, T: s.time / stats.speedMul, range: s.range * stats.reachMul,
+        kind: 'saw', owner: player, x: player.x, y: player.y, a, t: 0, T: s.time / stats.speedMul, range: s.range * stats.reachMul,
         size: s.size * stats.area, dmg: s.dmg * stats.dmgMul, spin: rand(0, TAU), spiral: !!evolved, life: 9, trail: [], tone, tier: t,
       });
     }
@@ -5430,8 +5458,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       const a = rand(0, TAU);
       sparks.push({ x: b.x + Math.cos(a) * b.size, y: b.y + Math.sin(a) * b.size, vx: Math.cos(a) * 120, vy: Math.sin(a) * 120, life: 0.2, max: 0.2, color: b.tone, w: 1.4 });
     }
-    b.x = player.x + Math.cos(a) * out;
-    b.y = player.y + Math.sin(a) * out;
+    const o = b.owner || player;
+    b.x = o.x + Math.cos(a) * out;
+    b.y = o.y + Math.sin(a) * out;
     b.spin += dt * (b.spiral ? 16 : 22);
     return u >= 1;
   }
@@ -6062,7 +6091,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     return { pts, forks, style: style || '', life, max: life, tone: tone || '', flare: !!flare };
   }
   function hurt(amount) {
-    if (state !== 'playing' || player.invuln > 0) return;
+    if (state !== 'playing' || player.invuln > 0 || !player.alive) return;
     if (player.shield) { // the emergency barrier soaks the whole hit
       player.shield = false;
       player.shieldT = BARRIER_CD[rank('barrier') - 1] || 45;
@@ -6095,9 +6124,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       rings.push({ x: player.x, y: player.y, r: 8, max: 70, life: 0.5, full: 0.5, color: COLOR.teal, wide: true });
       addText(player.x, player.y - 34, '위기 회복!', COLOR.teal, 1.4, 14);
     }
-    hurtFlash = 0.35;
-    shakeBy(5);
-    sfx.play('hurt');
+    if (!ctxNow) { // the friend's phone shows its own hits
+      hurtFlash = 0.35;
+      shakeBy(5);
+      sfx.play('hurt');
+    }
     hudDirty = true;
     if (player.hp <= 0) {
       if (run.revives > 0) {
@@ -6105,7 +6136,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         return;
       }
       player.hp = 0;
-      die();
+      shipDown();
     }
   }
   function revive() {
@@ -6228,7 +6259,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
   }
   function updateEnemyShots(dt) {
-    let canHit = state === 'playing' && player.invuln <= 0;
+    let canHit = state === 'playing' && player.invuln <= 0 && player.alive;
     const slowR2 = slowField();
     const slowK = 1 - WEAPONS.aura.evo.slow;
     for (let i = eShots.length - 1; i >= 0; i--) {
@@ -6281,7 +6312,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
 
   function checkContacts() {
-    if (state !== 'playing' || player.invuln > 0) return;
+    if (state !== 'playing' || player.invuln > 0 || !player.alive) return;
     const b = liveBoss();
     const thorns = rank('thorns') * 60 * (1 + run.t / 200);
     if (b && inBoss(b, player.x, player.y, hitbox)) {
@@ -6387,16 +6418,28 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     gems.push({ x, y, v, pulled: false, sp: 0 });
   }
-  function updateGems(dt) {
+  function updateGems(dt, pullOnly) {
     const R = stats ? stats.pickup : 38;
     const collecting = state === 'playing' || state === 'clearing';
+    const me = ctxNow;
     for (let i = gems.length - 1; i >= 0; i--) {
       const g = gems[i];
+      if (g.pulled) { // already flying to a ship: leave it to that one unless it went down
+        if (g.to === undefined) g.to = me;
+        else if (g.to !== me) {
+          const owner = g.to ? g.to.player : coop.hostPlayer;
+          if (owner && owner.alive) continue;
+          g.to = me;
+        }
+      }
       const dx = player.x - g.x;
       const dy = player.y - g.y;
       const d2 = dx * dx + dy * dy;
       // picked up when close, or automatically once it has fallen to the ship's height
-      if (!g.pulled && collecting && (d2 < R * R || g.y > player.y - 10)) g.pulled = true;
+      if (!g.pulled && collecting && player.alive && (d2 < R * R || g.y > player.y - 10)) {
+        g.pulled = true;
+        g.to = me;
+      }
       if (g.pulled && collecting && player.alive) {
         const d = Math.sqrt(d2) || 1;
         g.sp = Math.min(700, (g.sp || 140) + 1100 * dt);
@@ -6407,7 +6450,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           removeAt(gems, i);
           sfx.play('gem');
         }
-      } else {
+      } else if (!pullOnly) {
         g.y += 55 * dt;
         if (g.y > H + 20) removeAt(gems, i);
       }
@@ -6429,15 +6472,27 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
     }
   }
-  function updateItems(dt) {
+  function updateItems(dt, pullOnly) {
     const reach = 22 + (stats ? stats.pickup * 0.25 : 10);
+    const me = ctxNow;
     for (let i = items.length - 1; i >= 0; i--) {
       const it = items[i];
-      it.t += dt;
+      if (!pullOnly) it.t += dt;
+      if (it.pulled) {
+        if (it.to === undefined) it.to = me;
+        else if (it.to !== me) {
+          const owner = it.to ? it.to.player : coop.hostPlayer;
+          if (owner && owner.alive) continue;
+          it.to = me;
+        }
+      }
       const dx = player.x - it.x;
       const dy = player.y - it.y;
       // like experience, an item is pulled in when close or once it has fallen to the ship's height
-      if (!it.pulled && state === 'playing' && (dx * dx + dy * dy < reach * reach || it.y > player.y - 10)) it.pulled = true;
+      if (!it.pulled && state === 'playing' && player.alive && (dx * dx + dy * dy < reach * reach || it.y > player.y - 10)) {
+        it.pulled = true;
+        it.to = me;
+      }
       if (it.pulled && state === 'playing' && player.alive) {
         const d = Math.hypot(dx, dy) || 1;
         it.sp = Math.min(600, (it.sp || 120) + 900 * dt);
@@ -6449,6 +6504,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         }
         continue;
       }
+      if (pullOnly) continue;
       it.y += 34 * dt;
       it.x = clamp(it.x + Math.sin(it.t * 2.2) * 14 * dt, 14, W - 14);
       if (it.y > H + 24) removeAt(items, i);
@@ -6474,7 +6530,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     } else if (kind === 'bomb') {
       bomb();
     } else if (kind === 'chest') {
-      pendingChests += 1;
+      if (ctxNow) ctxNow.chests += 1; // the friend's crate: the friend chooses
+      else pendingChests += 1;
       const bonus = 5 * rank('crate');
       if (bonus) run.coins += bonus * stats.coinMul;
       at(bonus ? `보급 상자! 코인 +${num(bonus * stats.coinMul)}` : '보급 상자!', COLOR.amber);
@@ -6519,6 +6576,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 
   // ---------- effects ----------
   function explode(x, y, color, size, quiet) {
+    coopRec(['x', Math.round(x), Math.round(y), color, size]);
+    coop.quiet += 1;
+    explodeHere(x, y, color, size, quiet);
+    coop.quiet -= 1;
+  }
+  function explodeHere(x, y, color, size, quiet) {
     const big = size === 'big';
     const mid = size === 'mid';
     const lite = !motionOK();
@@ -6572,6 +6635,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (motionOK()) shake = Math.max(shake, n);
   }
   function addText(x, y, text, color, life, size) {
+    coopRec(['tx', Math.round(x), Math.round(y), text, color, life, size]);
     if (texts.length < 30) texts.push({ x, y, text, color, life, max: life, size });
   }
   function emitFlames(s, evolved, dt) {
@@ -6713,10 +6777,15 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     drawUltFx(true);
     drawEnemies();
     drawWeapons();
+    if (coop.other) withCtx(coop.other, drawWeapons);
     drawFlames();
     drawRails();
     drawUltFx(false);
     drawPlayer();
+    if (coop.other) withCtx(coop.other, () => {
+      drawPlayer();
+      drawShipTag(coop.other.name);
+    });
     drawFx();
     drawHazards(); // enemy beams and warnings stay readable over our effects
     drawTexts();
@@ -7251,6 +7320,21 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ctx.restore();
   }
   // Ultimate effects drawn under the ships (black holes, fire on the ground) or over them.
+  // the friend's name over the friend's ship, and a countdown while it is down
+  function drawShipTag(name) {
+    if (!inPlay()) return;
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `600 11px ${FONT_DATA}`;
+    const y = player.alive ? player.y + 34 : H - 70;
+    const text = player.alive ? name : `${name} · ${Math.max(0, Math.ceil(player.downT || 0))}초 뒤 다시 출격`;
+    ctx.fillStyle = rgba(COLOR.void, 0.8);
+    ctx.fillText(text, (player.alive ? player.x : W / 2) + 1, y + 1);
+    ctx.fillStyle = player.alive ? shipOf(run.ship).tone : COLOR.coral;
+    ctx.fillText(text, player.alive ? player.x : W / 2, y);
+    ctx.restore();
+  }
   function drawDragonOrbs() {
     const n = 3 + gunTier();
     const R = 36 * stats.area;
@@ -7703,9 +7787,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ui.hpFill.style.transform = `scaleX(${k.toFixed(3)})`;
     ui.hpFill.classList.toggle('is-mid', k <= 0.5 && k > 0.25);
     ui.hpFill.classList.toggle('is-low', k <= 0.25);
-    ui.hpText.textContent = `${Math.ceil(player.hp)}/${stats.maxHp}`;
+    ui.hpText.textContent = coop.on && !player.alive ? `격추 · ${Math.max(0, Math.ceil(player.downT || 0))}초 뒤 출격` : `${Math.ceil(player.hp)}/${stats.maxHp}`;
     ui.hpTrack.setAttribute('aria-label', `체력 ${Math.ceil(player.hp)} / ${stats.maxHp}`);
     ui.level.textContent = String(run.level);
+    if (coop.on) renderCoopPanel();
+    else if (!run.vs) ui.vsPanel.hidden = true;
     ui.kills.textContent = num(run.kills);
     ui.coins.textContent = num(Math.floor(run.coins));
     const b = boss && !boss.dead ? boss : null;
@@ -7718,6 +7804,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (!ui.hud.hidden) hudBottom = ui.hud.offsetHeight / scale;
   }
   function showBanner(title, sub, warn) {
+    coopRec(['bn', title, sub, warn]);
     ui.bannerTitle.textContent = title;
     ui.bannerSub.textContent = sub;
     ui.banner.classList.toggle('is-warn', warn === true);
@@ -7995,6 +8082,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     audio.unlock();
     run.endless = index === ENDLESS;
     run.vs = false; // a versus match turns this on right after
+    run.coop = false;
     stageIndex = run.endless ? 1 : index;
     stage = run.endless ? endlessStage(0) : STAGES[index];
     skyIdx = run.endless ? 0 : index;
@@ -8073,6 +8161,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   function reroll() {
     if (state !== 'choice' || !canReroll()) return;
+    if (coopGuest()) {
+      if (coop.asked) coopSend({ t: 'reroll', id: coop.asked.id });
+      return;
+    }
     run.rerolls -= 1;
     choice.options = rollOptions(choice.options.length);
     renderCards(choice.options);
@@ -8083,6 +8175,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   function choose(i) {
     if (state !== 'choice') return;
+    if (coopGuest()) {
+      if (choice && choice.source !== 'wait' && choice.options[i]) coopGuestPick(i);
+      return;
+    }
     const o = choice.options[i];
     if (!o) return;
     if (o.kind === 'skip') { // keep the crate: it turns into an ordinary pick
@@ -8129,6 +8225,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       openChoice('level', `레벨 업 · Lv ${run.level - pendingLevels + 1}`, '스킬을 하나 고르세요', rollOptions(choiceCount()));
       sfx.play('levelup');
       announce('레벨 업! 스킬을 하나 고르세요.');
+    } else if (coopWaiting()) {
+      if (!(state === 'choice' && choice && choice.source === 'wait')) openChoice('wait', '잠깐만요', `${coop.ally.name}님이 고르는 중이에요`, []);
     } else {
       state = 'playing';
       showScreen(null);
@@ -8142,14 +8240,17 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     keys.clear();
     music.pause();
     ui.pauseInfo.textContent = `${run.endless ? `무한 모드 · 구역 ${run.sector + 1}` : `${stageIndex + 1}. ${stage.name}`} · ${clockText(run.t)} · Lv ${run.level} · 체력 ${Math.ceil(player.hp)}/${stats.maxHp}`;
-    ui.quit.textContent = run.endless || run.vs ? '여기서 끝내고 점수 받기' : '그만하기';
-    ui.quitNote.textContent = run.vs ? '대결은 계속돼요. 끝내면 지금 점수로 대결 순위에 남아요.'
+    ui.quit.textContent = coopGuest() ? '협동에서 나가기' : coopHost() ? '여기서 끝내기 (둘 다 끝나요)' : run.endless || run.vs ? '여기서 끝내고 점수 받기' : '그만하기';
+    ui.quitNote.textContent = coop.on ? (coop.pauseRemote ? `${coop.partner || '친구'}님이 일시정지했어요. ` : '친구 화면도 같이 멈춰요. ') + (coopGuest() ? '나가면 지금까지 점수와 코인을 받아요.' : '끝내면 둘 다 지금 점수와 코인을 받아요.')
+      : run.vs ? '대결은 계속돼요. 끝내면 지금 점수로 대결 순위에 남아요.'
       : run.endless ? '끝내면 지금까지 모은 점수와 코인을 받아요.' : '그만하면 이번 판의 기록과 코인은 남지 않아요.';
     ui.ultNote.textContent = `합체 스킬 2개를 가진 채 보급 상자를 열면 두 스킬을 하나의 궁극기로 합칠 수 있어요. ${run.endless ? '무한 모드에서는 몇 번이든 할 수 있어요.' : '한 판에 한 번이에요.'}`;
     renderSlots(ui.pauseSlots);
     renderRecipes(ui.recipes);
     renderUltGuide();
     showScreen('pause');
+    if (coop.on && !coop.pauseRemote) coopSend({ t: 'pause' });
+    coop.pauseRemote = false;
   }
   function resume() {
     if (state !== 'paused') return;
@@ -8157,6 +8258,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     showScreen(null);
     music.resume();
     lastFrame = performance.now();
+    if (coop.on && !coop.pauseRemote) coopSend({ t: 'resume' });
+    coop.pauseRemote = false;
   }
   // The run's score as it would end right now (the versus panel shows the same number the result screen will).
   function scoreNow(cleared) {
@@ -8165,7 +8268,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       ? Math.round((run.score + secs * 10 + run.level * 200) * (1 + 0.05 * rank('score')) * (1 + 0.05 * rank('endscore')))
       : Math.round((run.score + secs * 5 + run.level * 100 + (cleared ? 20000 * (stageIndex + 1) : 0)) * (1 + 0.05 * rank('score')));
   }
-  function endRun(cleared) {
+  function endRun(cleared, given) {
     state = 'result';
     music.stop();
     releasePointer();
@@ -8173,7 +8276,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (endless) cleared = false;
     const secs = endless ? run.t : Math.min(run.t, STAGE_TIME);
     const timeMs = Math.round(secs * 1000);
-    const score = scoreNow(cleared);
+    const score = given ? given.score : scoreNow(cleared);
     const stageNo = endless ? ENDLESS + 1 : stageIndex + 1;
     const record = { id: uid(), stage: stageNo, cleared, timeMs, level: run.level, kills: run.kills, score, at: new Date().toISOString() };
     if (endless) Object.assign(record, { sector: run.sector + 1, combo: run.bestCombo });
@@ -8181,7 +8284,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const unlockedBefore = saved.unlocked;
     const timeCoins = Math.floor(secs / 10) * stats.coinMul;
     const interest = Math.min(200 * rank('interest'), Math.floor(saved.coins * 0.01 * rank('interest')));
-    const earned = Math.floor(run.coins + timeCoins + (cleared ? 100 * (stageIndex + 1) : 0) + interest);
+    const earned = given ? Math.max(0, Math.floor(given.earned)) : Math.floor(run.coins + timeCoins + (cleared ? 100 * (stageIndex + 1) : 0) + interest);
     saved.coins += earned;
     saved.earned += earned;
     record.coins = earned;
@@ -8198,6 +8301,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const nextOpened = cleared && saved.unlocked > unlockedBefore;
     ui.resultEyebrow.textContent = endless ? '무한 모드' : cleared ? '작전 성공' : '작전 실패';
     ui.resultTitle.textContent = endless ? `구역 ${run.sector + 1}까지 버텼어요` : cleared ? `${stage.name} 클리어!` : '격추당했어요';
+    if (run.coop) { // a run played together
+      ui.resultEyebrow.textContent = `협동 · ${coop.partner || '친구'}님과 함께`;
+      ui.resultTitle.textContent = given && given.lost ? '연결이 끊겨서 여기까지예요' : cleared ? `함께 ${stage.name} 클리어!`
+        : endless ? `구역 ${run.sector + 1}까지 함께 버텼어요` : '둘 다 격추당했어요';
+    }
     ui.finalSeal.textContent = cleared ? '클리어' : prev ? '신기록' : '첫 기록';
     ui.finalSeal.hidden = !(cleared || isBest);
     let note;
@@ -8234,14 +8342,20 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (!ui.finalSeal.hidden) stampSeal(dur + 80);
     lastRun = {
       stage: stageNo, score, time: Math.round(timeMs / 1000), level: run.level, kills: run.kills, clear: cleared, ship: run.ship,
-      eligible: timeMs >= 15000, status: 'idle', key: null, rank: 0, total: 0,
+      eligible: timeMs >= 15000 && !run.coop, status: 'idle', key: null, rank: 0, total: 0,
     };
     if (board.on && lastRun.eligible && saved.name) submitRun();
     else renderBoardResult();
-    ui.again.hidden = run.vs;
-    ui.resultRow.hidden = run.vs;
+    const together = run.vs || run.coop;
+    ui.again.hidden = together;
+    ui.resultRow.hidden = together;
+    ui.vsLobby.textContent = run.coop ? '협동 방으로' : '대결 방으로';
     if (run.vs) vsFinish(score, cleared);
-    else ui.vsResult.hidden = true;
+    else if (run.coop) {
+      if (coopHost()) coopSend({ t: 'end', score, time: Math.round(timeMs / 1000), level: run.level, kills: run.kills, clear: cleared, coins: earned });
+      renderCoopResult(given || {});
+      coopFinish();
+    } else ui.vsResult.hidden = true;
   }
   function countUp(node, to) {
     if (!motionOK() || to <= 0) {
@@ -8275,7 +8389,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   const VS_KILL_STEP = 100; // kills between attacks sent to the others
   const VS_SILENT = 15000; // a player we have not heard from this long has dropped out
   const vs = {
-    code: '', room: null, timer: 0, busy: false, fail: 0, joinedAt: 0, startedFor: 0, inMatch: false, match: 0, stage: 1,
+    mode: 'vs', code: '', room: null, timer: 0, busy: false, fail: 0, joinedAt: 0, startedFor: 0, inMatch: false, match: 0, stage: 1,
     sent: 0, kind: 0, killMark: 0, seen: {}, heard: {}, queue: [], queueT: 0, final: null, note: '', noteErr: false, pending: null,
   };
   const ATTACKS = { 1: ['divers', 'seekers', 'snipers', 'phantoms', 'bombers'], 2: ['lancers', 'tank', 'spinner', 'carrier', 'shieldwall'] };
@@ -8330,8 +8444,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         if (cur && Number(cur.at) > Date.now() - 6 * 3600e3) continue; // someone is using that number
         vs.joinedAt = Date.now();
         vs.stage = Math.min(saved.unlocked, STAGES.length);
-        await board.put(roomPath(code), { at: { '.sv': 'timestamp' }, host: saved.pid, st: 'lobby', mode: 'vs', stage: vs.stage, go: 0, p: { [saved.pid]: vsStatus() } });
-        vsEnter(code, 0, { at: Date.now(), host: saved.pid, st: 'lobby', mode: 'vs', stage: vs.stage, go: 0, p: { [saved.pid]: vsStatus() } });
+        await board.put(roomPath(code), { at: { '.sv': 'timestamp' }, host: saved.pid, st: 'lobby', mode: vs.mode, stage: vs.stage, go: 0, p: { [saved.pid]: vsStatus() } });
+        vsEnter(code, 0, { at: Date.now(), host: saved.pid, st: 'lobby', mode: vs.mode, stage: vs.stage, go: 0, p: { [saved.pid]: vsStatus() } });
         tgNote('방을 만들었어요! 친구 초대하기를 눌러 방 번호를 보내 주세요.');
         return;
       }
@@ -8357,14 +8471,16 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         return;
       }
       const ids = Object.keys(room.p);
-      if (!ids.includes(saved.pid) && ids.length >= ROOM_MAX) {
-        tgNote(`${code}번 방이 꽉 찼어요 (${ROOM_MAX}명).`, true);
+      const max = room.mode === 'coop' ? 2 : ROOM_MAX;
+      if (!ids.includes(saved.pid) && ids.length >= max) {
+        tgNote(`${code}번 방이 꽉 찼어요 (${max}명).`, true);
         return;
       }
+      vs.mode = room.mode === 'coop' ? 'coop' : 'vs';
       vs.joinedAt = Date.now();
       await board.put(`${roomPath(code)}/p/${saved.pid}`, vsStatus());
       vsEnter(code, Number(room.go) || 0, null);
-      tgNote(room.st === 'go' && ids.length ? '친구들이 대결 중이에요. 이번 판이 끝나면 같이 출발해요.' : '방에 들어왔어요! 방장이 출발을 누르면 시작해요.');
+      tgNote(vs.mode === 'coop' ? '방에 들어왔어요! 친구와 연결하는 중이에요.' : room.st === 'go' && ids.length ? '친구들이 대결 중이에요. 이번 판이 끝나면 같이 출발해요.' : '방에 들어왔어요! 방장이 출발을 누르면 시작해요.');
     } catch (err) {
       tgNote(roomError(err), true);
     } finally {
@@ -8382,6 +8498,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const alone = !vs.room || Object.keys(vs.room.p || {}).length <= 1;
     window.clearTimeout(vs.timer);
     Object.assign(vs, { code: '', room: null, inMatch: false, final: null, queue: [] });
+    if (coop.link) coopSend({ t: 'bye' });
+    coopDrop();
     if (code) board.del(alone ? roomPath(code) : `${roomPath(code)}/p/${saved.pid}`).catch(() => {});
     tgNote(note || '');
     if (state === 'together') renderTogether();
@@ -8405,7 +8523,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       vs.fail += 1;
       if (state === 'together' && vs.fail >= 3) tgNote('연결이 불안정해요. 다시 연결하는 중…', true);
     } finally {
-      if (vs.code === code) vsSchedule(vs.inMatch ? 1000 : 1500);
+      const pairing = coop.link && !coop.link.open && !coop.link.relay;
+      if (vs.code === code) vsSchedule(vs.inMatch ? 1000 : pairing ? 600 : 1500);
     }
   }
   const fighting = (p, id) => p.al === true && Date.now() - ((vs.heard[id] && vs.heard[id].at) || 0) < VS_SILENT;
@@ -8437,7 +8556,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     if (room.host !== saved.pid && Number(room.stage) >= 1) vs.stage = Number(room.stage);
     const go = Number(room.go) || 0;
-    if (go > vs.startedFor) { // the host pressed start
+    if (room.mode === 'coop') { // two seats; the phones talk to each other directly
+      coopRoom(room);
+      vs.startedFor = Math.max(vs.startedFor, go);
+    } else if (go > vs.startedFor) { // the host pressed start
       vs.startedFor = go;
       if (state === 'together' || state === 'hangar' || (state === 'result' && run.vs)) vsStart(room, go);
     }
@@ -8449,6 +8571,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   async function vsGo() {
     const room = vs.room;
     if (!room || !isHost() || vs.busy) return;
+    if (room.mode === 'coop') {
+      coopGo();
+      return;
+    }
     if (Object.keys(room.p).length < 2) {
       tgNote('친구가 한 명 이상 들어와야 출발할 수 있어요.', true);
       return;
@@ -8533,7 +8659,24 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     rows.sort((a, b) => b.sc - a.sc);
     return rows;
   }
+  function renderCoopPanel() {
+    const c = coop.on ? coop.other : null;
+    if (!c) return false;
+    const p = c.player;
+    const mx = (c.stats && c.stats.maxHp) || 100;
+    const row = document.createElement('div');
+    row.className = `vs-row${p.alive ? '' : ' is-out'}`;
+    row.innerHTML = '<em></em><span></span><i class="vs-hp"><i></i></i><b></b>';
+    row.querySelector('em').textContent = '';
+    row.querySelector('span').textContent = c.name;
+    row.querySelector('.vs-hp i').style.width = `${p.alive ? clamp((p.hp / mx) * 100, 0, 100) : 0}%`;
+    row.querySelector('b').textContent = p.alive ? `${Math.ceil(p.hp)}` : `${Math.max(0, Math.ceil(p.downT || 0))}초`;
+    ui.vsPanel.replaceChildren(row);
+    ui.vsPanel.hidden = false;
+    return true;
+  }
   function renderVsPanel() {
+    if (renderCoopPanel()) return;
     const show = run.vs && vs.inMatch && !!vs.code;
     ui.vsPanel.hidden = !show;
     if (!show) return;
@@ -8577,9 +8720,19 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   function renderTogether() {
     const inRoom = !!vs.code;
+    const mode = inRoom && vs.room && vs.room.mode === 'coop' ? 'coop' : inRoom && vs.room ? 'vs' : vs.mode;
+    const coopRoomOn = mode === 'coop';
     ui.tgEntry.hidden = inRoom;
     ui.tgLobby.hidden = !inRoom;
     ui.tgBack.hidden = inRoom;
+    ui.tgTitle.textContent = coopRoomOn ? '협동 방' : '대결 방';
+    for (const t of ui.tgTabs) {
+      t.setAttribute('aria-selected', String(t.dataset.tgMode === mode));
+      t.disabled = inRoom;
+    }
+    ui.tgLede.textContent = coopRoomOn
+      ? '둘이 한 전장에서 함께 싸워요. 방을 만든 사람 폰이 게임을 돌리고, 친구 폰은 화면을 받아서 같이 조종해요. 두 사람 모두 와이파이에 있으면 가장 잘 돼요.'
+      : '방을 만들어 친구를 부르거나, 친구가 알려 준 방 번호로 들어가요. 각자 자기 폰에서 같은 지역을 동시에 출발하고, 점수가 가장 높은 사람이 이겨요. 적을 많이 잡으면 친구 화면에 적을 보내 방해할 수 있어요.';
     ui.tgNote.textContent = vs.note;
     ui.tgNote.classList.toggle('is-error', vs.noteErr);
     if (!inRoom) return;
@@ -8608,7 +8761,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
       return li;
     });
-    for (let k = players.length; k < ROOM_MAX; k++) {
+    for (let k = players.length; k < (coopRoomOn ? 2 : ROOM_MAX); k++) {
       const li = document.createElement('li');
       li.className = 'tg-player is-empty';
       li.innerHTML = '<span class="tg-dot"></span><span class="tg-who">빈 자리</span><span></span>';
@@ -8634,6 +8787,16 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         return b;
       }));
     }
+    if (coopRoomOn) {
+      const L = coop.link;
+      const status = !L || players.length < 2 ? '친구가 들어오길 기다리는 중'
+        : L.open ? '친구와 직접 연결됐어요 (빠름)' : L.relay ? '서버를 거쳐 연결됐어요 (조금 느릴 수 있어요)' : '친구와 연결하는 중…';
+      ui.tgGo.hidden = !host;
+      ui.tgGo.disabled = !room || players.length < 2 || !coopReady();
+      ui.tgGo.textContent = !room ? '방을 여는 중…' : players.length < 2 ? '친구를 기다리는 중' : coopReady() ? '둘이 함께 출발' : '연결하는 중…';
+      if (!vs.noteErr) ui.tgNote.textContent = host ? status : `${status}. 방장이 출발을 누르면 시작해요.`;
+      return;
+    }
     const busy = !!room && players.some(([id, p]) => p.m === room.go && room.go > 0 && fighting(p, id));
     ui.tgGo.hidden = !host;
     ui.tgGo.disabled = !room || players.length < 2 || busy;
@@ -8642,7 +8805,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   async function vsInvite() {
     const url = `${location.href.split(/[?#]/)[0]}?room=${vs.code}`;
-    const text = `전투의 미 대결 방 ${vs.code}번에서 같이 하자! 링크를 누르면 바로 들어와져.`;
+    const text = `전투의 미 ${vs.room && vs.room.mode === 'coop' ? '협동' : '대결'} 방 ${vs.code}번에서 같이 하자! 링크를 누르면 바로 들어와져.`;
     try {
       if (navigator.share) {
         await navigator.share({ title: '전투의 미 대결', text, url });
@@ -8659,6 +8822,1128 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       window.prompt('아래 글을 복사해서 친구에게 보내세요.', `${text} ${url}`);
     }
   }
+
+  // ---------- co-op: two ships on one battlefield ----------
+  // The room's owner (the host) runs the whole fight. The friend's phone (the guest) sends where its ship is and
+  // draws what the host sends back about fifteen times a second; it checks its own ship against the bullets it
+  // sees and tells the host when it was hit. Each ship keeps its own fighter, weapons and skill tree.
+  // Phones talk directly (WebRTC) when they can, and through the room in the database when they cannot.
+  const COOP_REVIVE = 12; // seconds before a downed ship comes back while the other one fights on
+  const COOP_SNAP = 1 / 15; // seconds between snapshots on a direct link
+  const COOP_SLOW = 0.2; // ... and through the database
+  const ICE = [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }];
+  const coop = {
+    on: false, role: '', link: null, info: null, ally: null, other: null, hostPlayer: null, askId: 0,
+    snapT: 0, inT: 0, seq: 0, ev: [], quiet: 0, lastIn: 0, asked: null, hostTree: null, map: new Map(), shots: new Map(),
+    mine: new Map(), snapAt: 0, gap: COOP_SNAP, lost: false, ended: false, hostSt: 'p', partner: '', pauseRemote: false,
+  };
+  const ENEMY_KINDS = Object.keys(ENEMY);
+  const STEPS = ['', 'hover', 'dash', 'aim'];
+  const BULLET_TONES = Object.keys(EBULLET);
+  const ITEM_KINDS = ['coin', 'heal', 'magnet', 'bomb', 'chest', 'mystery'];
+  const UFX_TYPES = ['meteor', 'pillar', 'shell', 'fire', 'hole'];
+  const WEAPON_IDS = [...Object.keys(WEAPONS), 'ult'];
+  const ULT_IDS = Object.keys(ULTS);
+  const PALETTE = [...new Set(['#7fe7ff', ...Object.values(TIER_TONES).flat(), ...Object.values(EVO_TONES), ...SHIPS.map((sd) => sd.tone),
+    '#b8f36b', '#ffa94d', '#ff7a3d', '#ff6f91', '#c9b6ff', '#ff5a3d', COLOR.orange, COLOR.cyan, COLOR.amber, COLOR.violet, COLOR.teal,
+    COLOR.coral, COLOR.lime, COLOR.danger, COLOR.steel, COLOR.ink, '#ffffff', '#ffe08a', '#9ad8ff', '#bfefff', '#fff3b0', '#ffd27a'])];
+  const colorIdx = (c) => Math.max(0, PALETTE.indexOf(c));
+  const coopHost = () => coop.on && coop.role === 'host';
+  const coopGuest = () => coop.on && coop.role === 'guest';
+  let entityId = 0;
+  const nextId = () => (entityId = (entityId % 32000) + 1);
+
+  // --- the link between the two phones ---
+  function coopSend(msg) {
+    const L = coop.link;
+    if (!L) return;
+    if (L.ctl && L.ctl.readyState === 'open') {
+      try {
+        L.ctl.send(JSON.stringify(msg));
+        return;
+      } catch {
+        /* fall through to the database */
+      }
+    }
+    if (L.relay) {
+      L.out.push([++L.outId, msg]);
+      if (L.out.length > 60) L.out.splice(0, L.out.length - 60);
+    }
+  }
+  function coopSendSnap(buf) {
+    const L = coop.link;
+    if (!L) return;
+    if (L.snap && L.snap.readyState === 'open') {
+      if (L.snap.bufferedAmount < 512 * 1024) {
+        try {
+          L.snap.send(buf);
+        } catch {
+          /* dropped: the next one follows shortly */
+        }
+      }
+      return;
+    }
+    if (L.relay) L.relaySnap = buf;
+  }
+  const coopReady = () => !!coop.link && (coop.link.open || coop.link.relay) && !!coop.info;
+  function linkNew(role, peerId) {
+    return {
+      role, peerId, pc: null, ctl: null, snap: null, open: false, relay: false, sid: '', hello: '', answered: false,
+      made: Date.now(), out: [], outId: 0, inId: 0, relaySnap: null, relayIn: null, relayBusy: false, relayT: 0, heard: Date.now(),
+      nonce: Math.random().toString(36).slice(2, 10), peerNonce: '',
+    };
+  }
+  function linkClose(L) {
+    if (!L) return;
+    L.closed = true;
+    try {
+      if (L.pc) L.pc.close();
+    } catch {
+      /* already closed */
+    }
+  }
+  function waitIce(pc, ms) {
+    return new Promise((resolve) => {
+      if (pc.iceGatheringState === 'complete') {
+        resolve();
+        return;
+      }
+      const t = window.setTimeout(resolve, ms);
+      pc.addEventListener('icegatheringstatechange', () => {
+        if (pc.iceGatheringState === 'complete') {
+          window.clearTimeout(t);
+          resolve();
+        }
+      });
+    });
+  }
+  function attachChannel(L, ch) {
+    if (ch.label === 'snap') {
+      ch.binaryType = 'arraybuffer';
+      L.snap = ch;
+      ch.onmessage = (e) => {
+        L.heard = Date.now();
+        coopSnapIn(e.data);
+      };
+      return;
+    }
+    L.ctl = ch;
+    ch.onopen = () => {
+      L.open = true;
+      L.relay = false;
+      L.heard = Date.now();
+      coopLinked();
+    };
+    ch.onmessage = (e) => {
+      L.heard = Date.now();
+      try {
+        coopCtl(JSON.parse(e.data));
+      } catch {
+        /* not ours */
+      }
+    };
+    ch.onclose = () => {
+      if (coop.link === L && !L.closed) {
+        L.open = false;
+        L.relay = true; // keep going through the database
+        L.made = Date.now();
+        coopLinked();
+      }
+    };
+    if (ch.readyState === 'open') ch.onopen();
+  }
+  const canRtc = () => typeof window.RTCPeerConnection === 'function';
+  async function coopOffer(L) {
+    if (!canRtc()) return;
+    linkClose({ pc: L.pc });
+    const pc = new RTCPeerConnection({ iceServers: ICE });
+    L.pc = pc;
+    L.sid = Math.random().toString(36).slice(2, 10);
+    L.answered = false;
+    L.made = Date.now();
+    attachChannel(L, pc.createDataChannel('ctl', { ordered: true }));
+    attachChannel(L, pc.createDataChannel('snap', { ordered: false, maxRetransmits: 0 }));
+    await pc.setLocalDescription(await pc.createOffer());
+    await waitIce(pc, 2500);
+    if (L.closed || coop.link !== L) return;
+    await board.put(`${roomPath()}/sig/${saved.pid}`, { to: L.peerId, d: JSON.stringify({ sid: L.sid, type: 'offer', sdp: pc.localDescription.sdp }) });
+  }
+  async function coopAnswer(L, d) {
+    L.sid = d.sid;
+    if (!canRtc()) return;
+    linkClose({ pc: L.pc });
+    const pc = new RTCPeerConnection({ iceServers: ICE });
+    L.pc = pc;
+    L.made = Date.now();
+    pc.ondatachannel = (e) => attachChannel(L, e.channel);
+    await pc.setRemoteDescription({ type: 'offer', sdp: d.sdp });
+    await pc.setLocalDescription(await pc.createAnswer());
+    await waitIce(pc, 2500);
+    if (L.closed || coop.link !== L) return;
+    await board.put(`${roomPath()}/sig/${saved.pid}`, { to: L.peerId, d: JSON.stringify({ sid: d.sid, type: 'answer', sdp: pc.localDescription.sdp }) });
+  }
+  const parseSig = (s) => {
+    try {
+      const d = JSON.parse(s && s.d);
+      return d && typeof d === 'object' ? d : null;
+    } catch {
+      return null;
+    }
+  };
+  // Called with every read of a co-op room: pairs the two phones up.
+  function coopRoom(room) {
+    const ids = Object.keys(room.p);
+    const other = ids.find((id) => id !== saved.pid) || '';
+    if (!other) {
+      if (coop.link) coopDrop('친구가 방에서 나갔어요.');
+      return;
+    }
+    const host = room.host === saved.pid;
+    let L = coop.link;
+    if (!L || L.peerId !== other || L.role !== (host ? 'host' : 'guest')) {
+      coopDrop();
+      L = coop.link = linkNew(host ? 'host' : 'guest', other);
+      if (!host) { // ask the host for a fresh offer
+        L.hello = Math.random().toString(36).slice(2, 10);
+        board.put(`${roomPath()}/sig/${saved.pid}`, { to: room.host, d: JSON.stringify({ sid: L.hello, type: 'hello' }) }).catch(() => {});
+      }
+    }
+    const sig = room.sig || {};
+    if (host) {
+      const d = sig[other] && sig[other].to === saved.pid ? parseSig(sig[other]) : null;
+      if (d && d.type === 'hello' && d.sid !== L.hello) { // the friend (re)arrived: offer a connection
+        L.hello = d.sid;
+        L.open = false;
+        coopOffer(L).catch(() => {});
+      } else if (d && d.type === 'answer' && d.sid === L.sid && !L.answered && L.pc) {
+        L.answered = true;
+        L.pc.setRemoteDescription({ type: 'answer', sdp: d.sdp }).catch(() => {});
+      }
+    } else {
+      const d = sig[room.host] && sig[room.host].to === saved.pid ? parseSig(sig[room.host]) : null;
+      if (d && d.type === 'offer' && d.sid !== L.sid) coopAnswer(L, d).catch(() => {});
+    }
+    // no direct line after a while: go through the database instead
+    if (!L.open && !L.relay && Date.now() - L.made > 12000) {
+      L.relay = true;
+      coopLinked();
+    }
+  }
+  function coopDrop(note) {
+    if (coop.link) linkClose(coop.link);
+    coop.link = null;
+    coop.info = null;
+    if (coop.on) coopLost();
+    if (note && state === 'together') tgNote(note);
+  }
+  // both ways open: introduce ourselves (name, fighter, skill tree)
+  function coopLinked() {
+    coopSend({ t: 'hello', name: saved.name || '조종사', ship: saved.ship, tree: saved.tree });
+    if (state === 'together') renderTogether();
+  }
+  // the database route: each phone keeps one record with its recent messages and, for the host, the latest snapshot
+  async function coopRelay() {
+    const L = coop.link;
+    if (!L || !L.relay || L.relayBusy || !vs.code) return;
+    L.relayBusy = true;
+    try {
+      const mine = { n: L.nonce, o: L.out };
+      if (L.relaySnap) mine.s = b64(L.relaySnap);
+      if (coop.role === 'guest' && coop.lastInput) mine.i = coop.lastInput;
+      await board.put(`${roomPath()}/rl/${saved.pid}`, JSON.stringify(mine)); // the latest snapshot stays until a newer one replaces it
+      const theirs = await board.get(`${roomPath()}/rl/${L.peerId}`);
+      if (typeof theirs === 'string' && theirs !== L.relayIn) {
+        L.relayIn = theirs;
+        L.heard = Date.now();
+        const d = JSON.parse(theirs);
+        if (d.n !== L.peerNonce) { // the other phone started over: count its messages from the beginning
+          L.peerNonce = d.n;
+          L.inId = 0;
+        }
+        for (const [id, msg] of Array.isArray(d.o) ? d.o : []) {
+          if (id > L.inId) {
+            L.inId = id;
+            coopCtl(msg);
+          }
+        }
+        if (d.i && coop.ally) coopInput(d.i);
+        if (d.s) coopSnapIn(unb64(d.s));
+      }
+    } catch {
+      /* try again next time */
+    } finally {
+      L.relayBusy = false;
+    }
+  }
+  function b64(buf) {
+    const bytes = new Uint8Array(buf);
+    let s = '';
+    for (let i = 0; i < bytes.length; i += 8192) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192));
+    return btoa(s);
+  }
+  function unb64(s) {
+    const bin = atob(s);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out.buffer;
+  }
+
+  // --- messages ---
+  function coopCtl(m) {
+    if (!m || typeof m !== 'object') return;
+    if (m.t === 'hello') {
+      coop.info = { name: cleanName(m.name) || '친구', ship: SHIPS.some((sd) => sd.id === m.ship) ? m.ship : 'star', tree: cleanTree(m.tree) };
+      coop.partner = coop.info.name;
+      if (state === 'together') renderTogether();
+    } else if (m.t === 'start' && coop.link && coop.link.role === 'guest') {
+      coopGuestStart(m);
+    } else if (m.t === 'in' && coop.ally) {
+      coopInput(m.v);
+    } else if (m.t === 'hit') {
+      allyHit(m);
+    } else if (m.t === 'pick') {
+      allyPick(m);
+    } else if (m.t === 'reroll') {
+      allyReroll(m);
+    } else if (m.t === 'choose' && coopGuest()) {
+      coopGuestChoose(m);
+    } else if (m.t === 'pause') {
+      if (state === 'playing' || (state === 'choice' && choice && choice.source === 'wait')) {
+        coop.pauseRemote = true;
+        pause();
+      }
+    } else if (m.t === 'resume') {
+      if (state === 'paused') {
+        coop.pauseRemote = true;
+        resume();
+      }
+    } else if (m.t === 'end' && coopGuest()) {
+      coopGuestEnd(m);
+    } else if (m.t === 'bye' && coopHost()) {
+      coopLost('친구가 협동에서 나갔어요.');
+    }
+  }
+  function coopInput(v) {
+    const a = coop.ally;
+    if (!a || !Array.isArray(v)) return;
+    a.input = { x: Number(v[0]) || a.player.x, y: Number(v[1]) || a.player.y, b: clamp(Number(v[2]) || 0, -1, 1) };
+    a.inAt = Date.now();
+  }
+
+  // --- a ship's own context: whose weapons, stats and skill tree are in play ---
+  const RUN_OWN = ['ship', 'rerolls', 'revives', 'magT', 'guard', 'panic', 'ults', 'fused'];
+  let ctxNow = null;
+  function withCtx(c, fn) {
+    if (!c || ctxNow === c) return fn();
+    const keep = { player, build, stats, gun, hitbox, treeCtx, ctxNow, run: {} };
+    for (const k of RUN_OWN) keep.run[k] = run[k];
+    player = c.player;
+    build = c.build;
+    stats = c.stats;
+    gun = c.gun;
+    hitbox = c.hitbox;
+    treeCtx = c.tree;
+    for (const k of RUN_OWN) run[k] = c.run[k];
+    ctxNow = c;
+    try {
+      return fn();
+    } finally {
+      c.stats = stats;
+      c.build = build;
+      for (const k of RUN_OWN) c.run[k] = run[k];
+      player = keep.player;
+      build = keep.build;
+      stats = keep.stats;
+      gun = keep.gun;
+      hitbox = keep.hitbox;
+      treeCtx = keep.treeCtx;
+      ctxNow = keep.ctxNow;
+      for (const k of RUN_OWN) run[k] = keep.run[k];
+    }
+  }
+  function shipCtx(info) {
+    const tree = info.tree || {};
+    const ship = info.ship;
+    return {
+      name: info.name, ship, tree,
+      player: { x: W / 2, y: H - 90, hp: 100, invuln: 1.5, bank: 0, prevX: W / 2, alive: true, shield: (tree.barrier || 0) > 0, shieldT: 0, downT: 0 },
+      build: { weapons: [], passives: [] }, stats: null, gun: { cd: 0.4, a: 0 }, hitbox: shipOf(ship).hitbox,
+      run: {
+        ship, rerolls: tree.reroll || 0, revives: tree.revive || 0, magT: AUTOMAG_EVERY[(tree.automag || 0) - 1] || 0,
+        guard: tree.guardian || 0, panic: tree.panic || 0, ults: 0, fused: [],
+      },
+      levels: 0, chests: 0, start: false, asking: null, chestSkip: false, input: null, inAt: Date.now(),
+    };
+  }
+  // enemies go after whichever ship is closer
+  function aimAt(e) {
+    const a = coop.ally && coop.ally.player;
+    const h = coop.hostPlayer;
+    if (!a || !a.alive) return h;
+    if (!h.alive) return a;
+    return (e.x - a.x) ** 2 + (e.y - a.y) ** 2 < (e.x - h.x) ** 2 + (e.y - h.y) ** 2 ? a : h;
+  }
+
+  // --- host: starting, the ally's turn, hits, downs, choices ---
+  function coopGo() {
+    const room = vs.room;
+    if (!room || !isHost() || !coopReady()) return;
+    const go = (Number(room.go) || 0) + 1;
+    board.patch(roomPath(), { go, st: 'go', stage: vs.stage }).catch(() => {});
+    vs.startedFor = go;
+    coopSend({ t: 'start', stage: vs.stage, go, name: saved.name || '조종사', ship: saved.ship, tree: saved.tree });
+    coopHostStart(vs.stage);
+  }
+  function coopHostStart(stageNo) {
+    startStage(clamp(stageNo - 1, 0, ENDLESS));
+    Object.assign(coop, { on: true, role: 'host', lost: false, ended: false, seq: 0, snapT: 0, ev: [], askId: 0, hostPlayer: player, pauseRemote: false });
+    run.coop = true;
+    const a = shipCtx(coop.info);
+    coop.ally = a;
+    coop.other = a;
+    player.x = W * 0.36;
+    a.player.x = W * 0.64;
+    a.player.prevX = a.player.x;
+    withCtx(a, () => {
+      recompute();
+      player.hp = stats.maxHp;
+    });
+    a.levels = a.tree.headstart || 0;
+    a.start = (a.tree.pick || 0) > 0;
+    showBanner('협동 출격!', `${a.name}님과 함께 싸워요`, false);
+    announce(`협동 출격! ${a.name}님과 함께 싸워요.`);
+    hudDirty = true;
+  }
+  function coopHostStep(dt) {
+    const a = coop.ally;
+    if (!a) return;
+    const p = a.player;
+    if (a.input && p.alive) {
+      const k = Math.min(1, dt * 18);
+      p.x += (clamp(a.input.x, 14, W - 14) - p.x) * k;
+      p.y += (clamp(a.input.y, 74, H - 26) - p.y) * k;
+    }
+    withCtx(a, () => {
+      if (!player.alive) return;
+      updatePlayer(dt);
+      if (a.input) player.bank = a.input.b;
+      updateWeapons(dt);
+      updateGun(dt, stats.cdMul * (liveBoss() ? stats.bossHaste : 1));
+    });
+    for (const [ship, c] of [[coop.hostPlayer, null], [p, a]]) { // downed ships come back while the other one holds on
+      if (ship.alive || !(ship.downT > 0)) continue;
+      ship.downT -= dt;
+      if (ship.downT <= 0) coopRevive(c);
+    }
+    if (coop.link && Date.now() - coop.link.heard > 9000) coopLost('친구와 연결이 끊겼어요. 혼자 계속 싸워요.');
+  }
+  function coopRevive(c) {
+    withCtx(c, () => {
+      Object.assign(player, { alive: true, hp: Math.round(stats.maxHp * 0.5), invuln: 3, x: W / 2, y: H - 90, prevX: W / 2, downT: 0 });
+      rings.push({ x: player.x, y: player.y, r: 6, max: 120, life: 0.6, full: 0.6, color: COLOR.teal, wide: true });
+      addText(player.x, player.y - 34, c ? `${c.name} 다시 출격!` : '다시 출격!', COLOR.teal, 1.6, 14);
+    });
+    sfx.play('evolve');
+    hudDirty = true;
+  }
+  // a ship lost all its health: in co-op the run goes on while the other ship flies
+  function shipDown() {
+    if (!coopHost()) {
+      die();
+      return;
+    }
+    player.alive = false;
+    player.hp = 0;
+    explode(player.x, player.y, COLOR.cyan, 'big');
+    sfx.play('bigBoom');
+    const other = ctxNow ? coop.hostPlayer : coop.ally && coop.ally.player;
+    if (!other || !other.alive) { // both down: the run is over
+      state = 'dying';
+      endT = 1.8;
+      music.stop();
+      releasePointer();
+      announce('둘 다 격추당했어요.');
+      return;
+    }
+    player.downT = COOP_REVIVE;
+    addText(player.x, player.y - 40, ctxNow ? `${ctxNow.name} 격추! ${COOP_REVIVE}초 뒤 다시 출격` : `격추! ${COOP_REVIVE}초 뒤 다시 출격해요`, COLOR.coral, 2, 14);
+    hudDirty = true;
+  }
+  function allyHit(m) {
+    const a = coop.ally;
+    if (!a || !a.player.alive || state !== 'playing') return;
+    let dmg = 0;
+    if (m.k === 's') {
+      const i = eShots.findIndex((b) => b.id === m.id);
+      if (i >= 0) {
+        dmg = eShots[i].dmg;
+        removeAt(eShots, i);
+      } else dmg = 8 * hitScale();
+    } else if (m.k === 't') {
+      const e = enemies.find((x) => x.id === m.id && !x.dead);
+      dmg = (e ? e.touch : 6) * hitScale();
+      if (e && !e.boss && ENEMY[e.kind].kamikaze) kill(e);
+    } else dmg = 16 * hitScale();
+    withCtx(a, () => hurt(dmg));
+    const r2 = 60 * 60; // a hit sweeps the bullets right around the ship, as it does for the host
+    for (let i = eShots.length - 1; i >= 0; i--) {
+      const b = eShots[i];
+      if ((b.x - a.player.x) ** 2 + (b.y - a.player.y) ** 2 < r2) removeAt(eShots, i);
+    }
+  }
+  const coopWaiting = () => !!coop.ally && coopHost() && (!!coop.ally.asking || coop.ally.levels > 0 || coop.ally.chests > 0 || coop.ally.start);
+  function buildView(c) {
+    return {
+      weapons: c.build.weapons.map((w) => ({ id: w.id, lv: w.lv, evolved: w.evolved, ult: w.ult, from: w.from })),
+      passives: c.build.passives.map((p) => ({ id: p.id, lv: p.lv })),
+    };
+  }
+  function coopAsk() {
+    const a = coop.ally;
+    if (!a || a.asking || state === 'paused') return;
+    let req = null;
+    if (a.start) {
+      a.start = false;
+      req = { source: 'start', eyebrow: '출격 준비', title: '시작 무기를 고르세요', options: Object.keys(WEAPONS).map((id) => ({ kind: 'weapon', id, lv: 1 })) };
+    } else if (a.chests > 0) req = withCtx(a, () => chestRequest(a));
+    else if (a.levels > 0) req = withCtx(a, () => ({ source: 'level', eyebrow: `레벨 업 · Lv ${run.level}`, title: '스킬을 하나 고르세요', options: rollOptions(choiceCount()) }));
+    if (!req) return;
+    a.asking = { ...req, id: ++coop.askId };
+    coopSend({ t: 'choose', ...a.asking, build: buildView(a), rerolls: a.run.rerolls });
+  }
+  function chestRequest(a) {
+    const offers = [];
+    if (!a.chestSkip) {
+      const ready = build.weapons.filter(canEvolve);
+      if (ready.length) offers.push({ kind: 'evolve', id: pick(ready).id });
+      const pair = ultPair();
+      if (pair) offers.push({ kind: 'ult', a: pair[0], b: pair[1], ult: ultFor(pair[0], pair[1]) });
+    }
+    if (offers.length) {
+      offers.push({ kind: 'skip' });
+      return { source: 'chest', eyebrow: '보급 상자', title: offers.some((o) => o.kind === 'ult') ? '궁극 합체를 할 수 있어요!' : '합체할 수 있어요!', options: offers };
+    }
+    return { source: 'chest', eyebrow: '보급 상자', title: '하나를 고르세요', options: rollOptions(choiceCount()) };
+  }
+  function allyPick(m) {
+    const a = coop.ally;
+    const req = a && a.asking;
+    if (!req || req.id !== m.id) return;
+    const o = req.options[Number(m.i)];
+    if (!o) return;
+    a.asking = null;
+    if (o.kind === 'skip') a.chestSkip = true; // the crate stays: next time it offers an ordinary pick
+    else {
+      withCtx(a, () => applyOption(o));
+      if (req.source === 'level') a.levels = Math.max(0, a.levels - 1);
+      else if (req.source === 'chest') {
+        a.chests = Math.max(0, a.chests - 1);
+        a.chestSkip = false;
+      }
+    }
+    hudDirty = true;
+    coopAsk();
+    if (state === 'choice' && choice && choice.source === 'wait' && !coopWaiting()) proceed();
+  }
+  function allyReroll(m) {
+    const a = coop.ally;
+    const req = a && a.asking;
+    if (!req || req.id !== m.id || a.run.rerolls <= 0) return;
+    if (req.source !== 'level' && !(req.source === 'chest' && req.options[0] && req.options[0].kind !== 'evolve' && req.options[0].kind !== 'ult')) return;
+    a.run.rerolls -= 1;
+    const options = withCtx(a, () => rollOptions(req.options.length));
+    a.asking = { ...req, options, id: ++coop.askId };
+    coopSend({ t: 'choose', ...a.asking, build: buildView(a), rerolls: a.run.rerolls });
+  }
+  // the friend left or the line went dead: the host keeps playing alone, the guest's run ends
+  function coopLost(note) {
+    if (!coop.on || coop.lost) return;
+    coop.lost = true;
+    if (coop.role === 'host') {
+      coop.ally = null;
+      coop.other = null;
+      if (state === 'choice' && choice && choice.source === 'wait') proceed();
+      if (note) {
+        addText(W / 2, hudBottom + 60, note, COLOR.coral, 3, 14);
+        announce(note);
+      }
+    } else if (!coop.ended) {
+      coopGuestEnd({ lost: true });
+    }
+  }
+
+  // --- host: what the guest gets to see ---
+  // Header (JSON): everything small. Body (16-bit numbers): enemies, enemy bullets, our shots, experience gems.
+  function coopRec(ev) {
+    if (!coopHost() || coop.ev.length >= 400) return;
+    if (ev[0] === 'sf' && coop.ev.some((x) => x[0] === 'sf' && x[1] === ev[1])) return; // one of each sound per snapshot
+    coop.ev.push(ev);
+  }
+  function shipState(c) {
+    const p = c ? c.player : coop.hostPlayer;
+    const st = c ? c.stats : stats;
+    const b = c ? c.build : build;
+    const g = c ? c.gun : gun;
+    return {
+      x: Math.round(p.x * 4) / 4, y: Math.round(p.y * 4) / 4, b: Math.round(p.bank * 100) / 100, hp: Math.ceil(p.hp), mx: st ? st.maxHp : 100,
+      iv: Math.round(Math.max(0, p.invuln) * 100) / 100, al: p.alive ? 1 : 0, dn: Math.ceil(p.downT || 0), sh: p.shield ? 1 : 0,
+      ship: c ? c.run.ship : run.ship, ga: Math.round(g.a * 100) / 100,
+      st: st ? { area: st.area, ultArea: st.ultArea, reachMul: st.reachMul, speedMul: st.speedMul, maxHp: st.maxHp } : null,
+      w: b.weapons.map((w) => [w.id, w.ult || '', w.lv, w.evolved ? 1 : 0, Math.round((w.angle || 0) * 1000) / 1000, Math.round((w.active || 0) * 1000) / 1000,
+        Math.round((w.sweepT || 0) * 1000) / 1000, Math.round((w.charge || 0) * 100) / 100, Math.round((w.t || 0) * 100) / 100,
+        w.ph ? [Math.round(w.ph.x), Math.round(w.ph.y), Math.round(w.ph.ang * 100) / 100] : 0]),
+      pv: b.passives.map((q) => [q.id, q.lv]),
+    };
+  }
+  const I16 = (v) => clamp(Math.round(v), -32767, 32767);
+  function angle16(a) {
+    let x = a % TAU;
+    if (x > Math.PI) x -= TAU;
+    if (x < -Math.PI) x += TAU;
+    return I16(x * 10000);
+  }
+  function coopSnapOut() {
+    const L = coop.link;
+    const slow = L && !L.open;
+    const cap = slow ? { e: 150, b: 260, s: 120, g: 150 } : { e: 260, b: 560, s: 320, g: 360 };
+    const body = [];
+    const listE = enemies.filter((e) => !e.dead && e.t >= 0).slice(0, cap.e);
+    body.push(listE.length);
+    for (const e of listE) {
+      if (!e.id) e.id = nextId();
+      let ang = 0;
+      if (e.kind === 'seeker' || e.kind === 'comet' || e.kind === 'diver') ang = e.angle || 0;
+      else if (e.kind === 'rock') ang = e.rot || 0;
+      else if (e.kind === 'spinner') ang = e.spin || 0;
+      const step = STEPS.indexOf(e.step);
+      const flags = (e.flash > 0 ? 1 : 0) | (e.armed ? 2 : 0) | (e.vx > 0 ? 4 : 0) | (e.boss ? 8 : 0) | (e.linkT > 0 ? 16 : 0) | (e.ghost ? 32 : 0);
+      body.push(e.id, ENEMY_KINDS.indexOf(e.kind), I16(e.x * 4), I16(e.y * 4), angle16(ang), angle16(e.aim || 0), Math.max(0, step),
+        I16((e.st || 0) * 100), I16((e.kind === 'phantom' ? e.alpha : 1) * 1000), flags, I16((e.hp / e.maxHp) * 1000), I16((e.size || 1) * 100), I16(e.r * 10));
+    }
+    const listB = eShots.slice(0, cap.b);
+    body.push(listB.length);
+    for (const b of listB) {
+      if (!b.id) b.id = nextId();
+      body.push(b.id, I16(b.x * 4), I16(b.y * 4), I16(b.vx * 10), I16(b.vy * 10), I16(b.r * 10), BULLET_TONES.indexOf(b.tone) | (b.split ? 256 : 0));
+    }
+    const listS = pShots.slice(-cap.s);
+    body.push(listS.length);
+    for (const s of listS) {
+      if (!s.id) s.id = nextId();
+      const kind = s.kind === 'missile' ? 1 : s.kind === 'orb' ? 2 : s.kind === 'saw' ? 3 : 0;
+      const look = s.spr && s.spr.look ? s.spr.look : null;
+      const color = kind === 0 ? (look ? look[1] : '') : s.tone || '';
+      const packed = (look ? look[0] : 0) | (colorIdx(color) << 2) | ((s.tier || 0) << 9) | (s.trail ? 2048 : 0) | (s.shell ? 4096 : 0) | (s.spiral ? 8192 : 0) | (s.plasma ? 16384 : 0);
+      const a = kind === 3 ? s.spin || 0 : s.a !== undefined ? s.a : Math.atan2(s.vy || 0, s.vx || 0);
+      body.push(s.id, kind, I16(s.x * 4), I16(s.y * 4), angle16(a), I16((s.size || 1) * 100), packed, I16((s.vx || 0) * 10), I16((s.vy || 0) * 10));
+    }
+    const listG = gems.slice(0, cap.g);
+    body.push(listG.length);
+    for (const g of listG) body.push(I16(g.x * 4), I16(g.y * 4), g.v >= 10 ? 2 : g.v >= 3 ? 1 : 0);
+    const b = boss && !boss.dead ? boss : null;
+    const head = {
+      q: ++coop.seq, t: Math.round(run.t * 100) / 100,
+      st: state === 'playing' ? 'p' : state === 'paused' ? 'z' : state === 'choice' ? (choice && choice.source === 'wait' ? 'w' : 'c') : state === 'dying' || state === 'clearing' ? 'd' : 'p',
+      sc: run.score, k: run.kills, lv: run.level, xp: Math.round((run.xp / run.need) * 1000) / 1000, co: Math.floor(run.coins),
+      si: stageIndex, sk: skyIdx, sec: run.sector, en: run.endless ? 1 : 0, fin: director.final ? 1 : 0, cb: run.combo || 0, ct: Math.round((run.comboT || 0) * 100) / 100,
+      fl: Math.round(flash * 100) / 100, shk: Math.round(shake * 10) / 10, cine: Math.round(Math.max(0, cine) * 100) / 100,
+      boss: b ? [b.id || (b.id = nextId()), Math.round((b.hp / b.maxHp) * 1000) / 1000, b.kind] : 0,
+      s: [shipState(null), coop.ally ? shipState(coop.ally) : null],
+      it: items.slice(0, 60).map((it) => [ITEM_KINDS.indexOf(it.kind), Math.round(it.x), Math.round(it.y), Math.round(it.t * 10) / 10]),
+      bm: beams.map((m) => [Math.round(m.x), Math.round(m.y), Math.round(m.width), Math.round(m.warn * 100) / 100, Math.round(m.active * 100) / 100, Math.round(m.full * 100) / 100]),
+      wn: warns.map((w) => [Math.round(w.x), Math.round(w.y), Math.round(w.life * 100) / 100, w.max]),
+      ux: ufx.map((f) => [UFX_TYPES.indexOf(f.type), Math.round(f.x || 0), Math.round(f.y || 0), Math.round((f.t || 0) * 100) / 100, f.T || 0,
+        Math.round(f.r || f.w || f.R || 0), Math.round(f.sx || 0), Math.round(f.sy || 0), Math.round(f.tx || 0), Math.round(f.ty || 0),
+        Math.round((f.spin || f.rot || 0) * 100) / 100, Math.round(f.blastR || 0)]),
+      ev: coop.ev,
+    };
+    coop.ev = [];
+    const headBytes = new TextEncoder().encode(JSON.stringify(head));
+    const off = 4 + headBytes.length + ((4 + headBytes.length) % 2);
+    const buf = new ArrayBuffer(off + body.length * 2);
+    new DataView(buf).setUint32(0, headBytes.length);
+    new Uint8Array(buf, 4, headBytes.length).set(headBytes);
+    new Int16Array(buf, off, body.length).set(body);
+    coopSendSnap(buf);
+  }
+
+  // --- guest: playing on someone else's battlefield ---
+  function coopGuestStart(m) {
+    if (coop.on) return;
+    vs.startedFor = Number(m.go) || vs.startedFor;
+    coop.hostTree = cleanTree(m.tree);
+    startStage(clamp((Number(m.stage) || 1) - 1, 0, ENDLESS));
+    Object.assign(coop, { on: true, role: 'guest', lost: false, ended: false, snapAt: 0, gap: COOP_SNAP, hostSt: 'p', asked: null, pauseRemote: false, lastQ: 0 });
+    run.coop = true;
+    coop.map.clear();
+    coop.shots.clear();
+    coop.mine.clear();
+    coop.partner = cleanName(m.name) || '친구';
+    // the host's ship, drawn with the host's own fighter and skill tree
+    const c = shipCtx({ name: coop.partner, ship: SHIPS.some((sd) => sd.id === m.ship) ? m.ship : 'star', tree: coop.hostTree });
+    withCtx(c, () => recompute());
+    coop.other = c;
+    player.x = W * 0.64;
+    player.invuln = 1.5;
+    pendingStart = false;
+    pendingLevels = 0;
+    pendingChests = 0;
+    build.weapons = [];
+    showBanner('협동 출격!', `${coop.partner}님과 함께 싸워요`, false);
+    announce(`협동 출격! ${coop.partner}님과 함께 싸워요.`);
+    hudDirty = true;
+  }
+  function coopSnapIn(data) {
+    if (!coopGuest() || coop.ended || !(data instanceof ArrayBuffer)) return;
+    let head;
+    let body;
+    try {
+      const n = new DataView(data).getUint32(0);
+      head = JSON.parse(new TextDecoder().decode(new Uint8Array(data, 4, n)));
+      const off = 4 + n + ((4 + n) % 2);
+      body = new Int16Array(data, off, (data.byteLength - off) >> 1);
+    } catch {
+      return;
+    }
+    if (head.q <= (coop.lastQ || 0) && coop.lastQ - head.q < 1000) return; // an old one that arrived late
+    coop.lastQ = head.q;
+    const now = performance.now();
+    if (coop.snapAt) coop.gap = clamp((now - coop.snapAt) / 1000, 0.03, 0.5);
+    coop.snapAt = now;
+    let i = 0;
+    // enemies: kept by id so they glide between snapshots
+    const seen = new Set();
+    const nE = body[i++] || 0;
+    for (let k = 0; k < nE; k++) {
+      const id = body[i++];
+      const kind = ENEMY_KINDS[body[i++]] || 'scout';
+      const x = body[i++] / 4;
+      const y = body[i++] / 4;
+      const ang = body[i++] / 10000;
+      const aim = body[i++] / 10000;
+      const step = STEPS[body[i++]] || '';
+      const st = body[i++] / 100;
+      const alpha = body[i++] / 1000;
+      const flags = body[i++];
+      const hp = body[i++] / 1000;
+      const size = body[i++] / 100;
+      const r = body[i++] / 10;
+      seen.add(id);
+      let e = coop.map.get(id);
+      if (!e || e.kind !== kind) {
+        e = { id, kind, x, y, px: x, py: y, nx: x, ny: y, t: 1, dead: false, maxHp: 1, links: [] };
+        coop.map.set(id, e);
+      }
+      e.px = e.x;
+      e.py = e.y;
+      e.nx = x;
+      e.ny = y;
+      Object.assign(e, { angle: ang, rot: ang, spin: ang, aim, step, st, hover: 1, alpha, flash: flags & 1 ? 0.05 : 0, armed: !!(flags & 2), vx: flags & 4 ? 1 : -1,
+        boss: !!(flags & 8), linkT: 0, ghost: !!(flags & 32), hp, size, r });
+    }
+    for (const id of coop.map.keys()) if (!seen.has(id)) coop.map.delete(id);
+    enemies.length = 0;
+    for (const e of coop.map.values()) enemies.push(e);
+    // enemy bullets and our shots: placed, then moved along their speed until the next snapshot
+    const nB = body[i++] || 0;
+    const shots = new Map();
+    eShots.length = 0;
+    for (let k = 0; k < nB; k++) {
+      const id = body[i++];
+      const b = coop.shots.get(id) || { id, t: 0 };
+      b.x = body[i++] / 4;
+      b.y = body[i++] / 4;
+      b.vx = body[i++] / 10;
+      b.vy = body[i++] / 10;
+      b.r = body[i++] / 10;
+      const tone = body[i++];
+      b.tone = BULLET_TONES[tone & 255] || 'coral';
+      b.split = tone & 256 ? 1 : 0;
+      if (!coop.gone || !coop.gone.has(id)) {
+        shots.set(id, b);
+        eShots.push(b);
+      }
+    }
+    coop.shots = shots;
+    const nS = body[i++] || 0;
+    const mine = new Map();
+    pShots.length = 0;
+    for (let k = 0; k < nS; k++) {
+      const id = body[i++];
+      const kind = body[i++];
+      const s = coop.mine.get(id) || { id, trail: [], last: null };
+      s.kind = ['bolt', 'missile', 'orb', 'saw'][kind] || 'bolt';
+      s.x = body[i++] / 4;
+      s.y = body[i++] / 4;
+      const a = body[i++] / 10000;
+      s.size = body[i++] / 100;
+      const packed = body[i++];
+      s.vx = body[i++] / 10;
+      s.vy = body[i++] / 10;
+      const sprType = packed & 3;
+      const color = PALETTE[(packed >> 2) & 127] || COLOR.cyan;
+      s.tier = (packed >> 9) & 3;
+      s.plasma = !!(packed & 16384);
+      if (s.kind === 'bolt') {
+        s.a = a;
+        s.spr = sprType === 1 ? boltOf(color) : sprType === 2 ? lanceOf(color) : null;
+        s.trail = !!(packed & 2048);
+        s.shell = packed & 4096 ? 1 : 0;
+      } else {
+        s.tone = color;
+        if (s.kind === 'saw') {
+          s.spin = a;
+          s.spiral = !!(packed & 8192);
+          if (!Array.isArray(s.trail)) s.trail = [];
+        }
+      }
+      mine.set(id, s);
+      pShots.push(s);
+    }
+    coop.mine = mine;
+    const nG = body[i++] || 0;
+    gems.length = 0;
+    for (let k = 0; k < nG; k++) {
+      const x = body[i++] / 4;
+      const y = body[i++] / 4;
+      const c = body[i++];
+      gems.push({ x, y, v: c === 2 ? 10 : c === 1 ? 3 : 1 });
+    }
+    coopApplyHead(head);
+  }
+  function coopApplyHead(h) {
+    run.t = h.t;
+    run.score = h.sc;
+    run.kills = h.k;
+    if (h.lv !== run.level) hudDirty = true;
+    run.level = h.lv;
+    run.xp = h.xp;
+    run.need = 1;
+    run.coins = h.co;
+    run.combo = h.cb;
+    run.comboT = h.ct;
+    run.sector = h.sec;
+    director.final = !!h.fin;
+    if (h.si !== stageIndex || h.sk !== skyIdx) { // the endless mode moved on to a new sector
+      stageIndex = h.si;
+      skyIdx = h.sk;
+      stage = run.endless ? endlessStage(h.sec) : STAGES[clamp(h.si, 0, STAGES.length - 1)];
+      paintSky();
+    }
+    flash = Math.max(flash, h.fl || 0);
+    if (h.shk > shake) shake = h.shk;
+    cine = Math.max(cine, h.cine || 0);
+    boss = null;
+    if (h.boss) {
+      const e = coop.map.get(h.boss[0]);
+      if (e) {
+        boss = e;
+        e.hp = h.boss[1];
+        e.maxHp = 1;
+        e.kind = h.boss[2];
+        e.step = 'fight';
+      }
+    }
+    // the ships
+    const [hs, me] = h.s;
+    if (!me) { // the host carried on without us
+      coopGuestEnd({ lost: true });
+      return;
+    }
+    const other = coop.other;
+    if (other && hs) {
+      const op = other.player;
+      op.px = op.x;
+      op.py = op.y;
+      op.nx = hs.x;
+      op.ny = hs.y;
+      if (!op.seen) {
+        op.x = op.px = hs.x;
+        op.y = op.py = hs.y;
+        op.seen = true;
+      }
+      Object.assign(op, { bank: hs.b, hp: hs.hp, invuln: hs.iv, alive: !!hs.al, downT: hs.dn, shield: !!hs.sh });
+      if (hs.st) other.stats = { ...other.stats, ...hs.st };
+      other.gun.a = hs.ga;
+      syncWeapons(other.build, hs.w, hs.pv);
+      other.run.ship = hs.ship;
+    }
+    if (me) {
+      player.hp = me.hp;
+      if (stats && me.st) Object.assign(stats, me.st);
+      if (stats) stats.maxHp = me.mx;
+      // the host's number counts, except just after a hit we reported that the host may not have seen yet
+      player.invuln = coop.hitAt && clock - coop.hitAt < 0.6 ? Math.max(player.invuln, me.iv) : me.iv;
+      if (player.alive && !me.al) {
+        explode(player.x, player.y, COLOR.cyan, 'big');
+        announce(`격추당했어요. ${COOP_REVIVE}초 뒤 다시 출격해요.`);
+      }
+      if (!player.alive && me.al) {
+        player.x = W / 2;
+        player.y = H - 90;
+      }
+      player.alive = !!me.al;
+      player.downT = me.dn;
+      player.shield = !!me.sh;
+      gun.a = me.ga;
+      syncWeapons(build, me.w, me.pv);
+      hudDirty = true;
+    }
+    items.length = 0;
+    for (const [k, x, y, t] of h.it || []) items.push({ kind: ITEM_KINDS[k] || 'coin', x, y, t, v: 1 });
+    beams.length = 0;
+    for (const [x, y, width, warn, active, full] of h.bm || []) beams.push({ x, y, width, warn, active, full });
+    warns.length = 0;
+    for (const [x, y, life, max] of h.wn || []) warns.push({ x, y, life, max });
+    ufx.length = 0;
+    for (const u of h.ux || []) {
+      const type = UFX_TYPES[u[0]];
+      if (!type) continue;
+      const f = { type, x: u[1], y: u[2], t: u[3], T: u[4], sx: u[6], sy: u[7], tx: u[8], ty: u[9], spin: u[10], rot: u[10], blastR: u[11] };
+      if (type === 'pillar') f.w = u[5];
+      else if (type === 'hole') f.R = u[5];
+      else f.r = u[5];
+      ufx.push(f);
+    }
+    for (const ev of h.ev || []) coopEvent(ev);
+    const st = h.st;
+    if (st !== coop.hostSt) {
+      coop.hostSt = st;
+      coopGuestWait();
+    }
+  }
+  // weapons as the host has them, keeping the moving parts we animate between snapshots
+  function syncWeapons(b, list, passives) {
+    const old = b.weapons;
+    b.weapons = (list || []).map(([id, ult, lv, evo, angle, active, sweepT, charge, t, ph], k) => {
+      const w = old[k] && old[k].id === id && (old[k].ult || '') === ult ? old[k] : { id, cd: 0, tick: 0 };
+      Object.assign(w, { id, lv, evolved: !!evo, angle, active, sweepT, charge, t });
+      if (ult) w.ult = ult;
+      if (ph) {
+        w.ph = w.ph || { mode: 'orbit' };
+        Object.assign(w.ph, { x: ph[0], y: ph[1], ang: ph[2] });
+      } else w.ph = null;
+      return w;
+    });
+    b.passives = (passives || []).map(([id, lv]) => ({ id, lv }));
+  }
+  // effects the host made, replayed here
+  function coopEvent(ev) {
+    const [k] = ev;
+    if (k === 'x') explode(ev[1], ev[2], ev[3], ev[4], true);
+    else if (k === 'tx') addText(ev[1], ev[2], ev[3], ev[4], ev[5], ev[6]);
+    else if (k === 'r') rings.push({ x: ev[1], y: ev[2], r: ev[3], max: ev[4], life: ev[5], full: ev[5], color: ev[6], wide: !!ev[7] });
+    else if (k === 'bl') blooms.push({ x: ev[1], y: ev[2], size: ev[3], life: ev[4], full: ev[4], color: ev[5] });
+    else if (k === 'z') {
+      const z = zigzag(ev[1], ev[2], ev[3], ev[4], ev[5], ev[6], !!ev[7]);
+      zaps.push(z);
+    } else if (k === 'rl') rails.push({ x1: ev[1], y1: ev[2], x2: ev[3], y2: ev[4], life: ev[5], full: ev[5] });
+    else if (k === 'bn') showBanner(ev[1], ev[2], ev[3]);
+    else if (k === 'sf') sfx.play(ev[1]);
+    else if (k === 'mu') {
+      if (ev[1]) music.play(ev[1]);
+      else music.stop();
+    }
+  }
+  // the guest's own frame: move our ship, let the world glide, check for hits, send where we are
+  function coopGuestFrame(dt) {
+    updateStars(dt);
+    const playing = state === 'playing';
+    if (playing && player.alive) updatePlayer(dt);
+    else if (player.invuln > 0) player.invuln -= dt;
+    const u = coop.gap > 0 ? clamp((performance.now() - coop.snapAt) / 1000 / coop.gap, 0, 1.25) : 1;
+    for (const e of enemies) {
+      e.x = e.px + (e.nx - e.px) * u;
+      e.y = e.py + (e.ny - e.py) * u;
+    }
+    const op = coop.other && coop.other.player;
+    if (op && op.seen) {
+      op.x = op.px + (op.nx - op.px) * u;
+      op.y = op.py + (op.ny - op.py) * u;
+    }
+    const k = coop.hostSt === 'p' ? 1 : 0;
+    for (const b of eShots) {
+      b.x += b.vx * dt * k;
+      b.y += b.vy * dt * k;
+      b.t += dt;
+    }
+    for (const s of pShots) {
+      if (s.kind === 'saw') {
+        s.trail.unshift(s.x, s.y);
+        if (s.trail.length > 14) s.trail.length = 14;
+      }
+      s.x += (s.vx || 0) * dt * k;
+      s.y += (s.vy || 0) * dt * k;
+    }
+    // moving parts of both ships' weapons
+    for (const c of [null, coop.other]) {
+      if (c && !c.stats) continue;
+      withCtx(c, () => {
+        for (const w of build.weapons) {
+          if (!stats) break;
+          const s = weaponStats(w);
+          if (w.id === 'drones') w.angle += (s.spin || 0) * dt * k;
+          else if (w.id === 'laser' && w.active > 0) {
+            w.active -= dt * k;
+            w.sweepT += dt * k;
+          } else if (w.id === 'flame' && player.alive && k) emitFlames(s, w.evolved, dt);
+          else if (w.id === 'ult') w.t += dt * k;
+        }
+        gun.a += dt * k;
+      });
+    }
+    if (playing && player.alive) coopGuestHits();
+    if (coop.gone) for (const [id, t] of coop.gone) if (clock - t > 1.5) coop.gone.delete(id);
+    // where we are, twenty times a second
+    coop.inT -= dt;
+    if (coop.inT <= 0) {
+      coop.inT = coop.link && coop.link.open ? 0.05 : 0.18;
+      coop.lastInput = [Math.round(player.x * 10) / 10, Math.round(player.y * 10) / 10, Math.round(player.bank * 100) / 100];
+      if (coop.link && coop.link.open) coopSend({ t: 'in', v: coop.lastInput });
+    }
+    updateFx(dt);
+    updateFlames(dt);
+    updateRails(dt);
+    if (coop.link && Date.now() - coop.link.heard > 9000) coopLost();
+  }
+  function coopGuestHits() {
+    if (player.invuln > 0) return;
+    const hb = hitbox;
+    let hit = null;
+    for (const b of eShots) {
+      const rr = b.r + hb - 1;
+      if ((b.x - player.x) ** 2 + (b.y - player.y) ** 2 < rr * rr) {
+        hit = { k: 's', id: b.id };
+        break;
+      }
+    }
+    if (!hit) {
+      for (const e of enemies) {
+        if (e.ghost) continue;
+        if (e.boss ? inBoss(e, player.x, player.y, hb) : (e.x - player.x) ** 2 + (e.y - player.y) ** 2 < (e.r * 0.75 + hb + 2) ** 2) {
+          hit = { k: 't', id: e.id };
+          break;
+        }
+      }
+    }
+    if (!hit) {
+      for (const m of beams) {
+        if (m.warn <= 0 && m.active > 0 && Math.abs(player.x - m.x) < m.width / 2 + hb && player.y > m.y) {
+          hit = { k: 'b', id: 0 };
+          break;
+        }
+      }
+    }
+    if (!hit) return;
+    coopSend({ t: 'hit', ...hit });
+    if (hit.k === 's') { // gone here at once; the host removes it too
+      const i = eShots.findIndex((b) => b.id === hit.id);
+      if (i >= 0) removeAt(eShots, i);
+      (coop.gone || (coop.gone = new Map())).set(hit.id, clock);
+    }
+    player.invuln = 1; // until the host's own number arrives
+    coop.hitAt = clock;
+    hurtFlash = 0.35;
+    shakeBy(5);
+    sfx.play('hurt');
+  }
+  // the host is choosing, paused or done: the guest waits with it
+  function coopGuestWait() {
+    const st = coop.hostSt;
+    if (st === 'p') {
+      if (state === 'choice' && choice && choice.source === 'wait') {
+        state = 'playing';
+        showScreen(null);
+      } else if (state === 'paused' && coop.waitPause) {
+        coop.waitPause = false;
+        state = 'playing';
+        showScreen(null);
+      }
+      return;
+    }
+    if (state !== 'playing') return;
+    if (st === 'c' || st === 'w') openChoice('wait', '잠깐만요', `${coop.partner}님이 고르는 중이에요`, []);
+  }
+  function coopGuestChoose(m) {
+    coop.asked = m;
+    build = { weapons: (m.build && m.build.weapons) || [], passives: (m.build && m.build.passives) || [] };
+    run.rerolls = Number(m.rerolls) || 0;
+    openChoice(m.source, m.eyebrow, m.title, Array.isArray(m.options) ? m.options : []);
+    sfx.play(m.source === 'level' ? 'levelup' : 'item');
+  }
+  function coopGuestPick(i) {
+    const m = coop.asked;
+    if (!m) return;
+    coopSend({ t: 'pick', id: m.id, i });
+    coop.asked = null;
+    if (coop.hostSt === 'c' || coop.hostSt === 'w') openChoice('wait', '잠깐만요', `${coop.partner}님이 고르는 중이에요`, []);
+    else {
+      state = 'playing';
+      showScreen(null);
+    }
+  }
+  function coopGuestEnd(m) {
+    if (coop.ended) return;
+    coop.ended = true;
+    const lost = !!m.lost;
+    if (!lost) {
+      run.t = Number(m.time) || run.t;
+      run.level = Number(m.level) || run.level;
+      run.kills = Number(m.kills) || run.kills;
+    }
+    if (state === 'choice' || state === 'paused') showScreen(null);
+    state = 'playing';
+    endRun(!!m.clear, { score: lost ? scoreNow(false) : Number(m.score) || 0, earned: lost ? Math.floor(run.coins + Math.floor(run.t / 10)) : Number(m.coins) || 0, lost });
+  }
+  // after the run: back to normal single-phone play
+  function coopFinish() {
+    coop.on = false;
+    coop.ally = null;
+    coop.other = null;
+    coop.asked = null;
+    coop.map.clear();
+    coop.shots.clear();
+    coop.mine.clear();
+  }
+  function renderCoopResult(m) {
+    ui.vsResult.hidden = false;
+    ui.vsResultTitle.textContent = m.lost ? '협동 · 연결이 끊겨서 여기까지예요' : `협동 · ${coop.partner || '친구'}님과 함께`;
+    const li = (name, ship, note) => {
+      const el = document.createElement('li');
+      el.className = 'tg-player';
+      el.style.setProperty('--tone', shipOf(ship).tone);
+      el.innerHTML = '<span class="tg-dot"></span><span class="tg-who"><b></b><small></small></span><span class="tg-side"></span>';
+      el.querySelector('b').textContent = name;
+      el.querySelector('small').textContent = shipOf(ship).name;
+      el.querySelector('.tg-side').textContent = note;
+      return el;
+    };
+    const otherShip = coop.other ? coop.other.run.ship : coop.info ? coop.info.ship : 'star';
+    ui.vsResultList.replaceChildren(li(`${saved.name || '나'} (나)`, run.ship, ''), li(coop.partner || '친구', otherShip, ''));
+    ui.vsLobby.textContent = '협동 방으로';
+  }
+
+  // record rings, blooms, lightning and railgun lines as they appear on the host
+  rings.push = function (...list) {
+    if (!coop.quiet) for (const r of list) coopRec(['r', Math.round(r.x), Math.round(r.y), r.r, Math.round(r.max), r.life, r.color, r.wide ? 1 : 0]);
+    return Array.prototype.push.apply(this, list);
+  };
+  blooms.push = function (...list) {
+    if (!coop.quiet) for (const b of list) coopRec(['bl', Math.round(b.x), Math.round(b.y), Math.round(b.size), b.life, b.color]);
+    return Array.prototype.push.apply(this, list);
+  };
+  zaps.push = function (...list) {
+    for (const z of list) {
+      const a = z.pts[0];
+      const b = z.pts[z.pts.length - 1];
+      coopRec(['z', Math.round(a[0]), Math.round(a[1]), Math.round(b[0]), Math.round(b[1]), z.style, z.tone, z.flare ? 1 : 0]);
+    }
+    return Array.prototype.push.apply(this, list);
+  };
+  rails.push = function (...list) {
+    for (const r of list) coopRec(['rl', Math.round(r.x1), Math.round(r.y1), Math.round(r.x2), Math.round(r.y2), r.life]);
+    return Array.prototype.push.apply(this, list);
+  };
 
   // ---------- hangar ----------
   let hangarSel = 'star';
@@ -9433,7 +10718,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   ui.pause.addEventListener('click', pause);
   ui.resume.addEventListener('click', resume);
   ui.quit.addEventListener('click', () => {
-    if ((run.endless || run.vs) && state === 'paused') endRun(false); // an endless or versus run is banked, not thrown away
+    if (coopGuest()) { // leave the friend's fight with what was earned so far
+      coopSend({ t: 'bye' });
+      coopGuestEnd({ lost: true });
+    } else if ((run.endless || run.vs || coopHost()) && state === 'paused') endRun(false); // banked, not thrown away
     else showTitle();
   });
   ui.again.addEventListener('click', () => startStage(Number(ui.again.dataset.stage) || 0));
@@ -9445,6 +10733,13 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     showTogether();
   });
   ui.tgCreate.addEventListener('click', vsCreate);
+  for (const t of ui.tgTabs) {
+    t.addEventListener('click', () => {
+      if (vs.code) return;
+      vs.mode = t.dataset.tgMode === 'coop' ? 'coop' : 'vs';
+      renderTogether();
+    });
+  }
   ui.tgJoin.addEventListener('submit', (e) => {
     e.preventDefault();
     vsJoin(ui.tgCode.value.replace(/\D/g, ''));
@@ -9640,11 +10935,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     buildGrid();
     if (state === 'playing') {
       run.t += dt;
-      updatePlayer(dt);
+      if (player.alive) updatePlayer(dt);
       updateDirector(dt);
       vsUpdate(dt);
-      updateWeapons(dt);
-      updateGun(dt, stats.cdMul * (liveBoss() ? stats.bossHaste : 1));
+      if (player.alive) {
+        updateWeapons(dt);
+        updateGun(dt, stats.cdMul * (liveBoss() ? stats.bossHaste : 1));
+      }
+      if (coop.ally) coopHostStep(dt);
     }
     updateEnemies(dt);
     updatePlayerShots(dt);
@@ -9663,6 +10961,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     compact(enemies);
     updateGems(dt);
     updateItems(dt);
+    if (coop.ally) withCtx(coop.ally, () => { // the friend's ship picks things up too
+      if (!player.alive) return;
+      updateGems(dt, true);
+      updateItems(dt, true);
+    });
     updateFx(dt);
     if (state === 'dying' || state === 'clearing') {
       endT -= dt;
@@ -9672,6 +10975,24 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   function idle(dt) {
     updateStars(dt);
     updateFx(dt);
+  }
+  // co-op housekeeping every frame: the database route, the friend's choices, snapshots out
+  function coopTick(dt) {
+    const L = coop.link;
+    if (L && L.relay) {
+      coop.relayT = (coop.relayT || 0) - dt;
+      if (coop.relayT <= 0) {
+        coop.relayT = coop.on ? COOP_SLOW : 0.4;
+        coopRelay();
+      }
+    }
+    if (!coopHost()) return;
+    coopAsk();
+    coop.snapT -= dt;
+    if (coop.snapT <= 0) {
+      coop.snapT = L && L.open ? (state === 'playing' || state === 'dying' ? COOP_SNAP : 0.25) : COOP_SLOW;
+      coopSnapOut();
+    }
   }
   function tick(now) {
     let dt = (now - lastFrame) / 1000;
@@ -9683,9 +11004,13 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       dt *= 0.35;
     }
     clock += dt;
-    if (state === 'playing' || state === 'dying' || state === 'clearing') step(dt);
-    else if (state !== 'paused' && state !== 'choice') idle(dt);
-    if (state === 'playing' && (pendingStart || pendingChests > 0 || pendingLevels > 0)) proceed();
+    if (coopGuest()) coopGuestFrame(dt);
+    else {
+      if (state === 'playing' || state === 'dying' || state === 'clearing') step(dt);
+      else if (state !== 'paused' && state !== 'choice') idle(dt);
+      if (state === 'playing' && (pendingStart || pendingChests > 0 || pendingLevels > 0 || coopWaiting())) proceed();
+    }
+    coopTick(dt);
     draw();
     if (hudDirty) renderHud();
     else if (Math.floor(run.t) !== shownSec) renderClock();
