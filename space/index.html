@@ -166,8 +166,11 @@ button { font: inherit; color: inherit; }
 .clock { font-size: 1.375rem; font-size: clamp(1.375rem, 5.4cqi, 2rem); line-height: 1.05; }
 .clock.is-final { color: var(--danger); }
 .hud-right { display: flex; justify-content: flex-end; align-items: flex-start; gap: 8px; }
-.kills { padding-top: 2px; font-size: 0.6875rem; color: var(--muted); text-align: right; white-space: nowrap; }
-.kills b { display: block; font-size: 1.0625rem; font-weight: 400; color: var(--ink); }
+.tally { padding-top: 2px; text-align: right; white-space: nowrap; }
+.kills { font-size: 0.6875rem; color: var(--muted); }
+.kills b { margin-right: 3px; font-size: 1.0625rem; font-weight: 400; color: var(--ink); }
+.coins { display: flex; justify-content: flex-end; align-items: center; gap: 3px; margin-top: 1px; font-size: 0.8125rem; color: var(--amber); }
+.coins svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .icon-btn {
   appearance: none;
   pointer-events: auto;
@@ -189,7 +192,7 @@ button { font: inherit; color: inherit; }
 @container (max-width: 320px) {
   .hud { padding: 0 8px 0 10px; }
   .xp { margin: 0 -8px 6px -10px; }
-  .kills { display: none; }
+  .tally { display: none; }
   .clock { font-size: 1.125rem; }
   .hud-sub { font-size: 0.6875rem; }
   .icon-btn { width: 40px; height: 40px; }
@@ -423,7 +426,7 @@ button { font: inherit; color: inherit; }
 .chip.is-passive svg { stroke: var(--amber); }
 .chip.is-evolved { border-color: var(--amber); color: var(--amber); }
 .chip.is-evolved svg { stroke: var(--amber); }
-.chip.is-empty { border-style: dashed; color: var(--muted); opacity: 0.6; }
+.chip.is-empty { padding: 4px 9px; border-style: dashed; color: var(--muted); opacity: 0.6; }
 .chip b { font-family: var(--font-data); font-weight: 400; color: var(--muted); }
 .recipes-box summary { cursor: pointer; font-weight: 600; font-size: 0.875rem; color: var(--muted); padding: 4px 0; }
 .recipes { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
@@ -444,6 +447,20 @@ button { font: inherit; color: inherit; }
 .recipe.is-hot { border-color: rgba(127, 231, 255, 0.55); color: var(--ink); }
 .recipe.is-hot.is-ready { border-color: var(--amber); }
 .recipes.is-compact { gap: 4px; }
+.recipes.is-compact:not(.show-all) .recipe.is-far { display: none; }
+.link-btn {
+  appearance: none;
+  min-height: 36px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--cyan);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
 .recipes.is-compact .recipe { padding: 5px 9px; font-size: 0.75rem; }
 
 .final { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 18px; }
@@ -545,6 +562,181 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .confirm { margin-top: 12px; padding: 14px; border: 1px solid rgba(255, 90, 110, 0.4); border-radius: 14px; background: rgba(255, 90, 110, 0.08); }
 .confirm p { margin: 0 0 12px; }
 
+/* ---------- shared board ---------- */
+.board-box { display: grid; gap: 10px; }
+.board-actions { display: flex; gap: 10px; }
+.board-actions .btn { flex: 1 1 0; }
+.board-status {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 194, 75, 0.35);
+  border-radius: 12px;
+  background: rgba(255, 194, 75, 0.08);
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.board-status b { font-family: var(--font-data); font-size: 1.25rem; font-weight: 700; color: var(--amber); }
+.board-sub { flex-basis: 100%; font-size: 0.75rem; }
+.name-form { display: grid; gap: 6px; }
+.name-form label { font-size: 0.8125rem; font-weight: 600; color: var(--muted); }
+.name-form .note { margin: 0; }
+.name-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.name-row input {
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+}
+.name-row input::placeholder { color: rgba(163, 169, 214, 0.6); }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 12px; padding: 4px; border-radius: 14px; background: rgba(255, 255, 255, 0.05); }
+.tab { appearance: none; min-height: 42px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-weight: 700; cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--amber); color: var(--on-amber); }
+.stage-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.stage-chip {
+  appearance: none;
+  min-width: 44px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font-family: var(--font-data);
+  font-weight: 700;
+  cursor: pointer;
+}
+.stage-chip[aria-pressed="true"] { border-color: var(--stage-color); color: var(--ink); box-shadow: inset 0 0 0 1px var(--stage-color); }
+.board-me { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 10px 0 4px; font-size: 0.875rem; color: var(--muted); }
+.board-me b { color: var(--ink); }
+.board .name-form { margin: 6px 0 10px; }
+.rank-name { margin-right: 8px; font-family: var(--font-ui); font-weight: 700; }
+
+/* ---------- coins and the skill tree ---------- */
+.coin-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px 2px 6px;
+  border-radius: 999px;
+  background: rgba(255, 194, 75, 0.16);
+  color: var(--amber);
+  font-family: var(--font-data);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.coin-pill svg, .coin-line svg, .wallet svg, .tn-cost svg, .td-buy svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.coin-pill svg { width: 13px; height: 13px; }
+.btn-tree { flex-direction: column; gap: 3px; padding-block: 6px; }
+.btn-tree .coin-pill { padding: 1px 7px 1px 5px; font-size: 0.75rem; }
+.coin-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; color: var(--amber); }
+.coin-line svg { width: 20px; height: 20px; }
+.coin-line b { font-family: var(--font-data); font-size: 1.125rem; font-weight: 600; }
+.coin-line span { color: var(--muted); font-size: 0.8125rem; }
+.overlay.is-tree { gap: 12px; background: rgba(7, 9, 24, 0.9); }
+.tree-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.tree-head p, .tree-head h2 { margin: 0; }
+.wallet {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 194, 75, 0.4);
+  border-radius: 12px;
+  background: rgba(255, 194, 75, 0.1);
+  color: var(--amber);
+  font-family: var(--font-data);
+  font-size: 1.125rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.wallet svg { width: 20px; height: 20px; }
+.tree-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.tree-tab {
+  appearance: none;
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  min-height: 48px;
+  padding: 6px 2px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+.tree-tab small { font-family: var(--font-data); font-weight: 500; font-size: 0.6875rem; }
+.tree-tab[aria-pressed="true"] { border-color: var(--tone); background: var(--tone-soft); color: var(--ink); }
+.tree-tab[aria-pressed="true"] small { color: var(--tone); }
+.tree { position: relative; }
+.tree-links { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+.tree-links path { fill: none; stroke: var(--line); stroke-width: 2; stroke-dasharray: 4 5; }
+.tree-links path.on { stroke: var(--tone); stroke-dasharray: none; opacity: 0.65; }
+.tree-grid { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 12px; }
+.tree-node {
+  appearance: none;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 4px;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #11163f;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.tree-node.is-root { grid-column: 1 / -1; justify-self: center; width: calc(50% - 6px); }
+.tn-icon { grid-row: span 2; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px; background: var(--tone-soft); }
+.tn-icon svg { width: 18px; height: 18px; fill: none; stroke: var(--tone); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tn-name { min-width: 0; font-weight: 700; font-size: 0.8125rem; line-height: 1.2; }
+.tn-pips { display: flex; gap: 3px; }
+.tn-pips i { width: 7px; height: 7px; border: 1px solid var(--tone); border-radius: 50%; opacity: 0.55; }
+.tn-pips i.on { background: var(--tone); opacity: 1; }
+.tn-cost { grid-column: 1 / -1; display: flex; align-items: center; gap: 4px; font-family: var(--font-data); font-size: 0.75rem; color: var(--muted); }
+.tn-cost svg { width: 12px; height: 12px; }
+.tree-node.is-afford { border-color: var(--tone); }
+.tree-node.is-afford .tn-cost { color: var(--amber); }
+.tree-node.is-max { border-color: var(--tone); background: linear-gradient(135deg, var(--tone-soft), #11163f 70%); }
+.tree-node.is-max .tn-cost { color: var(--tone); }
+.tree-node.is-locked { background: #0c1033; }
+.tree-node.is-locked > * { opacity: 0.5; }
+.tree-node.is-locked .tn-icon svg { stroke: var(--muted); }
+.tree-node.is-selected { box-shadow: 0 0 0 2px var(--tone), 0 0 18px -4px var(--tone); }
+.tree-detail { display: grid; gap: 6px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255, 255, 255, 0.04); }
+.tree-detail:empty { display: none; }
+.td-head { display: flex; align-items: center; gap: 10px; }
+.td-head .tn-icon { grid-row: auto; }
+.td-head b { font-size: 1rem; }
+.td-rank { margin-left: auto; font-family: var(--font-data); font-size: 0.8125rem; color: var(--muted); }
+.td-line { margin: 0; font-size: 0.875rem; color: var(--muted); }
+.td-line b { margin-right: 4px; color: var(--tone); font-weight: 700; }
+.td-line.is-req b, .td-line.is-req { color: var(--danger); }
+.td-buy svg { width: 18px; height: 18px; }
+@media (hover: hover) {
+  .tree-node:hover { border-color: var(--tone); }
+  .tree-tab:hover { color: var(--ink); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .btn, .bossbar-fill, .xp-fill, .hp-fill { transition: none; }
   .banner.show { animation-duration: 2.6s; }
@@ -571,7 +763,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
             <div class="hud-sub" id="stage-label">달 궤도</div>
           </div>
           <div class="hud-right">
-            <div class="kills"><b id="kills">0</b>격추</div>
+            <div class="tally">
+              <div class="kills"><b id="kills">0</b>격추</div>
+              <div class="coins" aria-label="이번 판 코인"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5v9M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4" /></svg><span id="coins">0</span></div>
+            </div>
             <button type="button" class="icon-btn" id="pause" aria-label="일시정지">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6v12M15 6v12" /></svg>
             </button>
@@ -595,15 +790,19 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         <ul class="howto">
           <li>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10m0-1.5a1.5 1.5 0 0 1 3 0V11m0-1a1.5 1.5 0 0 1 3 0v4.5a6 6 0 0 1-6 6h-.6a6 6 0 0 1-4.6-2.2L4.5 15a1.5 1.5 0 0 1 2.3-1.9L9 15" /></svg>
-            <span><b>누른 채로 끌기</b>화면 아무 곳이나 누르고 움직이면 우주선이 따라와요. 공격은 저절로 해요.</span>
+            <span><b>누른 채로 끌기</b>화면을 누른 채 움직이면 우주선이 따라와요. 공격은 저절로 해요.</span>
           </li>
           <li>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l6 9-6 9-6-9z" /><path d="M6 12h12" /></svg>
-            <span><b>경험치로 레벨 업</b>적이 떨어뜨린 경험치를 모으면 레벨이 올라요. 스킬 3개 중 하나를 고르세요.</span>
+            <span><b>경험치로 레벨 업</b>경험치를 모으면 레벨이 올라요. 스킬 3개 중 하나를 골라요.</span>
           </li>
           <li>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v6a5 5 0 0 0 10 0V4" /><path d="M12 15v6M8 21h8" /></svg>
-            <span><b>스킬 합체</b>무기를 Lv 5까지 올리고 짝이 되는 장비를 가진 채 보급 상자를 열면 더 강한 스킬로 합체돼요.</span>
+            <span><b>스킬 합체</b>무기 Lv 5와 짝 장비를 갖추고 보급 상자를 열면 더 강한 스킬로 합체해요. 한 판에 5개까지.</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="4.5" r="2.5" /><circle cx="6" cy="18.5" r="2.5" /><circle cx="18" cy="18.5" r="2.5" /><path d="M12 7v4M12 11l-6 5M12 11l6 5" /></svg>
+            <span><b>코인과 스킬 트리</b>모은 코인으로 스킬 트리에서 영구 강화를 사요.</span>
           </li>
           <li class="kbd-only">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2" /><path d="M7 10h.01M11 10h.01M15 10h.01M8 14h8" /></svg>
@@ -613,10 +812,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         <p class="note rotate-hint">폰을 세로로 돌리면 화면이 더 커져요.</p>
         <p class="best-line" id="title-best">아직 기록이 없어요</p>
         <button type="button" class="btn btn-primary btn-launch" id="start">출격</button>
+        <div class="row">
+          <button type="button" class="btn btn-tree" id="open-tree-1">스킬 트리<span class="coin-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5v9M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4" /></svg><span id="title-coins">0</span></span></button>
+          <button type="button" class="btn" id="open-records-1">순위·기록</button>
+        </div>
         <div class="row row-3">
-          <button type="button" class="btn" id="open-records-1">기록</button>
           <button type="button" class="btn" data-toggle="music" aria-pressed="true">음악</button>
           <button type="button" class="btn" data-toggle="sfx" aria-pressed="true">효과음</button>
+          <button type="button" class="btn" data-toggle="fx" aria-pressed="true">내 효과</button>
         </div>
       </section>
 
@@ -627,14 +830,44 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         <button type="button" class="btn btn-quiet" id="stages-back">처음 화면</button>
       </section>
 
+      <section class="overlay is-tree" id="screen-tree" aria-labelledby="tree-title" hidden>
+        <div class="tree-head">
+          <div>
+            <p class="eyebrow">강화 연구소</p>
+            <h2 class="panel-title" id="tree-title">스킬 트리</h2>
+          </div>
+          <p class="wallet" aria-label="보유 코인"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5v9M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4" /></svg><span id="tree-coins">0</span></p>
+        </div>
+        <p class="lede">코인으로 영구 강화를 사요. 아래 칸은 위 칸을 먼저 올려야 열려요.</p>
+        <div class="tree-tabs" id="tree-tabs"></div>
+        <div class="tree" id="tree">
+          <svg class="tree-links" id="tree-links" aria-hidden="true"></svg>
+          <div class="tree-grid" id="tree-grid"></div>
+        </div>
+        <div class="tree-detail" id="tree-detail" aria-live="polite"></div>
+        <div class="row">
+          <button type="button" class="btn" id="tree-back">돌아가기</button>
+          <button type="button" class="btn btn-quiet" id="tree-reset">초기화</button>
+        </div>
+        <div class="confirm" id="tree-confirm" hidden>
+          <p>스킬 트리를 처음으로 되돌리고 쓴 코인 <b id="tree-refund">0</b>개를 모두 돌려받을까요?</p>
+          <div class="row">
+            <button type="button" class="btn" id="tree-reset-cancel">취소</button>
+            <button type="button" class="btn btn-danger" id="tree-reset-ok">되돌리기</button>
+          </div>
+        </div>
+      </section>
+
       <section class="overlay is-choice" id="screen-choice" aria-labelledby="choice-title" hidden>
         <p class="eyebrow" id="choice-eyebrow">레벨 업</p>
         <h2 class="panel-title" id="choice-title">스킬을 하나 고르세요</h2>
         <div class="cards" id="cards"></div>
+        <button type="button" class="btn btn-quiet" id="reroll" hidden>다시 뽑기</button>
         <div class="slots" id="choice-slots"></div>
         <details class="recipes-box" open>
           <summary>합체 레시피</summary>
           <ul class="recipes is-compact" id="choice-recipes"></ul>
+          <button type="button" class="link-btn" id="recipes-more" hidden>레시피 모두 보기</button>
         </details>
       </section>
 
@@ -651,9 +884,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         <div class="row row-3">
           <button type="button" class="btn" data-toggle="music" aria-pressed="true">음악</button>
           <button type="button" class="btn" data-toggle="sfx" aria-pressed="true">효과음</button>
-          <button type="button" class="btn" id="quit">그만하기</button>
+          <button type="button" class="btn" data-toggle="fx" aria-pressed="true">내 효과</button>
         </div>
-        <p class="note">그만하면 이번 판은 기록되지 않아요.</p>
+        <p class="note">'내 효과 흐리게'를 고르면 내 공격과 폭발이 옅어져서 적 총알이 더 잘 보여요.</p>
+        <button type="button" class="btn" id="quit">그만하기</button>
+        <p class="note">그만하면 이번 판의 기록과 코인은 남지 않아요.</p>
       </section>
 
       <section class="overlay" id="screen-result" aria-labelledby="result-title" hidden>
@@ -670,11 +905,28 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           <div><dt>격추</dt><dd id="st-kills"></dd></div>
           <div><dt>지역</dt><dd id="st-stage"></dd></div>
         </dl>
+        <p class="coin-line" id="coin-line"></p>
+        <div class="board-box" id="board-box">
+          <p class="board-status" id="board-status" hidden></p>
+          <form class="name-form" id="result-name-form" hidden>
+            <label for="result-name">전체 순위에 올릴 이름</label>
+            <div class="name-row">
+              <input id="result-name" type="text" maxlength="10" autocomplete="nickname" enterkeyhint="done" placeholder="예: 우주 고양이">
+              <button type="submit" class="btn btn-primary">순위 등록</button>
+            </div>
+            <p class="note" id="result-name-note">이름은 다음 판부터 저절로 쓰여요.</p>
+          </form>
+          <div class="board-actions">
+            <button type="button" class="btn" id="board-retry" hidden>다시 올리기</button>
+            <button type="button" class="btn" id="share">친구에게 도전장 보내기</button>
+          </div>
+        </div>
         <p class="warn" id="result-warn" hidden>이 브라우저에서는 기록을 저장하지 못했어요. 시크릿 창이라면 일반 창에서 열어 주세요.</p>
         <button type="button" class="btn btn-primary btn-launch" id="again">다시 출격</button>
-        <div class="row">
+        <div class="row row-3">
           <button type="button" class="btn" id="to-stages">지역 선택</button>
-          <button type="button" class="btn" id="open-records-2">기록 보기</button>
+          <button type="button" class="btn" id="open-tree-2">스킬 트리</button>
+          <button type="button" class="btn" id="open-records-2">순위·기록</button>
         </div>
       </section>
     </div>
@@ -686,11 +938,34 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 <dialog id="dlg-records" aria-labelledby="records-title">
   <div class="sheet">
     <div class="sheet-head">
-      <h2 class="panel-title" id="records-title">비행 기록</h2>
+      <h2 class="panel-title" id="records-title">순위와 기록</h2>
       <button type="button" class="icon-btn" id="records-close" aria-label="닫기">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
       </button>
     </div>
+    <div class="tabs" id="records-tabs" role="tablist" hidden>
+      <button type="button" class="tab" role="tab" id="tab-board" data-view="board" aria-controls="board-panel" aria-selected="true">전체 순위</button>
+      <button type="button" class="tab" role="tab" id="tab-mine" data-view="mine" aria-controls="mine-panel" aria-selected="false">내 기록</button>
+    </div>
+    <div class="board" id="board-panel" role="tabpanel" aria-labelledby="tab-board" hidden>
+      <div class="stage-chips" id="board-stages"></div>
+      <p class="board-me" id="board-me"></p>
+      <form class="name-form" id="name-form" hidden>
+        <label for="name-input">순위에 쓸 이름 (10자까지)</label>
+        <div class="name-row">
+          <input id="name-input" type="text" maxlength="10" autocomplete="nickname" enterkeyhint="done" placeholder="예: 우주 고양이">
+          <button type="submit" class="btn btn-primary">저장</button>
+        </div>
+        <p class="note">이미 올린 기록의 이름은 그대로예요. 다음 판부터 새 이름으로 올라가요.</p>
+      </form>
+      <ol class="ranks" id="board-list"></ol>
+      <p class="empty" id="board-empty" hidden></p>
+      <div class="records-foot">
+        <p class="note">지역마다 한 사람의 가장 좋은 기록만 보여요.</p>
+        <button type="button" class="btn btn-quiet" id="board-refresh">새로 고침</button>
+      </div>
+    </div>
+    <div id="mine-panel" role="tabpanel" aria-labelledby="tab-mine">
     <dl class="summary">
       <div><dt>출격</dt><dd id="sum-plays">0회</dd></div>
       <div><dt>최고 점수</dt><dd id="sum-best">—</dd></div>
@@ -710,6 +985,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         <button type="button" class="btn btn-danger" id="clear-ok">지우기</button>
       </div>
     </div>
+    </div>
   </div>
 </dialog>
 
@@ -727,9 +1003,15 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     banner: $('banner'), bannerTitle: $('banner-title'), bannerSub: $('banner-sub'),
     screens: {
       title: $('screen-title'), stages: $('screen-stages'), choice: $('screen-choice'), pause: $('screen-pause'), result: $('screen-result'),
+      tree: $('screen-tree'),
     },
+    coins: $('coins'), titleCoins: $('title-coins'), coinLine: $('coin-line'), reroll: $('reroll'),
+    openTree1: $('open-tree-1'), openTree2: $('open-tree-2'), treeCoins: $('tree-coins'), treeTabs: $('tree-tabs'),
+    tree: $('tree'), treeLinks: $('tree-links'), treeGrid: $('tree-grid'), treeDetail: $('tree-detail'), treeBack: $('tree-back'),
+    treeReset: $('tree-reset'), treeConfirm: $('tree-confirm'), treeRefund: $('tree-refund'),
+    treeResetCancel: $('tree-reset-cancel'), treeResetOk: $('tree-reset-ok'),
     titleBest: $('title-best'), start: $('start'), stageList: $('stage-list'), stagesBack: $('stages-back'),
-    choiceEyebrow: $('choice-eyebrow'), choiceTitle: $('choice-title'), cards: $('cards'), choiceSlots: $('choice-slots'), choiceRecipes: $('choice-recipes'),
+    choiceEyebrow: $('choice-eyebrow'), choiceTitle: $('choice-title'), cards: $('cards'), choiceSlots: $('choice-slots'), choiceRecipes: $('choice-recipes'), recipesMore: $('recipes-more'),
     pauseInfo: $('pause-info'), pauseSlots: $('pause-slots'), recipes: $('recipes'), resume: $('resume'), quit: $('quit'),
     resultEyebrow: $('result-eyebrow'), resultTitle: $('result-title'), finalScore: $('final-score'), finalSeal: $('final-seal'),
     finalNote: $('final-note'), stTime: $('st-time'), stLevel: $('st-level'), stKills: $('st-kills'), stStage: $('st-stage'),
@@ -738,6 +1020,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     records: $('dlg-records'), recordsClose: $('records-close'), sumPlays: $('sum-plays'), sumBest: $('sum-best'),
     sumClear: $('sum-clear'), recordsList: $('records-list'), recordsEmpty: $('records-empty'), oldNote: $('old-note'),
     recordsClear: $('records-clear'), clearConfirm: $('clear-confirm'), clearCancel: $('clear-cancel'), clearOk: $('clear-ok'),
+    recordsTabs: $('records-tabs'), boardPanel: $('board-panel'), minePanel: $('mine-panel'), boardStages: $('board-stages'),
+    boardMe: $('board-me'), nameForm: $('name-form'), nameInput: $('name-input'), boardList: $('board-list'), boardEmpty: $('board-empty'),
+    boardRefresh: $('board-refresh'), boardBox: $('board-box'), boardStatus: $('board-status'), resultNameForm: $('result-name-form'),
+    resultName: $('result-name'), resultNameNote: $('result-name-note'), share: $('share'), boardRetry: $('board-retry'),
   };
   const ctx = ui.canvas.getContext('2d');
 
@@ -748,11 +1034,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   const STAGE_TIME = 780; // survive 13:00, then the final boss arrives
   const MIDBOSS_AT = [180, 390, 600];
   const MAX_LEVEL = 5;
-  const WEAPON_SLOTS = 4;
-  const PASSIVE_SLOTS = 4;
+  const WEAPON_SLOTS = 5; // five weapons and five gear: up to five combined skills in one run
+  const PASSIVE_SLOTS = 5;
   const MAX_ENEMIES = 260;
   const MAX_ESHOTS = 560;
   const MAX_GEMS = 360;
+  // Shared leaderboard: the address of a Firebase Realtime Database (https://….firebasedatabase.app).
+  // Left empty, the game keeps records on this device only and hides the shared ranking.
+  const BOARD_URL = '';
   const STORE_KEY = 'galaxy-defense:v2';
   const OLD_KEY = 'galaxy-defense:v1';
   const MAX_RECORDS = 200;
@@ -863,6 +1152,18 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       notes: ['무작위 적에게 떨어져 옆으로 번져요', '한 번 더 번져요', '피해 +33%', '번개 2줄기', '4번 번지고 더 자주'],
       evo: { name: '폭풍 핵', dmg: 46, cd: 0.6, strikes: 3, chain: 4, range: 100 },
     },
+    aura: {
+      name: '역장', icon: 'aura',
+      levels: [
+        { dmg: 7, tick: 0.4, radius: 40, push: 26, heal: 0, slow: 0 },
+        { dmg: 9, tick: 0.4, radius: 46, push: 26, heal: 0, slow: 0 },
+        { dmg: 9, tick: 0.32, radius: 50, push: 30, heal: 0, slow: 0 },
+        { dmg: 12, tick: 0.32, radius: 55, push: 30, heal: 0, slow: 0 },
+        { dmg: 15, tick: 0.28, radius: 62, push: 34, heal: 0, slow: 0 },
+      ],
+      notes: ['우주선 둘레의 역장이 닿는 적에게 계속 피해를 주고 살짝 밀어내요', '범위 넓어짐, 피해 +30%', '더 자주 피해를 줘요', '범위 넓어짐, 피해 +33%', '범위와 피해 커짐, 더 자주'],
+      evo: { name: '흡수 역장', dmg: 24, tick: 0.24, radius: 86, push: 40, heal: 0.25, slow: 0.45 },
+    },
   };
   const PASSIVES = {
     armor: { name: '강화 장갑', icon: 'armor', per: '최대 체력 +20' },
@@ -872,6 +1173,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     spread: { name: '확산기', icon: 'spread', per: '범위와 크기 +10%' },
     tractor: { name: '견인 빔', icon: 'tractor', per: '경험치를 끌어오는 거리 +35%' },
     luck: { name: '행운 부적', icon: 'luck', per: '아이템이 나올 확률 +20%' },
+    leech: { name: '흡수 장치', icon: 'leech', per: '적을 격추할 때마다 체력 0.08 회복' },
   };
   // A weapon at Lv 5 plus its partner gear combines into a stronger skill.
   const EVOLVE = {
@@ -881,9 +1183,88 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     laser: { partner: 'spread', about: '굵은 광선이 좌우로 훑어요' },
     nova: { partner: 'repair', about: '맞힌 적만큼 체력을 회복해요' },
     lightning: { partner: 'tractor', about: '번개가 쉬지 않고 쏟아져요' },
+    aura: { partner: 'leech', about: '커다란 역장이 적을 녹이며 체력을 흡수하고, 안에 들어온 적 총알을 느리게 해요' },
   };
   // Chance per kill before luck; gunners and tanks triple it.
   const DROPS = [['heal', 0.012], ['magnet', 0.006], ['bomb', 0.004], ['mystery', 0.014], ['chest', 0.0025]];
+  // Permanent upgrades bought with coins between runs. A node opens once its parent reaches the given level.
+  // Root nodes sit in the middle of their branch; the rest go in the left (col 0) or right (col 1) column.
+  // `about(r)` describes the total effect at level r.
+  const BARRIER_CD = [60, 45, 35];
+  const AUTOMAG_EVERY = [80, 65, 50];
+  const mastery = (id) => (r) => `${WEAPONS[id].name} 피해 +${6 * r}%, 재사용 −${2 * r}%`;
+  const TREE = [
+    {
+      id: 'attack', name: '공격', tone: 'coral', nodes: [
+        { id: 'might', name: '화력 강화', icon: 'amp', max: 5, cost: 30, row: 0, about: (r) => `모든 피해 +${3 * r}%` },
+        { id: 'haste', name: '속사', icon: 'coolant', max: 5, cost: 35, row: 1, col: 0, req: ['might', 1], about: (r) => `재사용 시간 −${2 * r}%` },
+        { id: 'reach', name: '확산 범위', icon: 'spread', max: 5, cost: 35, row: 1, col: 1, req: ['might', 1], about: (r) => `범위와 크기 +${3 * r}%` },
+        { id: 'crit', name: '치명타', icon: 'crit', max: 5, cost: 50, row: 2, col: 0, req: ['haste', 2], about: (r) => `${3 * r}% 확률로 치명타(피해 2배)` },
+        { id: 'bossdmg', name: '거함 사냥', icon: 'target', max: 5, cost: 45, row: 2, col: 1, req: ['reach', 2], about: (r) => `보스에게 주는 피해 +${6 * r}%` },
+        { id: 'critdmg', name: '치명 강화', icon: 'burst', max: 4, cost: 70, row: 3, col: 0, req: ['crit', 2], about: (r) => `치명타 피해 +${20 * r}%` },
+        { id: 'pierce', name: '관통탄', icon: 'cannon', max: 2, cost: 120, row: 3, col: 1, req: ['bossdmg', 1], about: (r) => `주포 총알이 적을 ${r}마리 더 꿰뚫어요` },
+        { id: 'fury', name: '분노', icon: 'fury', max: 5, cost: 60, row: 4, col: 0, req: ['critdmg', 1], about: (r) => `체력이 절반 아래면 피해 +${5 * r}%` },
+        { id: 'extra', name: '과부하', icon: 'plus', max: 1, cost: 800, row: 4, col: 1, req: ['pierce', 2], about: () => '주포·미사일·드론·번개가 하나씩 더 나가요' },
+      ],
+    },
+    {
+      id: 'defense', name: '방어', tone: 'teal', nodes: [
+        { id: 'hull', name: '강화 선체', icon: 'armor', max: 5, cost: 30, row: 0, about: (r) => `최대 체력 +${8 * r}` },
+        { id: 'regen', name: '자가 수리', icon: 'repair', max: 5, cost: 40, row: 1, col: 0, req: ['hull', 1], about: (r) => `초당 체력 ${(0.1 * r).toFixed(1)} 회복` },
+        { id: 'plating', name: '장갑판', icon: 'plating', max: 5, cost: 40, row: 1, col: 1, req: ['hull', 1], about: (r) => `받는 피해 −${2 * r}%` },
+        { id: 'medic', name: '의무 키트', icon: 'heal', max: 4, cost: 45, row: 2, col: 0, req: ['regen', 2], about: (r) => `회복 아이템 효과 +${15 * r}%` },
+        { id: 'evade', name: '회피 기동', icon: 'evade', max: 4, cost: 50, row: 2, col: 1, req: ['plating', 2], about: (r) => `맞은 뒤 무적 시간 +${(0.08 * r).toFixed(2)}초` },
+        { id: 'vital', name: '생명력', icon: 'repair', max: 3, cost: 70, row: 3, col: 0, req: ['medic', 1], about: (r) => `레벨이 오를 때마다 체력 +${1.5 * r}` },
+        { id: 'barrier', name: '비상 보호막', icon: 'bubble', max: 3, cost: 150, row: 3, col: 1, req: ['evade', 1], about: (r) => `공격을 한 번 막는 보호막, ${BARRIER_CD[r - 1]}초마다 다시 생겨요` },
+        { id: 'thorns', name: '반격 장갑', icon: 'thorns', max: 3, cost: 90, row: 4, col: 0, req: ['vital', 1], about: (r) => `부딪친 적에게 피해 ${60 * r} (시간이 갈수록 커짐)` },
+        { id: 'revive', name: '비상 탈출', icon: 'revive', max: 1, cost: 900, row: 4, col: 1, req: ['barrier', 1], about: () => '한 판에 한 번, 격추되는 순간 체력 절반으로 되살아나요' },
+      ],
+    },
+    {
+      id: 'growth', name: '성장', tone: 'cyan', nodes: [
+        { id: 'study', name: '학습', icon: 'book', max: 5, cost: 30, row: 0, about: (r) => `경험치 +${4 * r}%` },
+        { id: 'pull', name: '자력', icon: 'tractor', max: 5, cost: 30, row: 1, col: 0, req: ['study', 1], about: (r) => `경험치·아이템을 끌어오는 거리 +${8 * r}%` },
+        { id: 'greed', name: '탐욕', icon: 'coin', max: 5, cost: 40, row: 1, col: 1, req: ['study', 1], about: (r) => `얻는 코인 +${8 * r}%` },
+        { id: 'fortune', name: '행운', icon: 'luck', max: 5, cost: 45, row: 2, col: 0, req: ['pull', 2], about: (r) => `아이템이 나올 확률 +${5 * r}%` },
+        { id: 'reroll', name: '다시 뽑기', icon: 'reroll', max: 3, cost: 80, row: 2, col: 1, req: ['greed', 2], about: (r) => `판마다 스킬을 ${r}번 다시 뽑을 수 있어요` },
+        { id: 'supply', name: '보급 탐지', icon: 'chest', max: 4, cost: 60, row: 3, col: 0, req: ['fortune', 2], about: (r) => `보급 상자가 나올 확률 +${12 * r}%` },
+        { id: 'headstart', name: '빠른 출발', icon: 'missile', max: 3, cost: 90, row: 3, col: 1, req: ['reroll', 1], about: (r) => `출격하자마자 레벨 업 ${r}번` },
+        { id: 'automag', name: '자동 자석', icon: 'tractor', max: 3, cost: 100, row: 4, col: 0, req: ['supply', 1], about: (r) => `${AUTOMAG_EVERY[r - 1]}초마다 경험치를 모두 끌어와요` },
+        { id: 'choice4', name: '넓은 선택', icon: 'cards', max: 1, cost: 700, row: 4, col: 1, req: ['headstart', 2], about: () => '레벨 업 때 스킬 4개 중에서 골라요' },
+      ],
+    },
+    {
+      id: 'arsenal', name: '무기', tone: 'amber', nodes: [
+        { id: 'cannonM', name: '주포 숙련', icon: 'cannon', max: 3, cost: 40, row: 0, about: mastery('cannon') },
+        { id: 'missileM', name: '미사일 숙련', icon: 'missile', max: 3, cost: 40, row: 1, col: 0, req: ['cannonM', 1], about: mastery('missile') },
+        { id: 'dronesM', name: '드론 숙련', icon: 'drones', max: 3, cost: 40, row: 1, col: 1, req: ['cannonM', 1], about: mastery('drones') },
+        { id: 'laserM', name: '레이저 숙련', icon: 'laser', max: 3, cost: 45, row: 2, col: 0, req: ['missileM', 1], about: mastery('laser') },
+        { id: 'novaM', name: '충격파 숙련', icon: 'nova', max: 3, cost: 45, row: 2, col: 1, req: ['dronesM', 1], about: mastery('nova') },
+        { id: 'lightningM', name: '번개 숙련', icon: 'lightning', max: 3, cost: 50, row: 3, col: 0, req: ['laserM', 1], about: mastery('lightning') },
+        { id: 'auraM', name: '역장 숙련', icon: 'aura', max: 3, cost: 50, row: 3, col: 1, req: ['novaM', 1], about: mastery('aura') },
+        { id: 'evoM', name: '합체 숙련', icon: 'merge', max: 3, cost: 150, row: 4, col: 0, req: ['lightningM', 2], about: (r) => `합체 스킬 피해 +${8 * r}%` },
+        { id: 'pick', name: '무기 골라 출격', icon: 'check', max: 1, cost: 500, row: 4, col: 1, req: ['auraM', 2], about: () => '출격할 때 시작 무기를 직접 골라요' },
+      ],
+    },
+    {
+      id: 'tactics', name: '전술', tone: 'violet', nodes: [
+        { id: 'timewarp', name: '시간 왜곡', icon: 'clock', max: 5, cost: 40, row: 0, about: (r) => `적 총알 속도 −${2 * r}%` },
+        { id: 'bombplus', name: '폭탄 강화', icon: 'bomb', max: 3, cost: 45, row: 1, col: 0, req: ['timewarp', 1], about: (r) => `폭탄 피해 +${30 * r}%, 폭탄이 나올 확률 +${20 * r}%` },
+        { id: 'chain', name: '연쇄 폭발', icon: 'burst', max: 5, cost: 55, row: 1, col: 1, req: ['timewarp', 1], about: (r) => `격추한 적이 ${3 * r}% 확률로 터지며 주변에 피해` },
+        { id: 'lucky', name: '행운 캡슐', icon: 'mystery', max: 4, cost: 50, row: 2, col: 0, req: ['bombplus', 1], about: (r) => `수수께끼 캡슐의 꽝 확률 ${50 - 10 * r}%` },
+        { id: 'execute', name: '마무리 사격', icon: 'execute', max: 3, cost: 90, row: 2, col: 1, req: ['chain', 2], about: (r) => `체력이 ${3 * r}% 아래로 떨어진 적은 바로 격추` },
+        { id: 'bounty', name: '현상금', icon: 'coin', max: 3, cost: 70, row: 3, col: 0, req: ['lucky', 1], about: (r) => `보스가 주는 코인 +${30 * r}%` },
+        { id: 'overclock', name: '과열 가속', icon: 'gauge', max: 3, cost: 90, row: 3, col: 1, req: ['execute', 1], about: (r) => `보스와 싸울 때 재사용 시간 −${6 * r}%` },
+        { id: 'secondwind', name: '재정비', icon: 'repair', max: 3, cost: 80, row: 4, col: 0, req: ['bounty', 1], about: (r) => `중간 보스를 잡으면 체력 +${20 * r}` },
+        { id: 'crate', name: '보급 확장', icon: 'chest', max: 3, cost: 100, row: 4, col: 1, req: ['overclock', 1], about: (r) => `보급 상자를 주울 때 코인 +${5 * r}` },
+      ],
+    },
+  ];
+  const NODES = new Map();
+  for (const br of TREE) for (const n of br.nodes) NODES.set(n.id, { ...n, branch: br });
+  const MASTERY = { cannon: 'cannonM', missile: 'missileM', drones: 'dronesM', laser: 'laserM', nova: 'novaM', lightning: 'lightningM', aura: 'auraM' };
+  const COIN_DROP = 0.05; // chance per kill; bigger ships drop two
+
   // Squads the director can send: when they start (seconds into the run), how often, and how much spawn budget they use.
   const PATTERNS = [
     { id: 'sine', from: 0, w: 4, cost: 5 },
@@ -931,8 +1312,32 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     spread: '<path d="M12 12L5 5M12 12l7-7M12 12l-7 7M12 12l7 7" /><path d="M5 9V5h4M19 9V5h-4M5 15v4h4M19 15v4h-4" />',
     tractor: '<path d="M6 4v8a6 6 0 0 0 12 0V4" /><path d="M6 8h4M14 8h4" />',
     luck: '<path d="M12 3l2.6 5.5 6 .7-4.5 4.1 1.2 5.9L12 16.3l-5.3 2.9 1.2-5.9-4.5-4.1 6-.7z" />',
+    aura: '<path d="M12 2.5l8.2 4.75v9.5L12 21.5l-8.2-4.75v-9.5z" stroke-dasharray="3 2.4" /><circle cx="12" cy="12" r="3.2" />',
+    leech: '<path d="M12 3c3.5 4.6 6 7.8 6 11a6 6 0 0 1-12 0c0-3.2 2.5-6.4 6-11z" /><path d="M9.4 14.2a2.7 2.7 0 0 0 2.6 2.7" />',
     heal: '<path d="M12 21s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.6-7 10-7 10z" />',
     coin: '<circle cx="12" cy="12" r="8.5" /><path d="M12 7.5v9M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4" />',
+    crit: '<path d="M12 2l2 7 7 3-7 2-2 8-2-8-7-2 7-3z" />',
+    target: '<circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="3" /><path d="M12 1v4M12 19v4M1 12h4M19 12h4" />',
+    burst: '<path d="M12 2l1.8 5.2L19 5l-2.2 5.2L22 12l-5.2 1.8L19 19l-5.2-2.2L12 22l-1.8-5.2L5 19l2.2-5.2L2 12l5.2-1.8L5 5l5.2 2.2z" />',
+    fury: '<path d="M12 22c-4 0-7-2.8-7-6.6 0-3.4 2.4-5.4 3.6-8.4.6 1.8 1.6 2.8 2.6 3.2C11 6.4 13 4 15.4 2c-.4 3 .8 5 2.4 7 1.2 1.6 1.2 3.2 1.2 4.6C19 18.6 16 22 12 22z" />',
+    plus: '<circle cx="12" cy="12" r="9" /><path d="M12 8v8M8 12h8" />',
+    plating: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /><path d="M8 10l4 2 4-2M8 14l4 2 4-2" />',
+    evade: '<path d="M5 19L19 5" stroke-dasharray="2.5 2.5" /><path d="M12 5h7v7" />',
+    bubble: '<circle cx="12" cy="12" r="9" /><path d="M8 9a5 5 0 0 1 4-2.5" />',
+    thorns: '<path d="M12 3l2 4 4-2-1 4.5 4 1.5-4 1.5 1 4.5-4-2-2 4-2-4-4 2 1-4.5-4-1.5 4-1.5-1-4.5 4 2z" />',
+    revive: '<path d="M12 21s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.6-7 10-7 10z" /><path d="M12 15V9M9.5 11.5L12 9l2.5 2.5" />',
+    book: '<path d="M4 5.5C4 4.7 4.7 4 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5z" /><path d="M20 5.5c0-.8-.7-1.5-1.5-1.5H13v16h5.5c.8 0 1.5-.7 1.5-1.5z" />',
+    reroll: '<path d="M20 12a8 8 0 0 1-14.3 4.9" /><path d="M4 12a8 8 0 0 1 14.3-4.9" /><path d="M18.5 3v4.2h-4.2M5.5 21v-4.2h4.2" />',
+    chest: '<rect x="3.5" y="9" width="17" height="11" rx="1.5" /><path d="M3.5 9V7.5A3.5 3.5 0 0 1 7 4h10a3.5 3.5 0 0 1 3.5 3.5V9" /><path d="M12 12v3" />',
+    cards: '<rect x="3" y="6" width="8" height="13" rx="1.5" /><rect x="13" y="6" width="8" height="13" rx="1.5" /><path d="M7 3h10" />',
+    clock: '<circle cx="12" cy="13" r="8" /><path d="M12 9v4l3 2M9 2h6" />',
+    bomb: '<circle cx="11" cy="14" r="7" /><path d="M15 8l2-2M17 2.5v2M21.5 7h-2M20 4l-1.4 1.4" />',
+    mystery: '<circle cx="12" cy="12" r="9.5" /><path d="M9.2 9.2a2.9 2.9 0 1 1 4.3 2.5c-1 .6-1.5 1.3-1.5 2.4v.4" /><path d="M12 17.5h.01" />',
+    execute: '<circle cx="12" cy="12" r="9" /><path d="M8.5 8.5l7 7M15.5 8.5l-7 7" />',
+    gauge: '<path d="M4 17a8 8 0 1 1 16 0" /><path d="M12 17l4-5" /><path d="M4 17h2M18 17h2" />',
+    merge: '<path d="M6 3v5a6 6 0 0 0 6 6 6 6 0 0 0 6-6V3" /><path d="M12 14v7" />',
+    check: '<path d="M5 12.5l4.5 4.5L19 7" />',
+    tree: '<circle cx="12" cy="4.5" r="2.5" /><circle cx="6" cy="18.5" r="2.5" /><circle cx="18" cy="18.5" r="2.5" /><path d="M12 7v4M12 11l-6 5M12 11l6 5" />',
     lock: '<rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" />',
   };
   const svgIcon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;
@@ -1036,8 +1441,48 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       cleared,
       music: typeof raw.music === 'boolean' ? raw.music : true,
       sfx: typeof raw.sfx === 'boolean' ? raw.sfx : typeof old.sound === 'boolean' ? old.sound : true,
+      dimFx: raw.dimFx === true,
+      coins: Math.max(0, Math.floor(Number(raw.coins) || 0)),
+      earned: Math.max(0, Math.floor(Number(raw.earned) || 0)),
+      tree: cleanTree(raw.tree),
+      name: cleanName(raw.name),
+      pid: typeof raw.pid === 'string' && /^[a-z0-9]{8,24}$/.test(raw.pid) ? raw.pid : newPid(),
     };
   })();
+  // Names show on the shared board: 1-10 characters, no control characters, single spaces.
+  function cleanName(v) {
+    if (typeof v !== 'string') return '';
+    const t = v.replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim();
+    return Array.from(t).slice(0, 10).join('').trim();
+  }
+  // A random id per browser, so one player's runs can be grouped on the board.
+  function newPid() {
+    const abc = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    const bytes = new Uint8Array(16);
+    if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(bytes);
+    else for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+    return Array.from(bytes, (b) => abc[b % abc.length]).join('');
+  }
+  function cleanTree(raw) {
+    const out = {};
+    if (!raw || typeof raw !== 'object') return out;
+    for (const [id, v] of Object.entries(raw)) {
+      const n = NODES.get(id);
+      const r = Math.floor(Number(v) || 0);
+      if (n && r > 0) out[id] = Math.min(r, n.max);
+    }
+    return out;
+  }
+  const rank = (id) => saved.tree[id] || 0;
+  function nodeCost(n, r) {
+    return Math.round((n.cost * (1 + 0.7 * r)) / 5) * 5;
+  }
+  const nodeOpen = (n) => !n.req || rank(n.req[0]) >= n.req[1];
+  function spentCoins() {
+    let total = 0;
+    for (const n of NODES.values()) for (let r = 0; r < rank(n.id); r++) total += nodeCost(n, r);
+    return total;
+  }
   function save() {
     try {
       window.localStorage.setItem(STORE_KEY, JSON.stringify(saved));
@@ -1058,6 +1503,55 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       if (!best || (r.cleared && !best.cleared) || (r.cleared === best.cleared && r.timeMs > best.timeMs)) best = r;
     }
     return best;
+  }
+
+  // ---------- shared leaderboard (one list per region, best run per player) ----------
+  const board = (() => {
+    const base = BOARD_URL.trim().replace(/\/+$/, '');
+    const cache = new Map();
+    async function call(path, opts = {}) {
+      const ctl = 'AbortController' in window ? new AbortController() : null;
+      const timer = ctl ? window.setTimeout(() => ctl.abort(), 9000) : 0;
+      try {
+        const res = await fetch(`${base}/${path}`, { cache: 'no-store', ...opts, signal: ctl ? ctl.signal : undefined });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+      } finally {
+        window.clearTimeout(timer);
+      }
+    }
+    return {
+      on: /^https:\/\//.test(base),
+      // the top runs of a region, highest first
+      async top(stage, fresh) {
+        const hit = cache.get(stage);
+        if (hit && !fresh && Date.now() - hit.at < 20000) return hit.list;
+        const data = await call(`v1/scores/s${stage}.json?orderBy=%22score%22&limitToLast=200`);
+        const list = [];
+        for (const [key, r] of Object.entries(data && typeof data === 'object' ? data : {})) {
+          if (!r || typeof r !== 'object' || !Number.isFinite(r.score)) continue;
+          list.push({
+            key, name: cleanName(r.name) || '이름 없음', score: r.score, time: Number(r.time) || 0, level: Number(r.level) || 0,
+            kills: Number(r.kills) || 0, clear: r.clear === true, pid: typeof r.pid === 'string' ? r.pid : key, at: Number(r.at) || 0,
+          });
+        }
+        list.sort((a, b) => b.score - a.score || a.at - b.at);
+        cache.set(stage, { at: Date.now(), list });
+        return list;
+      },
+      async submit(stage, entry) {
+        // sent as plain text so the browser skips the extra CORS check; the database reads the body as JSON anyway
+        const res = await call(`v1/scores/s${stage}.json`, {
+          method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify({ ...entry, at: { '.sv': 'timestamp' } }),
+        });
+        cache.delete(stage);
+        return res && typeof res.name === 'string' ? res.name : null;
+      },
+    };
+  })();
+  function bestPerPlayer(list) {
+    const seen = new Set();
+    return list.filter((r) => (seen.has(r.pid) ? false : (seen.add(r.pid), true)));
   }
 
   // ---------- sound (one context: effects and music on separate volume buses) ----------
@@ -1137,7 +1631,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   const sfx = (() => {
     const last = {};
-    const GAP = { shot: 0.075, hit: 0.045, boom: 0.06, gem: 0.035, zap: 0.08, missile: 0.15, laser: 0.3, nova: 0.2, hurt: 0.15, snipe: 0.1, charge: 0.3, beam: 0.2 };
+    const GAP = { coin: 0.05, shot: 0.075, hit: 0.045, boom: 0.06, gem: 0.035, zap: 0.08, missile: 0.15, laser: 0.3, nova: 0.2, hurt: 0.15, snipe: 0.1, charge: 0.3, beam: 0.2 };
     const b = () => audio.sfx;
     const sounds = {
       shot() { tone(b(), 1250, 0, 0.05, 'square', 0.016, 820); },
@@ -1146,6 +1640,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       bigBoom() { hiss(b(), 0, 1.1, 0.42, 1800, 60); tone(b(), 110, 0, 0.7, 'sine', 0.3, 38); },
       hurt() { tone(b(), 420, 0, 0.25, 'sawtooth', 0.06, 110); hiss(b(), 0, 0.22, 0.16, 1400, 200); },
       gem() { tone(b(), 1480 + Math.random() * 300, 0, 0.06, 'sine', 0.035); },
+      coin() { tone(b(), 1568, 0, 0.05, 'sine', 0.03); tone(b(), 2093, 0.045, 0.09, 'sine', 0.03); },
       levelup() { [523.25, 659.25, 783.99, 1046.5].forEach((f, k) => tone(b(), f, k * 0.06, 0.22, 'triangle', 0.08)); },
       item() { [660, 880, 1320].forEach((f, k) => tone(b(), f, k * 0.06, 0.16, 'sine', 0.08)); },
       dud() { tone(b(), 300, 0, 0.18, 'square', 0.04, 220); tone(b(), 220, 0.18, 0.3, 'square', 0.04, 140); },
@@ -1352,6 +1847,34 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     });
   }
   const ORB = { coral: orb(COLOR.coral), amber: orb(COLOR.amber), violet: orb(COLOR.violet), teal: orb(COLOR.teal), cyan: orb(COLOR.cyan), lime: orb(COLOR.lime), red: orb(COLOR.danger) };
+  // Enemy fire: a dark rim around a bright body and a white-hot core, so it reads on any background,
+  // however busy our own effects get.
+  function bulletSprite(color) {
+    return sprite(48, 2, (g) => {
+      const halo = g.createRadialGradient(0, 0, 8, 0, 0, 24);
+      halo.addColorStop(0, rgba(color, 0.5));
+      halo.addColorStop(1, rgba(color, 0));
+      g.fillStyle = halo;
+      g.fillRect(-24, -24, 48, 48);
+      g.fillStyle = rgba(COLOR.void, 0.92);
+      g.beginPath();
+      g.arc(0, 0, 13, 0, TAU);
+      g.fill();
+      const body = g.createRadialGradient(-2, -2, 0, 0, 0, 10.5);
+      body.addColorStop(0, '#ffffff');
+      body.addColorStop(0.4, '#ffffff');
+      body.addColorStop(0.62, color);
+      body.addColorStop(1, shade(color, -0.2));
+      g.fillStyle = body;
+      g.beginPath();
+      g.arc(0, 0, 10.5, 0, TAU);
+      g.fill();
+    });
+  }
+  const EBULLET = {};
+  for (const [name, color] of Object.entries({ coral: COLOR.coral, amber: COLOR.amber, violet: COLOR.violet, teal: COLOR.teal, cyan: COLOR.cyan, lime: COLOR.lime, red: COLOR.danger })) {
+    EBULLET[name] = bulletSprite(color);
+  }
   function capsule(g, r, h) {
     g.beginPath();
     g.arc(0, -h / 2 + r, r, Math.PI, 0);
@@ -1378,6 +1901,51 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       g.fill();
     });
   }
+  function auraSprite(color) { // a soft bubble that brightens toward its rim
+    return sprite(128, 2, (g) => {
+      const grd = g.createRadialGradient(0, 0, 0, 0, 0, 64);
+      grd.addColorStop(0, rgba(color, 0));
+      grd.addColorStop(0.55, rgba(color, 0.05));
+      grd.addColorStop(0.86, rgba(color, 0.18));
+      grd.addColorStop(0.97, rgba(color, 0.4));
+      grd.addColorStop(1, rgba(color, 0));
+      g.fillStyle = grd;
+      g.fillRect(-64, -64, 128, 128);
+    });
+  }
+  const COIN = sprite(24, 3, (g) => {
+    const halo = g.createRadialGradient(0, 0, 4, 0, 0, 12);
+    halo.addColorStop(0, rgba(COLOR.amber, 0.45));
+    halo.addColorStop(1, rgba(COLOR.amber, 0));
+    g.fillStyle = halo;
+    g.fillRect(-12, -12, 24, 24);
+    const body = g.createRadialGradient(-2.5, -2.5, 0.5, 0, 0, 8);
+    body.addColorStop(0, '#fff3c4');
+    body.addColorStop(0.5, COLOR.amber);
+    body.addColorStop(1, shade(COLOR.amber, -0.45));
+    g.fillStyle = body;
+    g.beginPath();
+    g.arc(0, 0, 7.5, 0, TAU);
+    g.fill();
+    g.strokeStyle = rgba(COLOR.void, 0.7);
+    g.lineWidth = 1.2;
+    g.stroke();
+    g.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+    g.lineWidth = 0.9;
+    g.beginPath();
+    g.arc(0, 0, 5, 0, TAU);
+    g.stroke();
+    g.fillStyle = shade(COLOR.amber, -0.35);
+    g.beginPath();
+    g.moveTo(0, -3);
+    g.lineTo(2.2, 0);
+    g.lineTo(0, 3);
+    g.lineTo(-2.2, 0);
+    g.closePath();
+    g.fill();
+  });
+  const AURA = auraSprite(COLOR.teal);
+  const AURA_EVO = auraSprite(COLOR.violet);
   const BOLT = boltSprite(COLOR.cyan);
   const PLASMA = boltSprite(COLOR.violet);
   const CORE = sprite(32, 1, (g) => {
@@ -2210,12 +2778,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   let scale = 1;
   let dpr = 1;
   let bgGrad = null;
-  let state = 'title'; // title | stages | playing | choice | paused | dying | clearing | result
+  let state = 'title'; // title | stages | tree | playing | choice | paused | dying | clearing | result
   let stageIndex = 0;
   let stage = STAGES[0];
   let stats = null;
-  const player = { x: W / 2, y: 550, hp: 120, invuln: 0, bank: 0, prevX: W / 2, alive: true };
-  const run = { t: 0, score: 0, kills: 0, level: 1, xp: 0, need: 9 };
+  const player = { x: W / 2, y: 550, hp: 120, invuln: 0, bank: 0, prevX: W / 2, alive: true, shield: false, shieldT: 0 };
+  const run = { t: 0, score: 0, kills: 0, level: 1, xp: 0, need: 9, coins: 0, rerolls: 0, revives: 0, magT: 0 };
   const build = { weapons: [], passives: [] };
   const director = { budget: 0, next: null, mid: 0, final: false };
   const enemies = [];
@@ -2232,12 +2800,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   const zaps = [];
   const beams = [];
   const warns = [];
+  const blasts = []; // chain explosions waiting for the next frame
   const stars = [];
   const keys = new Set();
   const drag = { id: null, x: 0, y: 0 };
   let boss = null;
   let pendingLevels = 0;
   let pendingChests = 0;
+  let pendingStart = false; // the "pick your weapon" upgrade asks before the run begins
   let choice = { source: 'level', options: [] };
   let shake = 0;
   let flash = 0;
@@ -2251,6 +2821,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   let hudDirty = true;
   let shownSec = -1;
   let lastRecordId = null;
+  let lastRun = null; // the finished run, for the shared board and the share button
   let lastFrame = performance.now();
 
   // ---------- screen fitting ----------
@@ -2276,6 +2847,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     paintSky();
     buildSprites();
     hudDirty = true;
+    drawTreeLinks();
   }
   // Sky, nebula and the region's planet take the current stage's colors.
   function paintSky() {
@@ -2364,20 +2936,57 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   function recompute() {
     const prevMax = stats ? stats.maxHp : 120;
     stats = {
-      maxHp: 120 + 20 * passiveLv('armor'),
-      regen: 0.4 * passiveLv('repair'),
-      cdMul: Math.pow(0.93, passiveLv('coolant')),
-      dmgMul: 1 + 0.1 * passiveLv('amp'),
-      area: 1 + 0.1 * passiveLv('spread'),
-      pickup: 46 * (1 + 0.35 * passiveLv('tractor')),
-      luck: 1 + 0.2 * passiveLv('luck'),
+      maxHp: 120 + 20 * passiveLv('armor') + 8 * rank('hull'),
+      regen: 0.4 * passiveLv('repair') + 0.1 * rank('regen'),
+      cdMul: Math.pow(0.93, passiveLv('coolant')) * (1 - 0.02 * rank('haste')),
+      dmgMul: (1 + 0.1 * passiveLv('amp')) * (1 + 0.03 * rank('might')),
+      area: (1 + 0.1 * passiveLv('spread')) * (1 + 0.03 * rank('reach')),
+      pickup: 46 * (1 + 0.35 * passiveLv('tractor')) * (1 + 0.08 * rank('pull')),
+      luck: (1 + 0.2 * passiveLv('luck')) * (1 + 0.05 * rank('fortune')),
+      leech: 0.08 * passiveLv('leech'),
+      // from the skill tree only
+      crit: 0.03 * rank('crit'),
+      critMul: 2 + 0.2 * rank('critdmg'),
+      bossMul: 1 + 0.06 * rank('bossdmg'),
+      fury: 0.05 * rank('fury'),
+      taken: 1 - 0.02 * rank('plating'),
+      invuln: 0.8 + 0.08 * rank('evade'),
+      healMul: 1 + 0.15 * rank('medic'),
+      xpMul: 1 + 0.04 * rank('study'),
+      coinMul: (1 + 0.08 * rank('greed')) * stage.mul,
+      chestMul: 1 + 0.12 * rank('supply'),
+      bombMul: 1 + 0.3 * rank('bombplus'),
+      bulletK: 1 - 0.02 * rank('timewarp'),
+      chain: 0.03 * rank('chain'),
+      execute: 0.03 * rank('execute'),
+      bossHaste: 1 - 0.06 * rank('overclock'),
     };
     if (stats.maxHp > prevMax) player.hp += stats.maxHp - prevMax;
     player.hp = Math.min(player.hp, stats.maxHp);
   }
+  // A weapon's numbers for its level, with skill-tree mastery and the extra-projectile upgrade folded in.
   function weaponStats(w) {
     const def = WEAPONS[w.id];
-    return w.evolved ? def.evo : def.levels[w.lv - 1];
+    const base = w.evolved ? def.evo : def.levels[w.lv - 1];
+    const m = rank(MASTERY[w.id]);
+    const evo = w.evolved ? rank('evoM') : 0;
+    const extra = rank('extra');
+    if (!m && !evo && !extra) return base;
+    const k = (1 + 0.06 * m) * (1 + 0.08 * evo);
+    const c = 1 - 0.02 * m;
+    const out = { ...base };
+    if (out.dmg) out.dmg *= k;
+    if (out.dps) out.dps *= k;
+    if (out.cd) out.cd *= c;
+    if (out.rate) out.rate *= c;
+    if (out.tick) out.tick *= c;
+    if (extra) {
+      if (out.shots) out.shots = [...out.shots, [0, out.shots.length % 2 ? 4 : 0]];
+      if (out.count) out.count += 1;
+      if (out.n) out.n += 1;
+      if (out.strikes) out.strikes += 1;
+    }
+    return out;
   }
   function newWeapon(id) {
     return { id, lv: 1, evolved: false, cd: 0.3, angle: 0, active: 0, tick: 0, sweepT: 0 };
@@ -2421,7 +3030,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       else build.passives.push({ id: o.id, lv: 1 });
       recompute();
     } else if (o.kind === 'heal') {
-      heal(40);
+      heal(40 * stats.healMul);
     } else {
       run.score += 1000;
     }
@@ -2465,6 +3074,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       run.level += 1;
       run.need = xpNeed(run.level);
       pendingLevels += 1;
+      if (rank('vital') && stats) heal(1.5 * rank('vital'), true);
     }
     hudDirty = true;
   }
@@ -3440,6 +4050,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     run.score += b.pts * (stageIndex + 1);
     run.kills += 1;
     addText(b.x, b.y, `+${num(b.pts * (stageIndex + 1))}`, COLOR.amber, 1.6, 20);
+    const bounty = 150 * (1 + 0.3 * rank('bounty')) * stats.coinMul;
+    run.coins += bounty;
+    for (let i = items.length - 1; i >= 0; i--) { // coins still on the field are banked too
+      if (items[i].kind !== 'coin') continue;
+      run.coins += items[i].v * stats.coinMul;
+      removeAt(items, i);
+    }
+    addText(b.x, b.y + 26, `코인 +${num(bounty)}`, COLOR.amber, 1.8, 15);
     boss = null;
     state = 'clearing';
     endT = 2.2;
@@ -3468,25 +4086,38 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     player.prevX = player.x;
     player.bank += (clamp(vx / 420, -1, 1) - player.bank) * Math.min(1, dt * 10);
     if (player.invuln > 0) player.invuln -= dt;
+    if (!player.shield && rank('barrier')) {
+      player.shieldT -= dt;
+      if (player.shieldT <= 0) player.shield = true;
+    }
+    if (run.magT > 0) {
+      run.magT -= dt;
+      if (run.magT <= 0) {
+        for (const g of gems) g.pulled = true;
+        addText(player.x, player.y - 30, '자동 자석!', COLOR.coral, 1, 12);
+        run.magT = AUTOMAG_EVERY[rank('automag') - 1];
+      }
+    }
     if (stats.regen && player.hp < stats.maxHp) {
       player.hp = Math.min(stats.maxHp, player.hp + stats.regen * dt);
       hudDirty = true;
     }
   }
   function updateWeapons(dt) {
+    const cdMul = stats.cdMul * (liveBoss() ? stats.bossHaste : 1);
     for (const w of build.weapons) {
       const s = weaponStats(w);
       if (w.id === 'cannon') {
         w.cd -= dt;
         if (w.cd <= 0) {
           fireCannon(s, w.evolved);
-          w.cd = Math.max(0, w.cd + s.rate * stats.cdMul);
+          w.cd = Math.max(0, w.cd + s.rate * cdMul);
         }
       } else if (w.id === 'missile') {
         w.cd -= dt;
         if (w.cd <= 0) {
           fireMissiles(s);
-          w.cd = s.cd * stats.cdMul;
+          w.cd = s.cd * cdMul;
         }
       } else if (w.id === 'drones') {
         w.angle += s.spin * dt;
@@ -3504,7 +4135,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           w.cd -= dt;
           if (w.cd <= 0) {
             w.active = s.dur;
-            w.cd = s.cd * stats.cdMul;
+            w.cd = s.cd * cdMul;
             w.tick = 0;
             w.sweepT = 0;
             sfx.play('laser');
@@ -3514,13 +4145,19 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         w.cd -= dt;
         if (w.cd <= 0) {
           nova(s);
-          w.cd = s.cd * stats.cdMul;
+          w.cd = s.cd * cdMul;
         }
       } else if (w.id === 'lightning') {
         w.cd -= dt;
         if (w.cd <= 0) {
           lightning(s);
-          w.cd = s.cd * stats.cdMul;
+          w.cd = s.cd * cdMul;
+        }
+      } else if (w.id === 'aura') {
+        w.cd -= dt;
+        if (w.cd <= 0) {
+          auraPulse(s);
+          w.cd = Math.max(0.05, w.cd + s.tick * cdMul);
         }
       }
     }
@@ -3531,7 +4168,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       const a = (deg * Math.PI) / 180;
       pShots.push({
         kind: 'bolt', x: player.x + ox, y: player.y - 14, vx: Math.sin(a) * 660, vy: -Math.cos(a) * 660, a,
-        dmg: s.dmg * stats.dmgMul, pierce: s.pierce || 0, size, plasma, last: null,
+        dmg: s.dmg * stats.dmgMul, pierce: (s.pierce || 0) + rank('pierce'), size, plasma, last: null,
       });
     }
     sfx.play('shot');
@@ -3715,6 +4352,38 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     sfx.play('zap');
   }
+  // The force field: ships inside take damage every tick and get nudged outward; the combined form also heals.
+  function auraPulse(s) {
+    const R = s.radius * stats.area;
+    const dmg = s.dmg * stats.dmgMul;
+    let healed = 0;
+    for (const e of gather(player.x, player.y, R + 30)) {
+      const dx = e.x - player.x;
+      const dy = e.y - player.y;
+      const d = Math.hypot(dx, dy);
+      if (d >= R + e.r * 0.7) continue;
+      damage(e, dmg, e.x, e.y);
+      if (d > 0.01) {
+        e.kx += (dx / d) * s.push;
+        e.ky += (dy / d) * s.push;
+      }
+      if (s.heal && healed < 1.5) {
+        heal(s.heal, true);
+        healed += s.heal;
+      }
+    }
+    const b = liveBoss();
+    if (b && inBoss(b, player.x, player.y, R)) damage(b, dmg, b.x, b.y + 20);
+    if (healed) hudDirty = true;
+  }
+  // Inside the combined field enemy fire crawls; returns the field's squared radius, or 0.
+  function slowField() {
+    if (!player.alive) return 0;
+    const w = owned('weapon', 'aura');
+    if (!w || !w.evolved) return 0;
+    const R = weaponStats(w).radius * stats.area;
+    return R * R;
+  }
   function zigzag(x0, y0, x1, y1) {
     const pts = [[x0, y0]];
     const steps = 6;
@@ -3727,16 +4396,41 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   function hurt(amount) {
     if (state !== 'playing' || player.invuln > 0) return;
-    player.hp -= amount;
-    player.invuln = 0.8;
+    if (player.shield) { // the emergency barrier soaks the whole hit
+      player.shield = false;
+      player.shieldT = BARRIER_CD[rank('barrier') - 1] || 45;
+      player.invuln = stats.invuln;
+      rings.push({ x: player.x, y: player.y, r: 10, max: 46, life: 0.4, full: 0.4, color: COLOR.cyan, wide: true });
+      addText(player.x, player.y - 30, '보호막!', COLOR.cyan, 1, 13);
+      sfx.play('nova');
+      return;
+    }
+    player.hp -= amount * stats.taken;
+    player.invuln = stats.invuln;
     hurtFlash = 0.35;
     shakeBy(5);
     sfx.play('hurt');
     hudDirty = true;
     if (player.hp <= 0) {
+      if (run.revives > 0) {
+        revive();
+        return;
+      }
       player.hp = 0;
       die();
     }
+  }
+  function revive() {
+    run.revives -= 1;
+    player.hp = Math.round(stats.maxHp * 0.5);
+    player.invuln = 2.5;
+    eShots.length = 0;
+    rings.push({ x: player.x, y: player.y, r: 6, max: W * 0.7, life: 0.6, full: 0.6, color: COLOR.teal, wide: true });
+    flash = Math.max(flash, motionOK() ? 0.4 : 0.1);
+    addText(player.x, player.y - 34, '비상 탈출! 다시 일어났어요', COLOR.teal, 1.8, 14);
+    announce('비상 탈출! 체력 절반으로 되살아났어요.');
+    sfx.play('evolve');
+    hudDirty = true;
   }
   function die() {
     state = 'dying';
@@ -3810,8 +4504,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   function updateEnemyShots(dt) {
     let canHit = state === 'playing' && player.invuln <= 0;
+    const slowR2 = slowField();
+    const slowK = 1 - WEAPONS.aura.evo.slow;
     for (let i = eShots.length - 1; i >= 0; i--) {
       const b = eShots[i];
+      if (!b) continue; // a revive mid-loop wipes the list
       b.t += dt;
       if (b.home > 0) { // homing rockets turn toward the ship for a while, then fly straight
         b.home -= dt;
@@ -3833,8 +4530,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         b.vx *= 1 + b.acc * dt;
         b.vy *= 1 + b.acc * dt;
       }
-      b.x += b.vx * dt;
-      b.y += b.vy * dt;
+      const k = (slowR2 && (b.x - player.x) ** 2 + (b.y - player.y) ** 2 < slowR2 ? slowK : 1) * stats.bulletK;
+      b.x += b.vx * dt * k;
+      b.y += b.vy * dt * k;
       if (b.split && b.t >= b.split) { // bombs burst into a ring
         const { x, y, n } = b;
         removeAt(eShots, i);
@@ -3860,8 +4558,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   function checkContacts() {
     if (state !== 'playing' || player.invuln > 0) return;
     const b = liveBoss();
+    const thorns = rank('thorns') * 60 * (1 + run.t / 200);
     if (b && inBoss(b, player.x, player.y, HITBOX)) {
       hurt(b.touch * hitScale());
+      if (thorns) damage(b, thorns, player.x, player.y - 10);
       return;
     }
     for (const e of gather(player.x, player.y, 40)) {
@@ -3869,18 +4569,24 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       if ((e.x - player.x) ** 2 + (e.y - player.y) ** 2 >= rr * rr) continue;
       hurt(e.touch * hitScale());
       if (ENEMY[e.kind].kamikaze) kill(e);
+      else if (thorns) damage(e, thorns, e.x, e.y);
       return;
     }
   }
   function damage(e, amount, x, y) {
     if (e.dead || e.t < 0 || e.ghost) return;
     if (e.boss && e.step !== 'fight') return;
+    const crit = stats.crit > 0 && Math.random() < stats.crit;
+    if (crit) amount *= stats.critMul;
+    if (e.boss) amount *= stats.bossMul;
+    if (stats.fury && player.hp < stats.maxHp * 0.5) amount *= 1 + stats.fury;
     e.hp -= amount;
     e.flash = 0.06;
     if (e.boss) hudDirty = true;
-    if (e.hp <= 0) kill(e);
+    if (e.hp <= 0 || (!e.boss && e.hp < e.maxHp * stats.execute)) kill(e);
     else sfx.play('hit');
-    if (Math.random() < 0.3) spark(x, y, KIND_COLOR[e.kind], 1);
+    if (crit) spark(x, y, COLOR.amber, 2);
+    else if (Math.random() < 0.3) spark(x, y, KIND_COLOR[e.kind], 1);
   }
   function kill(e) {
     if (e.kind === 'mother') {
@@ -3894,6 +4600,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     e.dead = true;
     run.kills += 1;
     run.score += e.pts;
+    if (stats.leech) heal(stats.leech, true);
+    if (!e.boss && stats.chain && Math.random() < stats.chain) blasts.push({ x: e.x, y: e.y });
     hudDirty = true;
     if (e.kind === 'cruiser') {
       explode(e.x, e.y, COLOR.amber, 'big');
@@ -3901,6 +4609,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       for (let i = 0; i < 12; i++) dropGem(e.x + rand(-40, 40), e.y + rand(-20, 20), Math.ceil(e.xp / 12));
       items.push({ kind: 'chest', x: e.x, y: e.y, t: 0 });
       items.push({ kind: 'heal', x: e.x + 24, y: e.y - 10, t: 0 });
+      const bag = 5 * (1 + 0.3 * rank('bounty'));
+      for (let i = 0; i < 8; i++) items.push({ kind: 'coin', v: bag, x: e.x + rand(-44, 44), y: e.y + rand(-16, 16), t: rand(0, 3) });
+      if (rank('secondwind')) {
+        heal(20 * rank('secondwind'));
+        addText(e.x, e.y + 16, `재정비! 체력 +${20 * rank('secondwind')}`, COLOR.teal, 1.6, 13);
+      }
       addText(e.x, e.y - 20, `+${num(e.pts)}`, COLOR.amber, 1.4, 16);
       eShots.length = 0;
       boss = null;
@@ -3943,7 +4657,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         g.x += (dx / d) * g.sp * dt;
         g.y += (dy / d) * g.sp * dt;
         if (d < 14) {
-          gainXp(g.v);
+          gainXp(g.v * stats.xpMul);
           removeAt(gems, i);
           sfx.play('gem');
         }
@@ -3955,8 +4669,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   function rollItem(e) {
     const big = e.r >= 18 ? 3 : 1;
+    if (Math.random() < COIN_DROP * (big > 1 ? 1.5 : 1)) items.push({ kind: 'coin', v: big > 1 ? 2 : 1, x: e.x + rand(-6, 6), y: e.y, t: rand(0, 3) });
     for (const [kind, p] of DROPS) {
-      if (Math.random() < p * big * (kind === 'mystery' ? 1 : stats.luck)) {
+      let chance = p * big * (kind === 'mystery' ? 1 : stats.luck);
+      if (kind === 'chest') chance *= stats.chestMul;
+      else if (kind === 'bomb') chance *= 1 + 0.2 * rank('bombplus');
+      if (Math.random() < chance) {
         items.push({ kind, x: e.x, y: e.y, t: 0 });
         return;
       }
@@ -3978,7 +4696,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         it.y += (dy / d) * it.sp * dt;
         if (d < 16) {
           removeAt(items, i);
-          collect(it.kind);
+          collect(it.kind, it.v);
         }
         continue;
       }
@@ -3987,11 +4705,18 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       if (it.y > H + 24) removeAt(items, i);
     }
   }
-  function collect(kind) {
+  function collect(kind, value) {
     const at = (text, color) => addText(player.x, player.y - 30, text, color, 1.1, 13);
+    if (kind === 'coin') {
+      run.coins += value * stats.coinMul;
+      sfx.play('coin');
+      hudDirty = true;
+      return;
+    }
     if (kind === 'heal') {
-      heal(30);
-      at('체력 +30', COLOR.teal);
+      const amount = Math.round(30 * stats.healMul);
+      heal(amount);
+      at(`체력 +${amount}`, COLOR.teal);
       sfx.play('item');
     } else if (kind === 'magnet') {
       for (const g of gems) g.pulled = true;
@@ -4001,18 +4726,23 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       bomb();
     } else if (kind === 'chest') {
       pendingChests += 1;
-      at('보급 상자!', COLOR.amber);
+      const bonus = 5 * rank('crate');
+      if (bonus) run.coins += bonus * stats.coinMul;
+      at(bonus ? `보급 상자! 코인 +${num(bonus * stats.coinMul)}` : '보급 상자!', COLOR.amber);
       sfx.play('item');
-    } else { // the mystery capsule: half the time it is a dud
+    } else { // the mystery capsule: half the time it is a dud (less with the lucky-capsule upgrade)
+      const dud = 0.5 - 0.1 * rank('lucky');
       const r = Math.random();
-      if (r < 0.5) {
+      const u = (r - dud) / (1 - dud);
+      if (r < dud) {
         at('꽝!', COLOR.muted);
         sfx.play('dud');
-      } else if (r < 0.7) {
-        heal(15);
-        at('체력 +15', COLOR.teal);
+      } else if (u < 0.4) {
+        const amount = Math.round(15 * stats.healMul);
+        heal(amount);
+        at(`체력 +${amount}`, COLOR.teal);
         sfx.play('item');
-      } else if (r < 0.85) {
+      } else if (u < 0.7) {
         for (const g of gems) g.pulled = true;
         at('자석!', COLOR.coral);
         sfx.play('item');
@@ -4026,7 +4756,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   function bomb() {
     eShots.length = 0;
-    const dmg = 60 * stats.dmgMul * (1 + run.t / 300);
+    const dmg = 60 * stats.dmgMul * stats.bombMul * (1 + run.t / 300);
     for (const e of enemies) {
       if (e.dead || e.t < 0 || e.ghost || e.y < -10 || e.y > H + 10) continue;
       damage(e, e.boss ? dmg * 2 : dmg, e.x, e.y);
@@ -4180,23 +4910,28 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
     drawBackground();
+    const sx = shake > 0 ? rand(-shake, shake) : 0;
+    const sy = shake > 0 ? rand(-shake, shake) : 0;
     ctx.save();
-    if (shake > 0) ctx.translate(rand(-shake, shake), rand(-shake, shake));
+    ctx.translate(sx, sy);
     drawGems();
     drawItems();
     drawPlayerShots();
     drawEnemies();
-    drawHazards();
     drawWeapons();
     drawPlayer();
     drawFx();
-    drawEnemyShots();
+    drawHazards(); // enemy beams and warnings stay readable over our effects
     drawTexts();
     ctx.restore();
     if (vignette) {
       ctx.fillStyle = vignette;
       ctx.fillRect(0, 0, W, H);
     }
+    ctx.save(); // enemy fire goes on top of everything, the vignette included
+    ctx.translate(sx, sy);
+    drawEnemyShots();
+    ctx.restore();
     if (flash > 0) {
       ctx.globalAlpha = Math.min(0.5, flash);
       ctx.fillStyle = COLOR.ink;
@@ -4245,6 +4980,13 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const spr = SPR.player;
     if (spr) ctx.drawImage(spr.img, -spr.size / 2, -spr.size / 2, spr.size, spr.size);
     ctx.restore();
+    if (player.shield) {
+      ctx.strokeStyle = rgba(COLOR.cyan, 0.35 + 0.15 * Math.sin(clock * 4));
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.arc(player.x, player.y, 24, 0, TAU);
+      ctx.stroke();
+    }
     // the glowing core is the only part that can be hit
     ctx.fillStyle = rgba(COLOR.void, 0.85);
     ctx.beginPath();
@@ -4422,6 +5164,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
   }
 
+  // How strongly our own attacks and explosions are drawn (a setting, so enemy fire is easy to pick out).
+  const fxAlpha = () => (saved.dimFx ? 0.4 : 0.85);
   function glow(img, x, y, size, alpha) {
     ctx.globalCompositeOperation = 'lighter';
     ctx.globalAlpha = alpha;
@@ -4474,7 +5218,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         const size = s.size * stats.area;
         for (let k = 0; k < s.n; k++) {
           const [x, y] = dronePos(w, s, k);
-          glow(w.evolved ? ORB.amber : ORB.cyan, x, y, size * 4, 0.9);
+          glow(w.evolved ? ORB.amber : ORB.cyan, x, y, size * 4, 0.9 * fxAlpha());
           if (w.evolved) {
             ctx.strokeStyle = rgba(COLOR.amber, 0.7);
             ctx.lineWidth = 1.5;
@@ -4483,6 +5227,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
             ctx.stroke();
           }
         }
+      } else if (w.id === 'aura') {
+        drawAura(w, s);
       } else if (w.id === 'laser' && w.active > 0) {
         const g = laserGeom(w, s);
         const fade = Math.min(1, w.active / 0.12, (s.dur - w.active) / 0.08 + 0.2);
@@ -4492,7 +5238,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         const tone = w.evolved ? COLOR.amber : COLOR.cyan;
         const half = g.half * (1 + 0.06 * Math.sin(clock * 50));
         ctx.globalCompositeOperation = 'lighter';
-        ctx.globalAlpha = fade;
+        ctx.globalAlpha = fade * fxAlpha();
         ctx.fillStyle = beamFill(-half * 1.7, half * 1.7, tone, 0.29);
         ctx.fillRect(-half * 1.7, -1000, half * 3.4, 1000);
         ctx.drawImage(dot(tone), -half * 2.2, -half * 2.2, half * 4.4, half * 4.4);
@@ -4500,8 +5246,37 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
     }
   }
+  function drawAura(w, s) {
+    const R = s.radius * stats.area;
+    const tone = w.evolved ? COLOR.violet : COLOR.teal;
+    const fx = fxAlpha();
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = fx * (0.8 + 0.2 * Math.sin(clock * 5));
+    ctx.drawImage(w.evolved ? AURA_EVO : AURA, player.x - R, player.y - R, R * 2, R * 2);
+    ctx.globalAlpha = 0.5 * fx;
+    ctx.strokeStyle = tone;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([9, 7]);
+    ctx.lineDashOffset = -clock * (w.evolved ? 40 : 24);
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, R - 1, 0, TAU);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    if (w.evolved) { // motes spiral in toward the ship
+      for (let k = 0; k < 8; k++) {
+        const u = (clock * 0.6 + k / 8) % 1;
+        const a = k * 2.4 + clock * 2.2 + u * 3;
+        const r = R * (1 - u);
+        ctx.globalAlpha = fx * (1 - u) * 0.9;
+        ctx.drawImage(dot(COLOR.violet), player.x + Math.cos(a) * r - 5, player.y + Math.sin(a) * r - 5, 10, 10);
+      }
+    }
+    ctx.restore();
+  }
   function drawPlayerShots() {
     ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = fxAlpha();
     for (const s of pShots) {
       if (s.kind === 'missile') {
         const a = Math.atan2(s.vy, s.vx);
@@ -4531,14 +5306,13 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
     }
     ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
   }
   function drawEnemyShots() {
-    ctx.globalCompositeOperation = 'lighter';
     for (const b of eShots) {
-      const s = 6 * b.r * (b.split ? 1 + 0.15 * Math.sin(b.t * 20) : 1);
-      ctx.drawImage(ORB[b.tone] || ORB.coral, b.x - s / 2, b.y - s / 2, s, s);
+      const s = 5 * (b.r + 1) * (b.split ? 1 + 0.15 * Math.sin(b.t * 20) : 1);
+      ctx.drawImage(EBULLET[b.tone] || EBULLET.coral, b.x - s / 2, b.y - s / 2, s, s);
     }
-    ctx.globalCompositeOperation = 'source-over';
   }
 
   function drawGems() {
@@ -4552,6 +5326,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   function drawItems() {
     if (!SPR.item) return;
     for (const it of items) {
+      if (it.kind === 'coin') { // coins flip as they fall
+        const flip = Math.max(0.2, Math.abs(Math.cos(it.t * 5)));
+        ctx.drawImage(COIN, it.x - 8 * flip, it.y - 8, 16 * flip, 16);
+        continue;
+      }
       const pulse = 1 + 0.1 * Math.sin(it.t * 6);
       const s = 30 * pulse;
       ctx.drawImage(SPR.item[it.kind], it.x - s / 2, it.y - s / 2, s, s);
@@ -4564,35 +5343,36 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'lighter';
+    const fx = fxAlpha();
     for (const b of blooms) {
       const k = Math.max(0, b.life / b.full);
       const d = b.size * (1.25 - 0.45 * k);
-      ctx.globalAlpha = k;
+      ctx.globalAlpha = k * fx;
       ctx.drawImage(dot(b.color), b.x - d / 2, b.y - d / 2, d, d);
     }
     for (const p of sparks) {
       const k = Math.max(0, p.life / p.max);
       const d = p.w * 4.2 * (0.35 + 0.65 * k);
-      ctx.globalAlpha = k;
+      ctx.globalAlpha = k * fx;
       ctx.drawImage(dot(p.color), p.x - d / 2, p.y - d / 2, d, d);
     }
     ctx.lineCap = 'round';
     for (const r of rings) {
       const k = Math.max(0, r.life / r.full);
       ctx.strokeStyle = r.color;
-      ctx.globalAlpha = k * 0.25;
+      ctx.globalAlpha = k * 0.25 * fx;
       ctx.lineWidth = r.wide ? 10 : 6;
       ctx.beginPath();
       ctx.arc(r.x, r.y, r.r, 0, TAU);
       ctx.stroke();
-      ctx.globalAlpha = k * 0.85;
+      ctx.globalAlpha = k * 0.85 * fx;
       ctx.lineWidth = r.wide ? 3 : 1.6;
       ctx.stroke();
     }
     for (const z of zaps) {
       const a = Math.max(0, z.life / z.max);
       for (const [width, color] of [[7, COLOR.cyan], [3, COLOR.cyan], [1.4, '#ffffff']]) {
-        ctx.globalAlpha = a * (width > 5 ? 0.25 : width > 2 ? 0.6 : 1);
+        ctx.globalAlpha = a * (width > 5 ? 0.25 : width > 2 ? 0.6 : 1) * fx;
         ctx.strokeStyle = color;
         ctx.lineWidth = width;
         ctx.beginPath();
@@ -4648,6 +5428,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ui.hpTrack.setAttribute('aria-label', `체력 ${Math.ceil(player.hp)} / ${stats.maxHp}`);
     ui.level.textContent = String(run.level);
     ui.kills.textContent = num(run.kills);
+    ui.coins.textContent = num(Math.floor(run.coins));
     const b = boss && !boss.dead ? boss : null;
     ui.bossbar.hidden = !b;
     if (b) {
@@ -4665,12 +5446,18 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     void ui.banner.offsetWidth;
     ui.banner.classList.add('show');
   }
+  const TOGGLES = {
+    music: { on: () => saved.music, label: (on) => `음악 ${on ? '켜짐' : '꺼짐'}` },
+    sfx: { on: () => saved.sfx, label: (on) => `효과음 ${on ? '켜짐' : '꺼짐'}` },
+    fx: { on: () => !saved.dimFx, label: (on) => `내 효과 ${on ? '진하게' : '흐리게'}` },
+  };
   function renderToggles() {
     for (const b of document.querySelectorAll('[data-toggle]')) {
-      const on = b.dataset.toggle === 'music' ? saved.music : saved.sfx;
+      const t = TOGGLES[b.dataset.toggle];
+      const on = t.on();
       b.setAttribute('aria-pressed', String(on));
       b.classList.toggle('is-off', !on);
-      b.textContent = `${b.dataset.toggle === 'music' ? '음악' : '효과음'} ${on ? '켜짐' : '꺼짐'}`;
+      b.textContent = t.label(on);
     }
   }
   function chipsFor(list, kind, slots) {
@@ -4681,7 +5468,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       const chip = document.createElement('span');
       if (!s) {
         chip.className = 'chip is-empty';
-        chip.textContent = kind === 'weapon' ? '빈 무기 칸' : '빈 장비 칸';
+        chip.textContent = '빈 칸';
+        chip.setAttribute('aria-label', kind === 'weapon' ? '빈 무기 칸' : '빈 장비 칸');
       } else {
         const def = kind === 'weapon' ? WEAPONS[s.id] : PASSIVES[s.id];
         chip.className = `chip${kind === 'passive' ? ' is-passive' : ''}${s.evolved ? ' is-evolved' : ''}`;
@@ -4699,14 +5487,21 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     el.replaceChildren(chipsFor(build.weapons, 'weapon', WEAPON_SLOTS), chipsFor(build.passives, 'passive', PASSIVE_SLOTS));
   }
   // Each recipe shows how far along it is; recipes touched by the cards on offer are highlighted.
+  // On the level-up screen the ones that have nothing to do with this run yet fold away.
+  let allRecipes = false;
   function renderRecipes(listEl, offered = []) {
     const hot = new Set(offered.map((o) => o.id).filter(Boolean));
+    const compact = listEl === ui.choiceRecipes;
+    let far = 0;
     listEl.replaceChildren(...Object.keys(EVOLVE).map((wid) => {
       const w = owned('weapon', wid);
       const pid = EVOLVE[wid].partner;
       const ready = w && canEvolve(w);
+      const isHot = hot.has(wid) || hot.has(pid);
+      const isFar = compact && !w && !passiveLv(pid) && !isHot;
+      if (isFar) far += 1;
       const li = document.createElement('li');
-      li.className = `recipe${w && w.evolved ? ' is-done' : ready ? ' is-ready' : ''}${hot.has(wid) || hot.has(pid) ? ' is-hot' : ''}`;
+      li.className = `recipe${w && w.evolved ? ' is-done' : ready ? ' is-ready' : ''}${isHot ? ' is-hot' : ''}${isFar ? ' is-far' : ''}`;
       const left = document.createElement('span');
       const weaponPart = w && !w.evolved ? `${WEAPONS[wid].name} Lv ${w.lv}/5` : `${WEAPONS[wid].name} Lv 5`;
       left.textContent = `${weaponPart} + ${PASSIVES[pid].name}${passiveLv(pid) ? ' ✓' : ''}`;
@@ -4715,15 +5510,20 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       li.append(left, right);
       return li;
     }));
+    if (compact) {
+      listEl.classList.toggle('show-all', allRecipes);
+      ui.recipesMore.hidden = far === 0;
+      ui.recipesMore.textContent = allRecipes ? '관련 레시피만 보기' : `레시피 모두 보기 (+${far})`;
+    }
   }
 
   // ---------- screens ----------
   function showScreen(name, focus = true) {
     for (const [key, el] of Object.entries(ui.screens)) el.hidden = key !== name;
-    ui.hud.hidden = name === 'title' || name === 'stages' || name === 'result' || name === 'pause';
+    ui.hud.hidden = ['title', 'stages', 'result', 'pause', 'tree'].includes(name);
     ui.pause.hidden = name !== null;
     if (name !== null && name !== 'choice') ui.banner.classList.remove('show');
-    const target = { title: ui.start, pause: ui.resume, result: ui.again, stages: ui.stageList.querySelector('button:not(:disabled)') }[name];
+    const target = { title: ui.start, pause: ui.resume, result: ui.again, stages: ui.stageList.querySelector('button:not(:disabled)'), tree: ui.treeTabs.querySelector('[aria-pressed="true"]') }[name];
     if (focus && target) target.focus({ preventScroll: true });
     if (name === 'choice' && focus) {
       const first = ui.cards.querySelector('button');
@@ -4744,6 +5544,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     debris.length = 0;
     beams.length = 0;
     warns.length = 0;
+    blasts.length = 0;
     boss = null;
     clearRadius = 0;
   }
@@ -4755,6 +5556,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const best = bestRecord();
     const cleared = saved.cleared.filter(Boolean).length;
     ui.titleBest.textContent = best ? `최고 기록 ${num(best.score)}점 · 클리어 ${cleared}/${STAGES.length}` : '아직 기록이 없어요';
+    ui.titleCoins.textContent = fmt(saved.coins);
     showScreen('title', focus);
   }
   function showStages() {
@@ -4791,15 +5593,20 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     shake = 0;
     flash = 0;
     hurtFlash = 0;
-    Object.assign(run, { t: 0, score: 0, kills: 0, level: 1, xp: 0, need: xpNeed(1) });
-    build.weapons = [newWeapon('cannon')];
+    const head = rank('headstart');
+    Object.assign(run, {
+      t: 0, score: 0, kills: 0, level: 1 + head, xp: 0, need: xpNeed(1 + head), coins: 0,
+      rerolls: rank('reroll'), revives: rank('revive'), magT: AUTOMAG_EVERY[rank('automag') - 1] || 0,
+    });
+    build.weapons = rank('pick') ? [] : [newWeapon('cannon')];
     build.passives = [];
     stats = null;
     recompute();
-    Object.assign(player, { x: W / 2, y: H - 90, hp: stats.maxHp, invuln: 1.2, bank: 0, prevX: W / 2, alive: true });
+    Object.assign(player, { x: W / 2, y: H - 90, hp: stats.maxHp, invuln: 1.2, bank: 0, prevX: W / 2, alive: true, shield: rank('barrier') > 0, shieldT: 0 });
     Object.assign(director, { budget: 5, next: null, lastId: '', mid: 0, final: false });
-    pendingLevels = 0;
+    pendingLevels = head;
     pendingChests = 0;
+    pendingStart = rank('pick') > 0;
     endT = 0;
     paintSky();
     state = 'playing';
@@ -4811,11 +5618,25 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     lastFrame = performance.now();
     hudDirty = true;
   }
+  const choiceCount = () => 3 + rank('choice4');
   function openChoice(source, eyebrow, title, options) {
     state = 'choice';
     choice = { source, options };
     ui.choiceEyebrow.textContent = eyebrow;
     ui.choiceTitle.textContent = title;
+    renderCards(options);
+    renderSlots(ui.choiceSlots);
+    renderRecipes(ui.choiceRecipes, options);
+    showScreen('choice');
+    releasePointer();
+    keys.clear();
+  }
+  function canReroll() {
+    return run.rerolls > 0 && (choice.source === 'level' || (choice.source === 'chest' && choice.options[0] && choice.options[0].kind !== 'evolve'));
+  }
+  function renderCards(options) {
+    ui.reroll.hidden = !canReroll();
+    ui.reroll.textContent = `다시 뽑기 · ${run.rerolls}번 남음`;
     ui.cards.replaceChildren(...options.map((o, i) => {
       const v = optionView(o);
       const b = document.createElement('button');
@@ -4834,11 +5655,16 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       b.querySelector('.card-key').textContent = String(i + 1);
       return b;
     }));
-    renderSlots(ui.choiceSlots);
-    renderRecipes(ui.choiceRecipes, options);
-    showScreen('choice');
-    releasePointer();
-    keys.clear();
+  }
+  function reroll() {
+    if (state !== 'choice' || !canReroll()) return;
+    run.rerolls -= 1;
+    choice.options = rollOptions(choice.options.length);
+    renderCards(choice.options);
+    renderRecipes(ui.choiceRecipes, choice.options);
+    sfx.play('item');
+    const first = ui.cards.querySelector('button');
+    if (first) first.focus({ preventScroll: true });
   }
   function choose(i) {
     if (state !== 'choice') return;
@@ -4846,18 +5672,21 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (!o) return;
     applyOption(o);
     if (choice.source === 'level') pendingLevels = Math.max(0, pendingLevels - 1);
-    else pendingChests = Math.max(0, pendingChests - 1);
+    else if (choice.source === 'chest') pendingChests = Math.max(0, pendingChests - 1);
+    else pendingStart = false;
     proceed();
   }
   // Opens the next queued crate or level-up, or goes back to the fight.
   function proceed() {
-    if (pendingChests > 0) {
+    if (pendingStart) {
+      openChoice('start', '출격 준비', '시작 무기를 고르세요', Object.keys(WEAPONS).map((id) => ({ kind: 'weapon', id, lv: 1 })));
+    } else if (pendingChests > 0) {
       const ready = build.weapons.find(canEvolve);
       if (ready) openChoice('chest', '보급 상자', '합체할 수 있어요!', [{ kind: 'evolve', id: ready.id }]);
-      else openChoice('chest', '보급 상자', '하나를 고르세요', rollOptions(3));
+      else openChoice('chest', '보급 상자', '하나를 고르세요', rollOptions(choiceCount()));
       sfx.play('item');
     } else if (pendingLevels > 0) {
-      openChoice('level', `레벨 업 · Lv ${run.level - pendingLevels + 1}`, '스킬을 하나 고르세요', rollOptions(3));
+      openChoice('level', `레벨 업 · Lv ${run.level - pendingLevels + 1}`, '스킬을 하나 고르세요', rollOptions(choiceCount()));
       sfx.play('levelup');
       announce('레벨 업! 스킬을 하나 고르세요.');
     } else {
@@ -4893,6 +5722,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const record = { id: uid(), stage: stageIndex + 1, cleared, timeMs, level: run.level, kills: run.kills, score, at: new Date().toISOString() };
     const prev = bestRecord();
     const unlockedBefore = saved.unlocked;
+    const timeCoins = Math.floor(Math.min(run.t, STAGE_TIME) / 10) * stats.coinMul;
+    const earned = Math.floor(run.coins + timeCoins + (cleared ? 100 * (stageIndex + 1) : 0));
+    saved.coins += earned;
+    saved.earned += earned;
+    record.coins = earned;
     saved.records.push(record);
     if (saved.records.length > MAX_RECORDS) saved.records.splice(0, saved.records.length - MAX_RECORDS);
     if (cleared) {
@@ -4923,6 +5757,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ui.stLevel.textContent = `Lv ${record.level}`;
     ui.stKills.textContent = `${num(record.kills)}대`;
     ui.stStage.textContent = `${stageIndex + 1}. ${stage.name}`;
+    ui.coinLine.innerHTML = svgIcon('coin');
+    const coinText = document.createElement('b');
+    coinText.textContent = `코인 +${fmt(earned)}`;
+    const coinHave = document.createElement('span');
+    coinHave.textContent = `보유 ${fmt(saved.coins)} · 스킬 트리에서 써요`;
+    ui.coinLine.append(coinText, coinHave);
     ui.resultWarn.hidden = stored;
     const hasNext = cleared && stageIndex < STAGES.length - 1;
     ui.again.textContent = hasNext ? '다음 지역 출격' : '다시 출격';
@@ -4932,6 +5772,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     announce(cleared ? `${stage.name} 클리어! ${fmt(score)}점.` : `작전 실패. ${fmt(score)}점, ${clockText(timeMs / 1000)} 버텼어요.`);
     const dur = countUp(ui.finalScore, score);
     if (!ui.finalSeal.hidden) stampSeal(dur + 80);
+    lastRun = {
+      stage: stageIndex + 1, score, time: Math.round(timeMs / 1000), level: run.level, kills: run.kills, clear: cleared,
+      eligible: timeMs >= 15000, status: 'idle', key: null, rank: 0, total: 0,
+    };
+    if (board.on && lastRun.eligible && saved.name) submitRun();
+    else renderBoardResult();
   }
   function countUp(node, to) {
     if (!motionOK() || to <= 0) {
@@ -4958,6 +5804,341 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     window.setTimeout(() => sfx.play('stamp'), delay + 200);
   }
 
+  // ---------- skill tree screen ----------
+  let treeTab = 'attack';
+  let treeSel = null;
+  let treeFrom = 'title';
+  function showTree() {
+    treeFrom = state === 'result' ? 'result' : 'title';
+    state = 'tree';
+    ui.treeConfirm.hidden = true;
+    const br = TREE.find((b) => b.id === treeTab);
+    if (!treeSel || NODES.get(treeSel).branch !== br) treeSel = br.nodes[0].id;
+    renderTree();
+    showScreen('tree');
+    drawTreeLinks();
+  }
+  function treeBack() {
+    if (state !== 'tree') return;
+    if (treeFrom === 'result') {
+      state = 'result';
+      showScreen('result');
+    } else showTitle();
+  }
+  function setTone(el, tone) {
+    el.style.setProperty('--tone', COLOR[tone]);
+    el.style.setProperty('--tone-soft', rgba(COLOR[tone], 0.14));
+  }
+  function renderTree() {
+    ui.treeCoins.textContent = fmt(saved.coins);
+    ui.treeTabs.replaceChildren(...TREE.map((br) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'tree-tab';
+      b.dataset.tab = br.id;
+      setTone(b, br.tone);
+      b.setAttribute('aria-pressed', String(br.id === treeTab));
+      const done = br.nodes.reduce((t, n) => t + rank(n.id), 0);
+      const all = br.nodes.reduce((t, n) => t + n.max, 0);
+      const name = document.createElement('span');
+      name.textContent = br.name;
+      const count = document.createElement('small');
+      count.textContent = `${done}/${all}`;
+      b.append(name, count);
+      return b;
+    }));
+    const br = TREE.find((b) => b.id === treeTab);
+    setTone(ui.screens.tree, br.tone);
+    ui.treeGrid.replaceChildren(...br.nodes.map(nodeButton));
+    renderTreeDetail();
+    window.requestAnimationFrame(drawTreeLinks);
+  }
+  function nodeButton(n) {
+    const r = rank(n.id);
+    const open = nodeOpen(n);
+    const max = r >= n.max;
+    const cost = max ? 0 : nodeCost(n, r);
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'tree-node' + (n.col === undefined ? ' is-root' : '') + (!open ? ' is-locked' : '') + (max ? ' is-max' : '') +
+      (open && !max && saved.coins >= cost ? ' is-afford' : '') + (treeSel === n.id ? ' is-selected' : '');
+    b.dataset.node = n.id;
+    b.style.gridRow = String(n.row + 1);
+    if (n.col !== undefined) b.style.gridColumn = String(n.col + 1);
+    b.innerHTML = `<span class="tn-icon">${svgIcon(open ? n.icon : 'lock')}</span><span class="tn-name"></span><span class="tn-pips"></span><span class="tn-cost"></span>`;
+    b.querySelector('.tn-name').textContent = n.name;
+    b.querySelector('.tn-pips').innerHTML = Array.from({ length: n.max }, (_, i) => `<i${i < r ? ' class="on"' : ''}></i>`).join('');
+    const costEl = b.querySelector('.tn-cost');
+    if (max) costEl.textContent = '최대';
+    else {
+      costEl.innerHTML = svgIcon('coin');
+      costEl.append(fmt(cost));
+    }
+    b.setAttribute('aria-label', `${n.name}, Lv ${r}/${n.max}${!open ? ', 잠김' : max ? ', 최대' : `, ${cost}코인`}`);
+    b.setAttribute('aria-pressed', String(treeSel === n.id));
+    return b;
+  }
+  function renderTreeDetail() {
+    const n = treeSel && NODES.get(treeSel);
+    if (!n) {
+      ui.treeDetail.replaceChildren();
+      return;
+    }
+    const r = rank(n.id);
+    const open = nodeOpen(n);
+    const max = r >= n.max;
+    const cost = max ? 0 : nodeCost(n, r);
+    const head = document.createElement('div');
+    head.className = 'td-head';
+    head.innerHTML = `<span class="tn-icon">${svgIcon(n.icon)}</span><b></b><span class="td-rank"></span>`;
+    head.querySelector('b').textContent = n.name;
+    head.querySelector('.td-rank').textContent = `Lv ${r}/${n.max}`;
+    const line = (label, text, cls = '') => {
+      const p = document.createElement('p');
+      p.className = `td-line ${cls}`;
+      const b = document.createElement('b');
+      b.textContent = label;
+      p.append(b, ` ${text}`);
+      return p;
+    };
+    const parts = [head];
+    parts.push(line('지금', r ? n.about(r) : '아직 배우지 않았어요'));
+    if (!max) parts.push(line('다음', n.about(r + 1)));
+    if (!open) {
+      const parent = NODES.get(n.req[0]);
+      parts.push(line('필요', `${parent.name} Lv ${n.req[1]} 이상`, 'is-req'));
+    }
+    const buy = document.createElement('button');
+    buy.type = 'button';
+    buy.className = 'btn btn-primary td-buy';
+    buy.dataset.buy = n.id;
+    if (max) {
+      buy.textContent = '최대 레벨이에요';
+      buy.disabled = true;
+    } else if (!open) {
+      buy.textContent = '아직 잠겨 있어요';
+      buy.disabled = true;
+    } else {
+      buy.innerHTML = svgIcon('coin');
+      buy.append(saved.coins >= cost ? `${fmt(cost)} 코인으로 강화` : `코인 ${fmt(cost - saved.coins)}개가 모자라요`);
+      buy.disabled = saved.coins < cost;
+    }
+    parts.push(buy);
+    ui.treeDetail.replaceChildren(...parts);
+  }
+  function drawTreeLinks() {
+    if (ui.screens.tree.hidden) return;
+    const box = ui.treeGrid.getBoundingClientRect();
+    if (!box.width) return;
+    ui.treeLinks.setAttribute('width', String(box.width));
+    ui.treeLinks.setAttribute('height', String(box.height));
+    ui.treeLinks.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
+    const paths = [];
+    for (const el of ui.treeGrid.children) {
+      const n = NODES.get(el.dataset.node);
+      if (!n || !n.req) continue;
+      const parent = ui.treeGrid.querySelector(`[data-node="${n.req[0]}"]`);
+      if (!parent) continue;
+      const a = parent.getBoundingClientRect();
+      const c = el.getBoundingClientRect();
+      const x1 = a.left + a.width / 2 - box.left;
+      const y1 = a.bottom - box.top;
+      const x2 = c.left + c.width / 2 - box.left;
+      const y2 = c.top - box.top;
+      const my = (y1 + y2) / 2;
+      paths.push(`<path d="M${x1.toFixed(1)} ${y1.toFixed(1)} C${x1.toFixed(1)} ${my.toFixed(1)} ${x2.toFixed(1)} ${my.toFixed(1)} ${x2.toFixed(1)} ${y2.toFixed(1)}"${nodeOpen(n) ? ' class="on"' : ''} />`);
+    }
+    ui.treeLinks.innerHTML = paths.join('');
+  }
+  function buyNode(id) {
+    const n = NODES.get(id);
+    if (!n || !nodeOpen(n)) return;
+    const r = rank(id);
+    if (r >= n.max) return;
+    const cost = nodeCost(n, r);
+    if (saved.coins < cost) return;
+    saved.coins -= cost;
+    saved.tree[id] = r + 1;
+    save();
+    audio.unlock();
+    sfx.play('levelup');
+    renderTree();
+    const again = ui.treeDetail.querySelector('[data-buy]');
+    if (again && !again.disabled) again.focus({ preventScroll: true });
+    announce(`${n.name} Lv ${r + 1}. 남은 코인 ${saved.coins}개.`);
+  }
+  function resetTree() {
+    const refund = spentCoins();
+    saved.coins += refund;
+    saved.tree = {};
+    save();
+    ui.treeConfirm.hidden = true;
+    renderTree();
+    announce(`스킬 트리를 되돌리고 코인 ${refund}개를 돌려받았어요.`);
+  }
+
+  // ---------- shared board: result box, ranking tab, names, sharing ----------
+  function renderBoardResult() {
+    const r = lastRun;
+    const show = board.on && r && r.eligible;
+    ui.boardStatus.hidden = !show || (!saved.name && r.status === 'idle');
+    ui.resultNameForm.hidden = !show || !!saved.name || r.status !== 'idle';
+    ui.boardRetry.hidden = !show || r.status !== 'error';
+    if (!show) return;
+    if (!ui.resultNameForm.hidden) ui.resultNameNote.textContent = '이름은 이 기기에 저장되고 다음 판부터 저절로 올라가요.';
+    if (r.status === 'sending') ui.boardStatus.textContent = '전체 순위에 올리는 중…';
+    else if (r.status === 'error') ui.boardStatus.textContent = '전체 순위에 올리지 못했어요. 인터넷 연결을 확인해 주세요.';
+    else if (r.status === 'done') {
+      ui.boardStatus.textContent = '';
+      const lead = document.createElement('span');
+      lead.textContent = `${saved.name} · ${r.stage}지역 전체`;
+      const rankEl = document.createElement('b');
+      rankEl.textContent = r.rank ? `${r.rank}위` : '200위 밖';
+      const tail = document.createElement('span');
+      tail.className = 'board-sub';
+      tail.textContent = r.rank ? `${r.total}명 중 · ${r.best ? '이번 판이 내 최고 기록' : '내 최고 기록 기준'}` : '';
+      ui.boardStatus.append(lead, rankEl, tail);
+    }
+  }
+  async function submitRun() {
+    const r = lastRun;
+    if (!r || !board.on || !saved.name || r.status === 'sending' || r.status === 'done') return;
+    r.status = 'sending';
+    renderBoardResult();
+    try {
+      r.key = await board.submit(r.stage, { name: saved.name, score: r.score, time: r.time, level: r.level, kills: r.kills, clear: r.clear, pid: saved.pid });
+      const list = bestPerPlayer(await board.top(r.stage, true));
+      const i = list.findIndex((x) => x.pid === saved.pid);
+      r.rank = i >= 0 ? i + 1 : 0;
+      r.total = list.length;
+      r.best = i >= 0 && list[i].key === r.key;
+      r.status = 'done';
+      if (r.rank) announce(`전체 순위 ${r.rank}위예요.`);
+    } catch {
+      r.status = 'error';
+    }
+    if (lastRun === r) renderBoardResult();
+  }
+  let boardStage = 1;
+  let recordsView = 'board';
+  function setRecordsView(view) {
+    recordsView = board.on ? view : 'mine';
+    ui.recordsTabs.hidden = !board.on;
+    for (const t of ui.recordsTabs.querySelectorAll('[data-view]')) t.setAttribute('aria-selected', String(t.dataset.view === recordsView));
+    ui.boardPanel.hidden = recordsView !== 'board';
+    ui.minePanel.hidden = recordsView !== 'mine';
+    if (recordsView === 'board') renderBoard(false);
+    else renderRecords();
+  }
+  function renderBoardMe() {
+    ui.boardMe.replaceChildren();
+    const label = document.createElement('span');
+    label.textContent = saved.name ? '내 이름' : '아직 이름이 없어요. 이름을 정하면 판이 끝날 때 기록이 올라가요.';
+    ui.boardMe.append(label);
+    if (saved.name) {
+      const b = document.createElement('b');
+      b.textContent = saved.name;
+      ui.boardMe.append(b);
+    }
+    const edit = document.createElement('button');
+    edit.type = 'button';
+    edit.className = 'link-btn';
+    edit.id = 'name-edit';
+    edit.textContent = saved.name ? '바꾸기' : '이름 정하기';
+    ui.boardMe.append(edit);
+  }
+  async function renderBoard(fresh) {
+    const stage = boardStage;
+    ui.boardStages.replaceChildren(...STAGES.map((st, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'stage-chip';
+      b.dataset.boardStage = String(i + 1);
+      b.style.setProperty('--stage-color', st.color);
+      b.setAttribute('aria-pressed', String(i + 1 === stage));
+      b.setAttribute('aria-label', `${i + 1}. ${st.name}`);
+      b.textContent = String(i + 1);
+      return b;
+    }));
+    renderBoardMe();
+    ui.boardList.replaceChildren();
+    ui.boardEmpty.hidden = false;
+    ui.boardEmpty.textContent = `${stage}. ${STAGES[stage - 1].name} 순위를 불러오는 중…`;
+    try {
+      const list = bestPerPlayer(await board.top(stage, fresh));
+      if (boardStage !== stage || recordsView !== 'board') return;
+      if (!list.length) {
+        ui.boardEmpty.textContent = `${stage}. ${STAGES[stage - 1].name}에는 아직 올라온 기록이 없어요. 첫 번째 주인공이 되어 보세요!`;
+        return;
+      }
+      ui.boardEmpty.hidden = true;
+      const rows = list.slice(0, 50).map((r, i) => boardRow(r, i + 1));
+      const mine = list.findIndex((r) => r.pid === saved.pid);
+      if (mine >= 50) rows.push(boardRow(list[mine], mine + 1));
+      ui.boardList.replaceChildren(...rows);
+    } catch {
+      if (boardStage !== stage || recordsView !== 'board') return;
+      ui.boardEmpty.textContent = '순위를 불러오지 못했어요. 인터넷 연결을 확인하고 새로 고침을 눌러 주세요.';
+    }
+  }
+  function boardRow(r, n) {
+    const li = document.createElement('li');
+    const me = r.pid === saved.pid;
+    li.className = 'rank' + (n === 1 ? ' is-top' : '') + (me ? ' is-latest' : '');
+    li.innerHTML = '<span class="rank-no"></span><span class="rank-score"></span><span class="rank-date"></span><span class="rank-meta"></span>';
+    li.querySelector('.rank-no').textContent = String(n);
+    const scoreEl = li.querySelector('.rank-score');
+    const name = document.createElement('b');
+    name.className = 'rank-name';
+    name.textContent = r.name;
+    scoreEl.append(name, `${fmt(r.score)}점`);
+    if (r.clear) {
+      const tag = document.createElement('span');
+      tag.className = 'tag is-clear';
+      tag.textContent = '클리어';
+      scoreEl.append(tag);
+    }
+    if (me) {
+      const tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.textContent = '나';
+      scoreEl.append(tag);
+    }
+    li.querySelector('.rank-date').textContent = r.at ? fmtDate(new Date(r.at).toISOString()) : '';
+    li.querySelector('.rank-meta').textContent = `${clockText(r.time)} 버팀 · Lv ${r.level} · 격추 ${fmt(r.kills)}대`;
+    return li;
+  }
+  function saveName(value) {
+    const name = cleanName(value);
+    if (!name) return false;
+    saved.name = name;
+    save();
+    return true;
+  }
+  async function shareRun() {
+    const url = location.href.split(/[?#]/)[0];
+    const r = lastRun;
+    const text = r
+      ? `은하수 방어선 ${r.stage}지역 '${STAGES[r.stage - 1].name}'에서 ${fmt(r.score)}점${r.rank ? `, 전체 ${r.rank}위` : ''}! 너도 도전해 봐.`
+      : '은하수 방어선, 같이 해 보자!';
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: '은하수 방어선', text, url });
+        return;
+      }
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;
+    }
+    try {
+      await navigator.clipboard.writeText(`${text} ${url}`);
+      const before = ui.share.textContent;
+      ui.share.textContent = '복사했어요! 카톡에 붙여 넣어요';
+      window.setTimeout(() => { ui.share.textContent = before; }, 2600);
+    } catch {
+      window.prompt('아래 글을 복사해서 친구에게 보내세요.', `${text} ${url}`);
+    }
+  }
+
   // ---------- flight log ----------
   function rankRow(r, rank) {
     const li = document.createElement('li');
@@ -4965,7 +6146,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     li.innerHTML = '<span class="rank-no"></span><span class="rank-score"></span><span class="rank-date"></span><span class="rank-meta"></span>';
     li.querySelector('.rank-no').textContent = String(rank);
     const scoreEl = li.querySelector('.rank-score');
-    scoreEl.textContent = `${num(r.score)}점`;
+    scoreEl.textContent = `${fmt(r.score)}점`;
     if (r.cleared) {
       const tag = document.createElement('span');
       tag.className = 'tag is-clear';
@@ -5002,8 +6183,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (oldList.length) ui.oldNote.textContent = `예전 방식(단계제) 기록 ${oldList.length}판 · 최고 ${fmt(bestRecord(oldList).score)}점`;
   }
   function openRecords() {
-    renderRecords();
     ui.clearConfirm.hidden = true;
+    ui.nameForm.hidden = true;
+    if (lastRun) boardStage = lastRun.stage;
+    setRecordsView(board.on ? 'board' : 'mine');
     if (!ui.records.open) ui.records.showModal();
   }
 
@@ -5050,8 +6233,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 
   const MOVE_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyA', 'KeyD', 'KeyW', 'KeyS', 'ShiftLeft', 'ShiftRight']);
   window.addEventListener('keydown', (e) => {
-    if (ui.records.open) return;
-    if (state === 'choice' && /^Digit[1-3]$/.test(e.code)) {
+    if (ui.records.open || (e.target && e.target.tagName === 'INPUT')) return;
+    if (state === 'choice' && /^Digit[1-9]$/.test(e.code)) {
       choose(Number(e.code.slice(5)) - 1);
       e.preventDefault();
       return;
@@ -5059,6 +6242,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (MOVE_KEYS.has(e.code)) {
       keys.add(e.code);
       if (state === 'playing') e.preventDefault();
+    }
+    if (state === 'tree' && e.code === 'Escape') {
+      treeBack();
+      e.preventDefault();
+      return;
     }
     if (e.code === 'KeyP' || e.code === 'Escape') {
       if (state === 'playing') {
@@ -5097,7 +6285,88 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   ui.quit.addEventListener('click', () => showTitle());
   ui.again.addEventListener('click', () => startStage(Number(ui.again.dataset.stage) || 0));
   ui.toStages.addEventListener('click', showStages);
+  ui.openTree1.addEventListener('click', showTree);
+  ui.openTree2.addEventListener('click', showTree);
+  ui.treeBack.addEventListener('click', treeBack);
+  ui.reroll.addEventListener('click', reroll);
+  ui.recipesMore.addEventListener('click', () => {
+    allRecipes = !allRecipes;
+    renderRecipes(ui.choiceRecipes, choice.options);
+  });
+  ui.treeTabs.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-tab]');
+    if (!b || b.dataset.tab === treeTab) return;
+    treeTab = b.dataset.tab;
+    treeSel = TREE.find((br) => br.id === treeTab).nodes[0].id;
+    ui.treeConfirm.hidden = true;
+    renderTree();
+  });
+  ui.treeGrid.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-node]');
+    if (!b) return;
+    treeSel = b.dataset.node;
+    for (const el of ui.treeGrid.children) {
+      el.classList.toggle('is-selected', el === b);
+      el.setAttribute('aria-pressed', String(el === b));
+    }
+    renderTreeDetail();
+  });
+  ui.treeDetail.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-buy]');
+    if (b && !b.disabled) buyNode(b.dataset.buy);
+  });
+  ui.treeReset.addEventListener('click', () => {
+    ui.treeRefund.textContent = fmt(spentCoins());
+    ui.treeConfirm.hidden = false;
+    ui.treeResetCancel.focus();
+  });
+  ui.treeResetCancel.addEventListener('click', () => {
+    ui.treeConfirm.hidden = true;
+    ui.treeReset.focus();
+  });
+  ui.treeResetOk.addEventListener('click', resetTree);
   ui.openRecords1.addEventListener('click', openRecords);
+  ui.recordsTabs.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-view]');
+    if (t) setRecordsView(t.dataset.view);
+  });
+  ui.boardStages.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-board-stage]');
+    if (!b) return;
+    boardStage = Number(b.dataset.boardStage);
+    renderBoard(false);
+  });
+  ui.boardRefresh.addEventListener('click', () => renderBoard(true));
+  ui.boardMe.addEventListener('click', (e) => {
+    if (!e.target.closest('#name-edit')) return;
+    ui.nameForm.hidden = false;
+    ui.nameInput.value = saved.name;
+    ui.nameInput.focus();
+  });
+  ui.nameForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!saveName(ui.nameInput.value)) {
+      ui.nameInput.focus();
+      return;
+    }
+    ui.nameForm.hidden = true;
+    renderBoardMe();
+    if (lastRun && lastRun.status === 'idle' && board.on && lastRun.eligible) submitRun();
+  });
+  ui.resultNameForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!saveName(ui.resultName.value)) {
+      ui.resultNameNote.textContent = '이름을 1~10자로 적어 주세요.';
+      ui.resultName.focus();
+      return;
+    }
+    submitRun();
+  });
+  ui.boardRetry.addEventListener('click', () => {
+    if (lastRun) lastRun.status = 'idle';
+    submitRun();
+  });
+  ui.share.addEventListener('click', shareRun);
   ui.openRecords2.addEventListener('click', openRecords);
   ui.recordsClose.addEventListener('click', () => ui.records.close());
   ui.records.addEventListener('click', (e) => {
@@ -5129,6 +6398,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         saved.music = !saved.music;
         if (saved.music && state !== 'paused') music.resume();
         else if (!saved.music) music.pause();
+      } else if (b.dataset.toggle === 'fx') {
+        saved.dimFx = !saved.dimFx;
       } else {
         saved.sfx = !saved.sfx;
         if (saved.sfx) sfx.play('item');
@@ -5152,6 +6423,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     updatePlayerShots(dt);
     updateEnemyShots(dt);
     updateHazards(dt);
+    if (blasts.length) {
+      const list = blasts.splice(0);
+      const dmg = 25 * stats.dmgMul * (1 + run.t / 200);
+      for (const p of list) blastAt(p.x, p.y, 38 * stats.area, dmg, null);
+    }
     checkContacts();
     applyClear();
     compact(enemies);
@@ -5175,7 +6451,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     clock += dt;
     if (state === 'playing' || state === 'dying' || state === 'clearing') step(dt);
     else if (state !== 'paused' && state !== 'choice') idle(dt);
-    if (state === 'playing' && (pendingChests > 0 || pendingLevels > 0)) proceed();
+    if (state === 'playing' && (pendingStart || pendingChests > 0 || pendingLevels > 0)) proceed();
     draw();
     if (hudDirty) renderHud();
     else if (Math.floor(run.t) !== shownSec) renderClock();
