@@ -8,15 +8,15 @@
 <!-- Link preview card (KakaoTalk and other messengers). The addresses follow the repository name; update them if it changes. -->
 <meta property="og:type" content="website">
 <meta property="og:locale" content="ko_KR">
-<meta property="og:title" content="은하수 방어선">
+<meta property="og:title" content="전투의 미">
 <meta property="og:description" content="13분을 버티며 스킬을 키우고, 마지막 모선을 격추하는 우주 슈팅 게임">
 <meta property="og:url" content="https://kswksj7867-a11y.github.io/game/space/">
-<meta property="og:image" content="https://kswksj7867-a11y.github.io/game/space/og.jpg">
+<meta property="og:image" content="https://kswksj7867-a11y.github.io/game/space/og.jpg?v=4">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <!-- page:start -->
-<title>은하수 방어선</title>
+<title>전투의 미</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -265,6 +265,7 @@ button { font: inherit; color: inherit; }
   line-height: 1.02;
   text-shadow: 0 0 30px rgba(168, 139, 255, 0.55);
 }
+.title-big { font-size: 2.2em; line-height: 0.95; } /* the name's last syllable, set extra large */
 .lede { color: var(--muted); font-size: 0.9375rem; }
 .howto { list-style: none; padding: 0; display: grid; gap: 10px; }
 .howto li { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; align-items: start; font-size: 0.875rem; color: var(--muted); }
@@ -924,7 +925,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 
       <section class="overlay" id="screen-title" aria-labelledby="game-title">
         <p class="eyebrow">작전명</p>
-        <h1 class="title" id="game-title">은하수<br>방어선</h1>
+        <h1 class="title" id="game-title">전투의 <span class="title-big">미</span></h1>
         <p class="lede">13분을 버티면 마지막에 모선이 나타나요. 모선을 격추하면 다음 지역이 열려요.</p>
         <ul class="howto">
           <li>
@@ -8550,11 +8551,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const url = location.href.split(/[?#]/)[0];
     const r = lastRun;
     const text = r
-      ? `은하수 방어선 ${r.stage === ENDLESS + 1 ? '무한 모드' : `${r.stage}지역 '${stageName(r.stage)}'`}에서 ${fmt(r.score)}점${r.rank ? `, 전체 ${r.rank}위` : ''}! 너도 도전해 봐.`
-      : '은하수 방어선, 같이 해 보자!';
+      ? `전투의 미 ${r.stage === ENDLESS + 1 ? '무한 모드' : `${r.stage}지역 '${stageName(r.stage)}'`}에서 ${fmt(r.score)}점${r.rank ? `, 전체 ${r.rank}위` : ''}! 너도 도전해 봐.`
+      : '전투의 미, 같이 해 보자!';
     try {
       if (navigator.share) {
-        await navigator.share({ title: '은하수 방어선', text, url });
+        await navigator.share({ title: '전투의 미', text, url });
         return;
       }
     } catch (err) {
