@@ -597,6 +597,16 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 }
 .name-input::placeholder { color: rgba(163, 169, 214, 0.6); }
 .note.is-error { color: var(--danger); }
+.name-fields, .name-linked { display: grid; gap: 12px; }
+.field-label { margin-bottom: -6px; font-size: 1rem; font-weight: 700; color: var(--ink); }
+.field-label span { margin-left: 4px; font-size: 0.8125rem; font-weight: 400; color: var(--muted); }
+.name-input:disabled { opacity: 0.5; }
+.linked-badge { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 1rem; font-weight: 700; color: var(--cyan); }
+.linked-badge svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
+.linked-name { margin: 0; font-family: var(--font-display); font-size: 1.75rem; line-height: 1.2; overflow-wrap: anywhere; }
+.linked-sum { margin: 0; font-family: var(--font-data); font-size: 0.9375rem; color: var(--amber); }
+#pilot-state { color: var(--muted); }
+#pilot-state.is-linked { color: var(--cyan); }
 
 /* ---------- shared board ---------- */
 .board-box { display: grid; gap: 10px; }
@@ -850,7 +860,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         <p class="best-line" id="title-best">아직 기록이 없어요</p>
         <div class="pilot" id="pilot" hidden>
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0" /></svg>
-          <span class="pilot-text"><span class="pilot-label">조종사 이름</span><b id="pilot-name">이름 없음</b></span>
+          <span class="pilot-text"><span class="pilot-label">조종사 이름 <span id="pilot-state"></span></span><b id="pilot-name">이름 없음</b></span>
           <button type="button" class="btn pilot-btn" id="pilot-edit">이름 정하기</button>
         </div>
         <button type="button" class="btn btn-primary btn-launch" id="start">출격</button>
@@ -985,12 +995,24 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
       </button>
     </div>
-    <p class="lede">전체 순위표에 이 이름으로 올라가요. 친구들이 알아볼 수 있게 정해 주세요.</p>
-    <label class="sr-only" for="name-dialog-input">조종사 이름</label>
-    <input class="name-input" id="name-dialog-input" type="text" maxlength="10" autocomplete="nickname" enterkeyhint="done" placeholder="예: 우주 고양이">
-    <p class="note" id="name-dialog-note">10자까지 쓸 수 있고, 나중에 처음 화면에서 바꿀 수 있어요.</p>
-    <button type="submit" class="btn btn-primary" id="name-dialog-save">저장</button>
-    <button type="button" class="btn btn-quiet" id="name-dialog-skip" hidden>이름 없이 출격</button>
+    <div class="name-fields" id="name-fields">
+      <p class="lede">전체 순위표에 이 이름으로 올라가요. 비밀번호도 정하면 다른 폰이나 앱(카톡, 크롬)에서도 이어서 할 수 있어요.</p>
+      <label class="field-label" for="name-dialog-input">이름 <span>10자까지</span></label>
+      <input class="name-input" id="name-dialog-input" type="text" maxlength="10" autocomplete="username" enterkeyhint="next" placeholder="예: 우주 고양이">
+      <label class="field-label" for="name-dialog-pass">비밀번호 <span>4자 이상 · 비우면 이 기기에만 저장</span></label>
+      <input class="name-input" id="name-dialog-pass" type="password" maxlength="40" autocomplete="current-password" enterkeyhint="done" placeholder="어디서나 이어하려면 정해 주세요">
+      <p class="note" id="name-dialog-note"></p>
+      <button type="submit" class="btn btn-primary" id="name-dialog-save">저장</button>
+      <button type="button" class="btn btn-quiet" id="name-dialog-skip" hidden>이름 없이 출격</button>
+    </div>
+    <div class="name-linked" id="name-linked" hidden>
+      <p class="linked-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18h10.5a4.5 4.5 0 0 0 .6-8.96A6 6 0 0 0 6.6 10.2 4 4 0 0 0 7 18z" /></svg><span id="linked-title">계정에 연결되어 있어요</span></p>
+      <p class="linked-name" id="linked-name"></p>
+      <p class="linked-sum" id="linked-sum"></p>
+      <p class="lede">코인, 스킬 트리, 열린 지역, 기록이 저절로 저장돼요. 다른 폰이나 앱에서도 같은 이름과 비밀번호를 넣으면 이어서 할 수 있어요.</p>
+      <button type="button" class="btn btn-primary" id="linked-ok">확인</button>
+      <button type="button" class="btn btn-quiet" id="linked-out">이 기기에서 연결 끊기</button>
+    </div>
   </form>
 </dialog>
 
@@ -1078,7 +1100,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     openRecords1: $('open-records-1'), openRecords2: $('open-records-2'),
     pilot: $('pilot'), pilotName: $('pilot-name'), pilotEdit: $('pilot-edit'), nameDialog: $('dlg-name'), nameDialogForm: $('name-dialog-form'),
     nameDialogInput: $('name-dialog-input'), nameDialogNote: $('name-dialog-note'), nameDialogSave: $('name-dialog-save'),
-    nameDialogSkip: $('name-dialog-skip'), nameClose: $('name-close'),
+    nameDialogSkip: $('name-dialog-skip'), nameClose: $('name-close'), nameDialogPass: $('name-dialog-pass'),
+    nameFields: $('name-fields'), nameLinked: $('name-linked'), linkedTitle: $('linked-title'), linkedName: $('linked-name'),
+    linkedSum: $('linked-sum'), linkedOk: $('linked-ok'), linkedOut: $('linked-out'), pilotState: $('pilot-state'),
     records: $('dlg-records'), recordsClose: $('records-close'), sumPlays: $('sum-plays'), sumBest: $('sum-best'),
     sumClear: $('sum-clear'), recordsList: $('records-list'), recordsEmpty: $('records-empty'), oldNote: $('old-note'),
     recordsClear: $('records-clear'), clearConfirm: $('clear-confirm'), clearCancel: $('clear-cancel'), clearOk: $('clear-ok'),
@@ -1511,8 +1535,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       name: cleanName(raw.name),
       pid: typeof raw.pid === 'string' && /^[a-z0-9]{8,24}$/.test(raw.pid) ? raw.pid : newPid(),
       boardHost: typeof raw.boardHost === 'string' ? raw.boardHost : '',
+      rev: Math.max(0, Math.floor(Number(raw.rev) || 0)),
+      account: cleanAccount(raw.account),
     };
   })();
+  function cleanAccount(a) {
+    const hex64 = (v) => typeof v === 'string' && /^[0-9a-f]{64}$/.test(v);
+    return a && typeof a === 'object' && hex64(a.key) && hex64(a.owner) ? { key: a.key, owner: a.owner } : null;
+  }
   // Names show on the shared board: 1-10 characters, no control characters, single spaces.
   function cleanName(v) {
     if (typeof v !== 'string') return '';
@@ -1547,13 +1577,20 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     for (const n of NODES.values()) for (let r = 0; r < rank(n.id); r++) total += nodeCost(n, r);
     return total;
   }
-  function save() {
+  function writeLocal() {
     try {
       window.localStorage.setItem(STORE_KEY, JSON.stringify(saved));
       return true;
     } catch {
       return false;
     }
+  }
+  // Every change bumps the revision; with an account linked it is also sent to the server shortly after.
+  function save() {
+    saved.rev += 1;
+    const ok = writeLocal();
+    cloud.schedule();
+    return ok;
   }
   function bestRecord(list = saved.records) {
     let best = null;
@@ -1645,8 +1682,154 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         cache.delete(stage);
         return res && typeof res.name === 'string' ? res.name : null;
       },
+      get: (path) => call(`${path}.json`),
+      put: (path, value) => call(`${path}.json`, { method: 'PUT', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(value) }),
     };
   })();
+
+  // ---------- accounts: a name and a password keep progress on the server ----------
+  // The password never leaves the device: it is stretched into a long key (PBKDF2), and that key is the account's
+  // address on the server. The name list stores only a hash of the key, so it tells nobody the address.
+  const hexOf = (buf) => Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, '0')).join('');
+  const utf8 = (text) => new TextEncoder().encode(text);
+  const sha256 = async (text) => hexOf(await window.crypto.subtle.digest('SHA-256', utf8(text)));
+  const canAccount = () => board.on && !!(window.crypto && window.crypto.subtle && window.TextEncoder);
+  async function accountKeys(name, password) {
+    const norm = name.normalize('NFC').toLowerCase();
+    const base = await window.crypto.subtle.importKey('raw', utf8(password), 'PBKDF2', false, ['deriveBits']);
+    const bits = await window.crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: utf8(`galaxy-defense:${norm}`), iterations: 60000 }, base, 256);
+    const key = hexOf(bits);
+    return { nameKey: await sha256(`gd-name:${norm}`), key, owner: await sha256(`gd-owner:${key}`) };
+  }
+  function packProgress() {
+    return JSON.stringify({
+      unlocked: saved.unlocked, cleared: saved.cleared, coins: saved.coins, earned: saved.earned, tree: saved.tree,
+      name: saved.name, pid: saved.pid, records: saved.records.slice(-120),
+    });
+  }
+  function readProgress(text) {
+    let raw = null;
+    try {
+      raw = JSON.parse(text);
+    } catch {
+      return null;
+    }
+    if (!raw || typeof raw !== 'object') return null;
+    return {
+      unlocked: clamp(Math.round(Number(raw.unlocked) || 1), 1, STAGES.length),
+      cleared: STAGES.map((_, i) => Array.isArray(raw.cleared) && raw.cleared[i] === true),
+      coins: Math.max(0, Math.floor(Number(raw.coins) || 0)),
+      earned: Math.max(0, Math.floor(Number(raw.earned) || 0)),
+      tree: cleanTree(raw.tree),
+      name: cleanName(raw.name),
+      pid: typeof raw.pid === 'string' && /^[a-z0-9]{8,24}$/.test(raw.pid) ? raw.pid : '',
+      records: Array.isArray(raw.records) ? raw.records.filter(isRecord) : [],
+    };
+  }
+  function mergeRecords(list) {
+    const seen = new Set(saved.records.map((r) => r.id));
+    for (const r of list) if (!seen.has(r.id)) saved.records.push(r);
+    saved.records.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
+    if (saved.records.length > MAX_RECORDS) saved.records.splice(0, saved.records.length - MAX_RECORDS);
+  }
+  // First link on a device: keep the best of what this device and the account each have.
+  function mergeProgress(p) {
+    saved.unlocked = Math.max(saved.unlocked, p.unlocked);
+    saved.cleared = saved.cleared.map((c, i) => c || p.cleared[i]);
+    saved.coins = Math.max(saved.coins, p.coins);
+    saved.earned = Math.max(saved.earned, p.earned);
+    for (const [id, r] of Object.entries(p.tree)) saved.tree[id] = Math.max(rank(id), r);
+    mergeRecords(p.records);
+    if (p.pid) saved.pid = p.pid;
+  }
+  // Later on: the server copy is newer (played somewhere else), so it replaces this one; history is kept from both.
+  function adoptProgress(p) {
+    saved.unlocked = p.unlocked;
+    saved.cleared = p.cleared;
+    saved.coins = p.coins;
+    saved.earned = p.earned;
+    saved.tree = p.tree;
+    if (p.name) saved.name = p.name;
+    if (p.pid) saved.pid = p.pid;
+    mergeRecords(p.records);
+  }
+  const cloud = (() => {
+    let timer = 0;
+    let lastPull = 0;
+    async function push() {
+      timer = 0;
+      const acct = saved.account;
+      if (!acct || !board.on) return;
+      try {
+        await board.put(`v1/accounts/${acct.key}`, { rev: saved.rev, data: packProgress(), at: { '.sv': 'timestamp' } });
+      } catch {
+        /* offline: the next save sends it */
+      }
+    }
+    return {
+      schedule() {
+        if (!saved.account || !board.on) return;
+        window.clearTimeout(timer);
+        timer = window.setTimeout(push, 1200);
+      },
+      // Brings in progress made on another device. Resolves true when something changed here.
+      async pull(force) {
+        const acct = saved.account;
+        if (!acct || !board.on || (!force && Date.now() - lastPull < 8000)) return false;
+        lastPull = Date.now();
+        try {
+          const doc = await board.get(`v1/accounts/${acct.key}`);
+          if (saved.account !== acct) return false;
+          if (!doc || typeof doc.data !== 'string') {
+            this.schedule();
+            return false;
+          }
+          const rev = Number(doc.rev) || 0;
+          if (rev > saved.rev) {
+            const p = readProgress(doc.data);
+            if (!p) return false;
+            adoptProgress(p);
+            saved.rev = rev;
+            writeLocal();
+            return true;
+          }
+          if (rev < saved.rev) this.schedule();
+        } catch {
+          /* offline: keep playing on this device */
+        }
+        return false;
+      },
+    };
+  })();
+  // Creates the account, or opens it when the name is already taken by these same keys.
+  async function connectAccount(name, password) {
+    const keys = await accountKeys(name, password);
+    let claim = await board.get(`v1/names/${keys.nameKey}`);
+    if (claim && claim !== keys.owner) return 'taken';
+    let created = false;
+    if (!claim) {
+      try {
+        await board.put(`v1/names/${keys.nameKey}`, keys.owner);
+        created = true;
+      } catch (err) {
+        claim = await board.get(`v1/names/${keys.nameKey}`); // someone may have taken it a moment ago
+        if (claim !== keys.owner) {
+          if (claim) return 'taken';
+          throw err;
+        }
+      }
+    }
+    const doc = created ? null : await board.get(`v1/accounts/${keys.key}`);
+    saved.account = { key: keys.key, owner: keys.owner };
+    saved.name = name;
+    if (doc && typeof doc.data === 'string') {
+      const p = readProgress(doc.data);
+      if (p) mergeProgress(p);
+      saved.rev = Math.max(saved.rev, Number(doc.rev) || 0);
+    }
+    save();
+    return created ? 'created' : 'loaded';
+  }
   function bestPerPlayer(list) {
     const seen = new Set();
     return list.filter((r) => (seen.has(r.pid) ? false : (seen.add(r.pid), true)));
@@ -5669,19 +5852,48 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ui.pilot.hidden = !board.on;
     ui.pilotName.textContent = saved.name || '순위표에 쓸 이름을 정해 주세요';
     ui.pilotName.classList.toggle('is-empty', !saved.name);
-    ui.pilotEdit.textContent = saved.name ? '바꾸기' : '이름 정하기';
+    ui.pilotState.textContent = saved.account ? '· 계정 연결됨' : saved.name ? '· 이 기기에만 저장' : '';
+    ui.pilotState.className = saved.account ? 'is-linked' : '';
+    ui.pilotEdit.textContent = saved.account ? '계정' : saved.name ? '이어하기' : '이름 정하기';
   }
   let nameThenStart = false;
   let skippedName = false;
+  let accountBusy = false;
+  const NAME_HINT = '비밀번호는 서버에 그대로 올라가지 않아요. 그래도 다른 곳에 쓰는 비밀번호와는 다르게 정해 주세요.';
+  function setNameNote(text, isError) {
+    ui.nameDialogNote.textContent = text;
+    ui.nameDialogNote.classList.toggle('is-error', !!isError);
+  }
   function openNameDialog(thenStart) {
     nameThenStart = thenStart;
-    ui.nameDialogInput.value = saved.name;
-    ui.nameDialogNote.classList.remove('is-error');
-    ui.nameDialogNote.textContent = '10자까지 쓸 수 있고, 나중에 처음 화면에서 바꿀 수 있어요.';
-    ui.nameDialogSave.textContent = thenStart ? '저장하고 출격' : '저장';
-    ui.nameDialogSkip.hidden = !thenStart;
+    if (saved.account) showLinked('계정에 연결되어 있어요');
+    else {
+      ui.nameFields.hidden = false;
+      ui.nameLinked.hidden = true;
+      ui.nameDialogInput.value = saved.name;
+      ui.nameDialogPass.value = '';
+      setNameNote(canAccount() ? NAME_HINT : '이 브라우저에서는 이 기기에만 저장돼요.', false);
+      ui.nameDialogPass.disabled = !canAccount();
+      ui.nameDialogSave.textContent = thenStart ? '저장하고 출격' : '저장';
+      ui.nameDialogSkip.hidden = !thenStart;
+    }
     if (!ui.nameDialog.open) ui.nameDialog.showModal();
-    ui.nameDialogInput.focus();
+    if (!saved.account) (saved.name ? ui.nameDialogPass : ui.nameDialogInput).focus();
+  }
+  function showLinked(title) {
+    ui.nameFields.hidden = true;
+    ui.nameLinked.hidden = false;
+    ui.linkedTitle.textContent = title;
+    ui.linkedName.textContent = saved.name;
+    ui.linkedSum.textContent = `열린 지역 ${saved.unlocked}/${STAGES.length} · 코인 ${fmt(saved.coins)} · 기록 ${saved.records.length}판`;
+    ui.linkedOk.textContent = nameThenStart ? '출격' : '확인';
+  }
+  // Something new came from the server: redraw whatever menu is showing.
+  function refreshMenus() {
+    renderPilot();
+    if (state === 'title') showTitle(false);
+    else if (state === 'stages') showStages();
+    else if (state === 'tree') renderTree();
   }
   function launch() {
     audio.unlock();
@@ -6402,33 +6614,79 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) pause();
+    else if (['title', 'stages', 'tree', 'result'].includes(state)) cloud.pull().then((changed) => changed && refreshMenus());
   });
 
   ui.start.addEventListener('click', launch);
   ui.pilotEdit.addEventListener('click', () => openNameDialog(false));
-  ui.nameDialogForm.addEventListener('submit', (e) => {
+  ui.nameDialogForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!saveName(ui.nameDialogInput.value)) {
-      ui.nameDialogNote.textContent = '이름을 1~10자로 적어 주세요.';
-      ui.nameDialogNote.classList.add('is-error');
+    if (accountBusy || !ui.nameLinked.hidden) return;
+    const name = cleanName(ui.nameDialogInput.value);
+    const pass = ui.nameDialogPass.value;
+    if (!name) {
+      setNameNote('이름을 1~10자로 적어 주세요.', true);
       ui.nameDialogInput.focus();
       return;
     }
+    if (!pass) { // a name for this device only
+      saveName(name);
+      ui.nameDialog.close();
+      renderPilot();
+      announce(`조종사 이름을 정했어요: ${saved.name}`);
+      if (nameThenStart && state === 'title') showStages();
+      return;
+    }
+    if (Array.from(pass).length < 4) {
+      setNameNote('비밀번호는 4자 이상으로 정해 주세요.', true);
+      ui.nameDialogPass.focus();
+      return;
+    }
+    accountBusy = true;
+    const label = ui.nameDialogSave.textContent;
+    ui.nameDialogSave.disabled = true;
+    ui.nameDialogSave.textContent = '연결하는 중…';
+    try {
+      const result = await connectAccount(name, pass);
+      if (result === 'taken') {
+        setNameNote('이미 다른 사람이 쓰는 이름이에요. 비밀번호가 맞는지 확인하거나 다른 이름을 써 주세요.', true);
+        ui.nameDialogPass.focus();
+      } else {
+        ui.nameDialogPass.value = '';
+        refreshMenus();
+        showLinked(result === 'created' ? '계정을 만들었어요!' : '계정을 불러왔어요!');
+        announce(result === 'created' ? '계정을 만들었어요.' : '계정을 불러왔어요.');
+        ui.linkedOk.focus();
+      }
+    } catch {
+      setNameNote('연결하지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.', true);
+    } finally {
+      accountBusy = false;
+      ui.nameDialogSave.disabled = false;
+      ui.nameDialogSave.textContent = label;
+    }
+  });
+  ui.linkedOk.addEventListener('click', () => {
+    ui.nameDialog.close();
+    if (nameThenStart && state === 'title') showStages();
+  });
+  ui.linkedOut.addEventListener('click', () => {
+    saved.account = null;
+    save();
     ui.nameDialog.close();
     renderPilot();
-    announce(`조종사 이름을 정했어요: ${saved.name}`);
-    if (nameThenStart && state === 'title') showStages();
+    announce('이 기기에서 계정 연결을 끊었어요. 기록은 이 기기에 남아요.');
   });
   ui.nameDialogSkip.addEventListener('click', () => {
     skippedName = true;
     ui.nameDialog.close();
     if (state === 'title') showStages();
   });
-  ui.nameDialogInput.addEventListener('input', () => {
-    if (!ui.nameDialogNote.classList.contains('is-error')) return;
-    ui.nameDialogNote.classList.remove('is-error');
-    ui.nameDialogNote.textContent = '10자까지 쓸 수 있고, 나중에 처음 화면에서 바꿀 수 있어요.';
-  });
+  for (const field of [ui.nameDialogInput, ui.nameDialogPass]) {
+    field.addEventListener('input', () => {
+      if (ui.nameDialogNote.classList.contains('is-error')) setNameNote(NAME_HINT, false);
+    });
+  }
   ui.nameClose.addEventListener('click', () => ui.nameDialog.close());
   ui.nameDialog.addEventListener('click', (e) => {
     if (e.target === ui.nameDialog) ui.nameDialog.close();
@@ -6501,6 +6759,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   ui.boardRefresh.addEventListener('click', () => renderBoard(true));
   ui.boardMe.addEventListener('click', (e) => {
     if (!e.target.closest('#name-edit')) return;
+    if (saved.account) {
+      ui.records.close();
+      openNameDialog(false);
+      return;
+    }
     ui.nameForm.hidden = false;
     ui.nameInput.value = saved.name;
     ui.nameInput.focus();
@@ -6628,6 +6891,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   window.addEventListener('resize', resize);
   resize();
   showTitle(false);
+  cloud.pull(true).then((changed) => changed && refreshMenus());
   window.requestAnimationFrame(tick);
 })();
 </script>
