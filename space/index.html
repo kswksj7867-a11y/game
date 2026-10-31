@@ -20,7 +20,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gasoek+One&family=Orbit&family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gasoek+One&family=Exo+2:wght@500;600;700&family=IBM+Plex+Sans+KR:wght@400;600;700&display=swap">
 <style>
 /* Layout: a tall play screen centered in a field of stars. Instruments run along its top edge; menus, level-ups and
    results are cockpit panels laid over the play. One dark theme on purpose: the whole game happens in space. */
@@ -44,7 +44,7 @@
   --danger: #ff5a6e;
   --on-danger: #1a0508;
   --font-display: "Gasoek One", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
-  --font-data: "Orbit", ui-monospace, "Apple SD Gothic Neo", monospace;
+  --font-data: "Exo 2", "IBM Plex Sans KR", "Apple SD Gothic Neo", sans-serif;
   --font-ui: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
   color-scheme: dark;
 }
@@ -130,6 +130,8 @@ button { font: inherit; color: inherit; }
   z-index: 2;
   padding: 0 10px 0 12px;
   font-family: var(--font-data);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
   pointer-events: none;
 }
@@ -757,11 +759,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 
   // `bias` makes some squads more common in a region so each one plays differently.
   const STAGES = [
-    { name: '달 궤도', about: '첫 출격 지역. 적이 천천히 늘어나요.', mul: 1, color: '#a88bff', sky: ['#0d1236', '#070918'], neb: ['#a88bff', '#7fe7ff', '#ff6f91'], bias: {} },
-    { name: '소행성대', about: '바위와 혜성 사이로 폭격기가 지나가요.', mul: 1.2, color: '#ffa94d', sky: ['#1d1531', '#08070f'], neb: ['#ffa94d', '#ff6f91', '#a88bff'], rocks: true, bias: { rocks: 2, comets: 2, bombers: 1.7, minefield: 1.4 } },
-    { name: '푸른 성운', about: '벌떼와 유령기가 사방에서 몰려와요.', mul: 1.45, color: '#3fe0b2', sky: ['#072a35', '#04080f'], neb: ['#3fe0b2', '#7fe7ff', '#a88bff'], rocks: true, bias: { seekers: 2, snake: 2, hsnake: 2, phantoms: 2, splitters: 1.5, ambush: 1.5 } },
-    { name: '사건의 지평선', about: '광선함과 저격기가 길목을 막아요.', mul: 1.75, color: '#ff5a6e', sky: ['#2a0d1f', '#080409'], neb: ['#ff5a6e', '#a88bff', '#ffa94d'], rocks: true, early: 0.7, bias: { lancers: 2, snipers: 2, spinner: 1.6, minefield: 1.5, wall: 1.4 } },
-    { name: '은하 중심', about: '모함과 수리선을 앞세운 총공세예요.', mul: 2.1, color: '#ffc24b', sky: ['#2a2210', '#0a0805'], neb: ['#ffc24b', '#eef0ff', '#ff6f91'], rocks: true, early: 0.55, bias: { carrier: 1.7, healers: 1.7, shieldwall: 1.7, spinner: 1.3, lancers: 1.3 } },
+    { name: '달 궤도', about: '첫 출격 지역. 적이 천천히 늘어나요.', mul: 1, color: '#a88bff', sky: ['#0d1236', '#070918'], neb: ['#a88bff', '#7fe7ff', '#ff6f91'], planet: '#b9b5d8', bias: {} },
+    { name: '소행성대', about: '바위와 혜성 사이로 폭격기가 지나가요.', mul: 1.2, color: '#ffa94d', sky: ['#1d1531', '#08070f'], neb: ['#ffa94d', '#ff6f91', '#a88bff'], rocks: true, planet: '#c98b5a', bias: { rocks: 2, comets: 2, bombers: 1.7, minefield: 1.4 } },
+    { name: '푸른 성운', about: '벌떼와 유령기가 사방에서 몰려와요.', mul: 1.45, color: '#3fe0b2', sky: ['#072a35', '#04080f'], neb: ['#3fe0b2', '#7fe7ff', '#a88bff'], rocks: true, planet: '#3d9fae', bias: { seekers: 2, snake: 2, hsnake: 2, phantoms: 2, splitters: 1.5, ambush: 1.5 } },
+    { name: '사건의 지평선', about: '광선함과 저격기가 길목을 막아요.', mul: 1.75, color: '#ff5a6e', sky: ['#2a0d1f', '#080409'], neb: ['#ff5a6e', '#a88bff', '#ffa94d'], rocks: true, early: 0.7, planet: '#ff7a45', bias: { lancers: 2, snipers: 2, spinner: 1.6, minefield: 1.5, wall: 1.4 } },
+    { name: '은하 중심', about: '모함과 수리선을 앞세운 총공세예요.', mul: 2.1, color: '#ffc24b', sky: ['#2a2210', '#0a0805'], neb: ['#ffc24b', '#ff6f91', '#a88bff'], rocks: true, early: 0.55, planet: '#ffd27a', bias: { carrier: 1.7, healers: 1.7, shieldwall: 1.7, spinner: 1.3, lancers: 1.3 } },
   ];
   // kamikaze ships blow up when they ram you
   const ENEMY = {
@@ -1003,7 +1005,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     gunner: COLOR.teal, spinner: COLOR.violet, shield: COLOR.cyan, lancer: COLOR.cyan, tank: COLOR.steel, carrier: COLOR.steel,
     rock: COLOR.rock, cruiser: COLOR.amber, mother: COLOR.violet,
   };
-  const FONT_DATA = '"Orbit", ui-monospace, monospace';
+  const FONT_DATA = '"Exo 2", "IBM Plex Sans KR", sans-serif';
   function rgba(hex, a) {
     const n = parseInt(hex.replace('#', ''), 16);
     if (Number.isNaN(n)) return `rgba(255, 255, 255, ${a})`;
@@ -1350,28 +1352,34 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     });
   }
   const ORB = { coral: orb(COLOR.coral), amber: orb(COLOR.amber), violet: orb(COLOR.violet), teal: orb(COLOR.teal), cyan: orb(COLOR.cyan), lime: orb(COLOR.lime), red: orb(COLOR.danger) };
-  const BOLT = sprite(48, 1, (g) => {
-    g.shadowColor = COLOR.cyan;
-    g.shadowBlur = 8;
-    g.fillStyle = COLOR.cyan;
-    g.fillRect(-3, -16, 6, 32);
-    g.shadowBlur = 0;
-    g.fillStyle = '#ffffff';
-    g.fillRect(-1.5, -14, 3, 28);
-  });
-  const PLASMA = sprite(48, 1, (g) => {
-    g.shadowColor = COLOR.violet;
-    g.shadowBlur = 10;
-    g.fillStyle = COLOR.violet;
+  function capsule(g, r, h) {
     g.beginPath();
-    g.ellipse(0, 0, 5, 16, 0, 0, TAU);
-    g.fill();
-    g.shadowBlur = 0;
-    g.fillStyle = '#ffffff';
-    g.beginPath();
-    g.ellipse(0, 0, 2.2, 12, 0, 0, TAU);
-    g.fill();
-  });
+    g.arc(0, -h / 2 + r, r, Math.PI, 0);
+    g.lineTo(r, h / 2 - r);
+    g.arc(0, h / 2 - r, r, 0, Math.PI);
+    g.closePath();
+  }
+  function boltSprite(color) {
+    return sprite(48, 2, (g) => {
+      g.globalCompositeOperation = 'lighter';
+      g.fillStyle = rgba(color, 0.22);
+      capsule(g, 6, 34);
+      g.fill();
+      const core = g.createLinearGradient(0, -16, 0, 16);
+      core.addColorStop(0, rgba(color, 1));
+      core.addColorStop(0.6, rgba(color, 0.75));
+      core.addColorStop(1, rgba(color, 0));
+      g.fillStyle = core;
+      capsule(g, 3.2, 30);
+      g.fill();
+      g.fillStyle = 'rgba(255, 255, 255, 0.95)';
+      capsule(g, 1.4, 18);
+      g.translate(0, -5);
+      g.fill();
+    });
+  }
+  const BOLT = boltSprite(COLOR.cyan);
+  const PLASMA = boltSprite(COLOR.violet);
   const CORE = sprite(32, 1, (g) => {
     const grd = g.createRadialGradient(0, 0, 0, 0, 0, 16);
     grd.addColorStop(0, '#ffffff');
@@ -1381,197 +1389,221 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     g.fillStyle = grd;
     g.fillRect(-16, -16, 32, 32);
   });
-  const SPR = {};
-  const nebula = document.createElement('canvas');
-
-  function hullPath(g, color, path) {
-    path(g);
-    g.fillStyle = color;
-    g.fill();
-    g.lineWidth = 1.2;
-    g.strokeStyle = rgba(COLOR.void, 0.55);
-    g.stroke();
-  }
-  const PAINT = {
-    scout(g) {
-      hullPath(g, COLOR.coral, (p) => {
-        p.beginPath();
-        p.moveTo(0, 13);
-        p.lineTo(11, -4);
-        p.lineTo(5, -2);
-        p.lineTo(0, -10);
-        p.lineTo(-5, -2);
-        p.lineTo(-11, -4);
-        p.closePath();
-      });
-      g.fillStyle = rgba(COLOR.void, 0.35);
+  function flameSprite(color) { // engine exhaust, drawn stretched to a flickering length
+    return sprite(32, 2, (g) => {
+      g.globalCompositeOperation = 'lighter';
+      const grd = g.createLinearGradient(0, -16, 0, 16);
+      grd.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+      grd.addColorStop(0.25, rgba(color, 0.9));
+      grd.addColorStop(1, rgba(color, 0));
+      g.fillStyle = grd;
       g.beginPath();
-      g.moveTo(0, 13);
-      g.lineTo(3, 0);
-      g.lineTo(0, -6);
-      g.lineTo(-3, 0);
+      g.moveTo(-6, -16);
+      g.quadraticCurveTo(0, -19, 6, -16);
+      g.lineTo(0, 16);
       g.closePath();
       g.fill();
-      g.fillStyle = COLOR.ink;
-      g.beginPath();
-      g.arc(0, 2, 2, 0, TAU);
-      g.fill();
-    },
-    seeker(g) { // points along +x, rotated to its heading
-      hullPath(g, COLOR.lime, (p) => {
-        p.beginPath();
-        p.moveTo(11, 0);
-        p.lineTo(-7, 7);
-        p.lineTo(-3, 0);
-        p.lineTo(-7, -7);
-        p.closePath();
+    });
+  }
+  const FLAME = flameSprite(COLOR.cyan);
+  const FLAME_HOT = flameSprite(COLOR.orange);
+  const SMOKE = sprite(64, 1, (g) => {
+    const grd = g.createRadialGradient(0, 0, 0, 0, 0, 32);
+    grd.addColorStop(0, rgba(COLOR.steel, 0.35));
+    grd.addColorStop(0.6, rgba(COLOR.void, 0.28));
+    grd.addColorStop(1, rgba(COLOR.void, 0));
+    g.fillStyle = grd;
+    g.fillRect(-32, -32, 64, 64);
+  });
+  // Soft glowing dots in any color, made on first use.
+  const DOTS = new Map();
+  function dot(color) {
+    let c = DOTS.get(color);
+    if (!c) {
+      c = sprite(32, 1, (g) => {
+        const grd = g.createRadialGradient(0, 0, 0, 0, 0, 16);
+        grd.addColorStop(0, 'rgba(255, 255, 255, 1)');
+        grd.addColorStop(0.2, rgba(color, 0.95));
+        grd.addColorStop(0.55, rgba(color, 0.3));
+        grd.addColorStop(1, rgba(color, 0));
+        g.fillStyle = grd;
+        g.fillRect(-16, -16, 32, 32);
       });
-      g.fillStyle = COLOR.void;
-      g.beginPath();
-      g.arc(2, 0, 2, 0, TAU);
-      g.fill();
-    },
-    diver(g) {
-      hullPath(g, COLOR.orange, (p) => {
-        p.beginPath();
-        p.moveTo(0, 15);
-        p.lineTo(7, 0);
-        p.lineTo(14, -6);
-        p.lineTo(6, -5);
-        p.lineTo(0, -12);
-        p.lineTo(-6, -5);
-        p.lineTo(-14, -6);
-        p.lineTo(-7, 0);
-        p.closePath();
-      });
-      g.fillStyle = rgba(COLOR.void, 0.4);
-      g.fillRect(-1.5, -9, 3, 18);
-      g.fillStyle = COLOR.ink;
-      g.beginPath();
-      g.arc(0, 4, 2.2, 0, TAU);
-      g.fill();
-    },
-    gunner(g) {
-      hullPath(g, COLOR.teal, (p) => {
-        p.beginPath();
-        p.moveTo(-20, -6);
-        p.lineTo(-10, -16);
-        p.lineTo(10, -16);
-        p.lineTo(20, -6);
-        p.lineTo(16, 10);
-        p.lineTo(6, 16);
-        p.lineTo(-6, 16);
-        p.lineTo(-16, 10);
-        p.closePath();
-      });
-      g.fillStyle = rgba(COLOR.void, 0.55);
-      g.fillRect(-11, 10, 5, 10);
-      g.fillRect(6, 10, 5, 10);
-      g.fillStyle = COLOR.amber;
-      g.beginPath();
-      g.arc(0, 0, 4, 0, TAU);
-      g.fill();
-    },
-    tank(g) {
-      hullPath(g, COLOR.steel, (p) => {
-        p.beginPath();
-        p.moveTo(-23, -10);
-        p.lineTo(-14, -21);
-        p.lineTo(14, -21);
-        p.lineTo(23, -10);
-        p.lineTo(23, 12);
-        p.lineTo(12, 22);
-        p.lineTo(-12, 22);
-        p.lineTo(-23, 12);
-        p.closePath();
-      });
-      g.fillStyle = rgba(COLOR.void, 0.3);
-      g.fillRect(-17, -8, 34, 4);
-      g.fillRect(-17, 2, 34, 4);
-      g.fillStyle = rgba(COLOR.void, 0.6);
-      g.beginPath();
-      g.arc(0, 6, 8, 0, TAU);
-      g.fill();
-      g.fillRect(-2.5, 8, 5, 15);
-      g.fillStyle = COLOR.danger;
-      g.beginPath();
-      g.arc(0, 6, 3, 0, TAU);
-      g.fill();
+      DOTS.set(color, c);
+    }
+    return c;
+  }
+  function starSprite(color, flare) {
+    return sprite(24, 2, (g) => {
+      const grd = g.createRadialGradient(0, 0, 0, 0, 0, 12);
+      grd.addColorStop(0, 'rgba(255, 255, 255, 1)');
+      grd.addColorStop(0.12, rgba(color, 0.95));
+      grd.addColorStop(0.35, rgba(color, 0.22));
+      grd.addColorStop(1, rgba(color, 0));
+      g.fillStyle = grd;
+      g.fillRect(-12, -12, 24, 24);
+      if (flare) {
+        g.globalCompositeOperation = 'lighter';
+        for (const [w, a] of [[1.6, 0.18], [0.6, 0.7]]) {
+          g.strokeStyle = rgba(color, a);
+          g.lineWidth = w;
+          g.beginPath();
+          g.moveTo(-12, 0);
+          g.lineTo(12, 0);
+          g.moveTo(0, -12);
+          g.lineTo(0, 12);
+          g.stroke();
+        }
+      }
+    });
+  }
+  const STAR_SPR = [starSprite(COLOR.ink, false), starSprite(COLOR.cyan, false), starSprite(COLOR.amber, false), starSprite(COLOR.ink, true)];
+  const SPR = {};
+  const nebula = document.createElement('canvas');
+  const planet = { img: null, size: 200, x: 0, y: 0 };
+  let vignette = null;
+
+  // Lighten (k > 0) or darken (k < 0) a #rrggbb color.
+  function shade(hex, k) {
+    const n = parseInt(hex.replace('#', ''), 16);
+    if (Number.isNaN(n)) return hex;
+    const mix = (c) => Math.round(k >= 0 ? c + (255 - c) * k : c * (1 + k));
+    return `rgb(${mix((n >> 16) & 255)}, ${mix((n >> 8) & 255)}, ${mix(n & 255)})`;
+  }
+  // A hull lit from the upper left: gradient body, a glossy sheen, a dark outline and a thin bright rim.
+  function hull(g, color, path, span = 16) {
+    path(g);
+    const body = g.createLinearGradient(-span * 0.6, -span, span * 0.6, span);
+    body.addColorStop(0, shade(color, 0.5));
+    body.addColorStop(0.45, color);
+    body.addColorStop(1, shade(color, -0.55));
+    g.fillStyle = body;
+    g.fill();
+    g.save();
+    g.clip();
+    const sheen = g.createLinearGradient(-span, -span, span * 0.4, span * 0.2);
+    sheen.addColorStop(0, 'rgba(255, 255, 255, 0.42)');
+    sheen.addColorStop(0.5, 'rgba(255, 255, 255, 0)');
+    g.fillStyle = sheen;
+    g.fillRect(-span * 2, -span * 2, span * 4, span * 4);
+    g.restore();
+    g.lineJoin = 'round';
+    g.lineWidth = 1.6;
+    g.strokeStyle = rgba(COLOR.void, 0.85);
+    g.stroke();
+    g.lineWidth = 0.7;
+    g.strokeStyle = 'rgba(255, 255, 255, 0.32)';
+    g.stroke();
+  }
+  // A glowing light (engines, cockpits, eyes), added on top so it blooms.
+  function lamp(g, x, y, r, color) {
+    g.save();
+    g.globalCompositeOperation = 'lighter';
+    const grd = g.createRadialGradient(x, y, 0, x, y, r);
+    grd.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+    grd.addColorStop(0.28, rgba(color, 0.9));
+    grd.addColorStop(1, rgba(color, 0));
+    g.fillStyle = grd;
+    g.fillRect(x - r, y - r, r * 2, r * 2);
+    g.restore();
+  }
+  function seams(g, segs) {
+    g.strokeStyle = rgba(COLOR.void, 0.42);
+    g.lineWidth = 0.8;
+    g.beginPath();
+    for (const [x1, y1, x2, y2] of segs) {
+      g.moveTo(x1, y1);
+      g.lineTo(x2, y2);
+    }
+    g.stroke();
+  }
+  function poly(pts) {
+    return (p) => {
+      p.beginPath();
+      pts.forEach(([x, y], i) => (i ? p.lineTo(x, y) : p.moveTo(x, y)));
+      p.closePath();
+    };
+  }
+  const circlePath = (x, y, r) => (p) => {
+    p.beginPath();
+    p.arc(x, y, r, 0, TAU);
+  };
+  const MISSILE = sprite(24, 3, (g) => { // points along +x
+    for (const side of [-1, 1]) hull(g, COLOR.coral, poly([[-9, side * 1.6], [-11.5, side * 6], [-7, side * 6], [-3, side * 1.6]]), 6);
+    hull(g, COLOR.ink, (p) => {
+      p.beginPath();
+      p.moveTo(-10, -2.3);
+      p.lineTo(4, -2.3);
+      p.quadraticCurveTo(10, -2, 11.5, 0);
+      p.quadraticCurveTo(10, 2, 4, 2.3);
+      p.lineTo(-10, 2.3);
+      p.closePath();
+    }, 9);
+    g.fillStyle = COLOR.coral;
+    g.fillRect(3, -2.2, 2, 4.4);
+    g.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    g.fillRect(-8, -1.6, 10, 0.9);
+  });
+
+  // Enemy ships face down (+y) unless noted; their engines glow at the top.
+  const PAINT = {
+    scout(g) {
+      lamp(g, 0, -12, 7, COLOR.orange);
+      hull(g, COLOR.coral, poly([[0, 14], [5, 3], [12, -3], [12, -7], [4, -5], [0, -10], [-4, -5], [-12, -7], [-12, -3], [-5, 3]]), 13);
+      seams(g, [[0, -8, 0, 10], [-5, 1, -10, -4], [5, 1, 10, -4]]);
+      lamp(g, 0, 3, 4.5, COLOR.amber);
     },
     swarm(g) {
-      hullPath(g, COLOR.lime, (p) => {
-        p.beginPath();
-        p.moveTo(0, 7);
-        p.lineTo(6, -4);
-        p.lineTo(0, -1.5);
-        p.lineTo(-6, -4);
-        p.closePath();
-      });
+      lamp(g, 0, -6, 4.5, COLOR.lime);
+      hull(g, COLOR.lime, poly([[0, 8], [7, -4], [0, -1], [-7, -4]]), 8);
+      lamp(g, 0, 2, 2.6, COLOR.ink);
     },
     fragment(g) {
-      hullPath(g, COLOR.coral, (p) => {
-        p.beginPath();
-        p.moveTo(0, -8);
-        p.lineTo(7, 0);
-        p.lineTo(0, 8);
-        p.lineTo(-7, 0);
-        p.closePath();
-      });
-      g.fillStyle = COLOR.ink;
-      g.beginPath();
-      g.arc(0, 0, 1.6, 0, TAU);
-      g.fill();
+      hull(g, COLOR.coral, poly([[0, -8], [7, 0], [0, 8], [-7, 0]]), 8);
+      lamp(g, 0, 0, 4, COLOR.amber);
     },
-    comet(g) { // points along +x, rotated to its heading
-      const grd = g.createRadialGradient(0, 0, 0, 0, 0, 14);
-      grd.addColorStop(0, rgba(COLOR.amber, 0.9));
-      grd.addColorStop(1, rgba(COLOR.orange, 0));
-      g.fillStyle = grd;
-      g.fillRect(-15, -15, 30, 30);
-      g.fillStyle = COLOR.orange;
-      g.beginPath();
-      g.arc(2, 0, 8, 0, TAU);
-      g.fill();
+    seeker(g) { // points along +x, rotated to its heading
+      lamp(g, -8, 0, 6.5, COLOR.lime);
+      hull(g, COLOR.lime, poly([[12, 0], [-6, 7], [-3, 0], [-6, -7]]), 10);
+      lamp(g, 3, 0, 3.4, COLOR.danger);
+    },
+    diver(g) {
+      lamp(g, 0, -12, 7.5, COLOR.amber);
+      hull(g, COLOR.orange, poly([[0, 16], [6, 2], [15, -5], [14, -8], [6, -6], [0, -13], [-6, -6], [-14, -8], [-15, -5], [-6, 2]]), 15);
+      seams(g, [[0, -10, 0, 12], [-6, -3, -12, -6], [6, -3, 12, -6]]);
+      lamp(g, 0, 5, 4, COLOR.ink);
+    },
+    comet(g) { // points along +x
+      lamp(g, -2, 0, 16, COLOR.orange);
+      hull(g, COLOR.rock, circlePath(2, 0, 8), 8);
       g.fillStyle = rgba(COLOR.void, 0.35);
       g.beginPath();
-      g.arc(4, -2, 2.5, 0, TAU);
+      g.arc(0, 2.5, 2.4, 0, TAU);
       g.fill();
+      lamp(g, 7, -1, 5.5, COLOR.amber);
     },
     splitter(g) {
       for (let k = 0; k < 3; k++) {
         const a = Math.PI / 2 + (k / 3) * TAU;
-        hullPath(g, COLOR.coral, (p) => {
-          p.beginPath();
-          p.arc(Math.cos(a) * 8, Math.sin(a) * 8, 8, 0, TAU);
-        });
+        hull(g, COLOR.coral, circlePath(Math.cos(a) * 8, Math.sin(a) * 8, 8), 14);
       }
-      g.fillStyle = rgba(COLOR.void, 0.5);
-      g.beginPath();
-      g.arc(0, 0, 6, 0, TAU);
-      g.fill();
-      g.fillStyle = COLOR.amber;
-      g.beginPath();
-      g.arc(0, 0, 3, 0, TAU);
-      g.fill();
+      hull(g, COLOR.violet, circlePath(0, 0, 6.5), 7);
+      lamp(g, 0, 0, 5.5, COLOR.amber);
     },
     sniper(g) {
-      hullPath(g, COLOR.steel, (p) => {
-        p.beginPath();
-        p.moveTo(-12, -8);
-        p.lineTo(12, -8);
-        p.lineTo(7, 6);
-        p.lineTo(-7, 6);
-        p.closePath();
-      });
-      g.fillStyle = rgba(COLOR.void, 0.6);
-      g.fillRect(-2, 4, 4, 13);
-      g.fillStyle = COLOR.danger;
-      g.beginPath();
-      g.arc(0, -2, 3, 0, TAU);
-      g.fill();
+      lamp(g, -9, -11, 4.5, COLOR.cyan);
+      lamp(g, 9, -11, 4.5, COLOR.cyan);
+      hull(g, COLOR.steel, poly([[-13, -9], [13, -9], [8, 6], [-8, 6]]), 12);
+      g.fillStyle = shade(COLOR.steel, -0.55);
+      g.fillRect(-2, 4, 4, 14);
+      g.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      g.fillRect(-2, 4, 1.2, 14);
+      lamp(g, 0, -2, 5.5, COLOR.danger);
+      lamp(g, 0, 18, 3.2, COLOR.danger);
     },
     phantom(g) {
-      hullPath(g, COLOR.violet, (p) => {
+      lamp(g, 0, 0, 16, COLOR.violet);
+      hull(g, COLOR.violet, (p) => {
         p.beginPath();
         p.moveTo(0, -12);
         p.quadraticCurveTo(12, -10, 11, 4);
@@ -1583,17 +1615,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         p.lineTo(-11, 4);
         p.quadraticCurveTo(-12, -10, 0, -12);
         p.closePath();
-      });
-      g.fillStyle = COLOR.ink;
-      for (const x of [-4, 4]) {
-        g.beginPath();
-        g.arc(x, -2, 2, 0, TAU);
-        g.fill();
-      }
+      }, 12);
+      lamp(g, -4, -2, 3.2, COLOR.ink);
+      lamp(g, 4, -2, 3.2, COLOR.ink);
     },
     mine(g) {
-      g.strokeStyle = COLOR.danger;
-      g.lineWidth = 2;
+      g.strokeStyle = shade(COLOR.steel, -0.25);
+      g.lineWidth = 2.4;
+      g.lineCap = 'round';
       for (let k = 0; k < 8; k++) {
         const a = (k / 8) * TAU;
         g.beginPath();
@@ -1601,164 +1630,448 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         g.lineTo(Math.cos(a) * 12, Math.sin(a) * 12);
         g.stroke();
       }
-      hullPath(g, COLOR.steel, (p) => {
-        p.beginPath();
-        p.arc(0, 0, 8, 0, TAU);
-      });
-      g.fillStyle = rgba(COLOR.void, 0.45);
-      g.beginPath();
-      g.arc(0, 0, 8, 0, TAU);
-      g.fill();
+      hull(g, COLOR.steel, circlePath(0, 0, 8), 8);
+      seams(g, [[-8, 0, 8, 0], [0, -8, 0, 8]]);
     },
     bomber(g) { // points along +x, the way it flies
-      hullPath(g, COLOR.amber, (p) => {
-        p.beginPath();
-        p.moveTo(18, 0);
-        p.lineTo(4, -6);
-        p.lineTo(-6, -18);
-        p.lineTo(-12, -18);
-        p.lineTo(-8, -5);
-        p.lineTo(-16, -4);
-        p.lineTo(-16, 4);
-        p.lineTo(-8, 5);
-        p.lineTo(-12, 18);
-        p.lineTo(-6, 18);
-        p.lineTo(4, 6);
-        p.closePath();
-      });
-      g.fillStyle = rgba(COLOR.void, 0.45);
-      g.fillRect(-8, -2, 16, 4);
-      g.fillStyle = COLOR.ink;
-      g.beginPath();
-      g.arc(10, 0, 2.2, 0, TAU);
-      g.fill();
+      lamp(g, -16, 0, 9, COLOR.amber);
+      hull(g, COLOR.amber, poly([[18, 0], [4, -6], [-6, -18], [-12, -18], [-8, -5], [-16, -4], [-16, 4], [-8, 5], [-12, 18], [-6, 18], [4, 6]]), 18);
+      seams(g, [[-8, 0, 12, 0], [-6, -12, -2, -4], [-6, 12, -2, 4]]);
+      lamp(g, 10, 0, 4.5, COLOR.cyan);
+      lamp(g, -9, -16, 3, COLOR.danger);
+      lamp(g, -9, 16, 3, COLOR.teal);
     },
     healer(g) {
-      hullPath(g, COLOR.teal, (p) => {
-        p.beginPath();
-        p.moveTo(-5, -14);
-        p.lineTo(5, -14);
-        p.lineTo(5, -5);
-        p.lineTo(14, -5);
-        p.lineTo(14, 5);
-        p.lineTo(5, 5);
-        p.lineTo(5, 14);
-        p.lineTo(-5, 14);
-        p.lineTo(-5, 5);
-        p.lineTo(-14, 5);
-        p.lineTo(-14, -5);
-        p.lineTo(-5, -5);
-        p.closePath();
-      });
-      g.fillStyle = COLOR.ink;
-      g.fillRect(-2, -7, 4, 14);
-      g.fillRect(-7, -2, 14, 4);
+      lamp(g, 0, 0, 17, COLOR.teal);
+      hull(g, COLOR.teal, poly([[-5, -14], [5, -14], [5, -5], [14, -5], [14, 5], [5, 5], [5, 14], [-5, 14], [-5, 5], [-14, 5], [-14, -5], [-5, -5]]), 14);
+      lamp(g, 0, 0, 7, COLOR.ink);
+      g.fillStyle = 'rgba(255, 255, 255, 0.9)';
+      g.fillRect(-1.6, -6, 3.2, 12);
+      g.fillRect(-6, -1.6, 12, 3.2);
+    },
+    gunner(g) {
+      lamp(g, -9, -17, 5.5, COLOR.cyan);
+      lamp(g, 9, -17, 5.5, COLOR.cyan);
+      hull(g, COLOR.teal, poly([[-20, -6], [-10, -16], [10, -16], [20, -6], [16, 10], [6, 16], [-6, 16], [-16, 10]]), 20);
+      g.fillStyle = shade(COLOR.teal, -0.65);
+      g.fillRect(-12, 10, 6, 11);
+      g.fillRect(6, 10, 6, 11);
+      g.fillStyle = 'rgba(255, 255, 255, 0.25)';
+      g.fillRect(-12, 10, 2, 11);
+      g.fillRect(6, 10, 2, 11);
+      seams(g, [[-14, -4, 14, -4], [0, -14, 0, -4]]);
+      lamp(g, 0, 3, 6.5, COLOR.amber);
     },
     spinner(g) { // rotated as it spins
       for (let k = 0; k < 3; k++) {
         g.save();
         g.rotate((k / 3) * TAU);
-        hullPath(g, COLOR.violet, (p) => {
-          p.beginPath();
-          p.moveTo(0, 0);
-          p.lineTo(20, -5);
-          p.lineTo(18, 5);
-          p.closePath();
-        });
+        hull(g, COLOR.violet, poly([[0, 0], [21, -5], [19, 5]]), 20);
         g.restore();
       }
-      hullPath(g, COLOR.violet, (p) => {
-        p.beginPath();
-        p.arc(0, 0, 10, 0, TAU);
-      });
-      g.fillStyle = COLOR.ink;
-      g.beginPath();
-      g.arc(0, 0, 3.5, 0, TAU);
-      g.fill();
+      hull(g, COLOR.violet, circlePath(0, 0, 10), 10);
+      lamp(g, 0, 0, 8, COLOR.coral);
     },
     shield(g) {
-      hullPath(g, COLOR.steel, (p) => {
-        p.beginPath();
-        p.moveTo(-16, -14);
-        p.lineTo(16, -14);
-        p.lineTo(20, 2);
-        p.lineTo(10, 10);
-        p.lineTo(-10, 10);
-        p.lineTo(-20, 2);
-        p.closePath();
-      });
-      g.strokeStyle = rgba(COLOR.cyan, 0.35);
-      g.lineWidth = 7;
-      g.beginPath();
-      g.arc(0, -2, 22, Math.PI * 0.18, Math.PI * 0.82);
-      g.stroke();
-      g.strokeStyle = COLOR.cyan;
-      g.lineWidth = 3;
-      g.stroke();
+      lamp(g, -10, -15, 4.5, COLOR.cyan);
+      lamp(g, 10, -15, 4.5, COLOR.cyan);
+      hull(g, COLOR.steel, poly([[-16, -14], [16, -14], [20, 2], [10, 10], [-10, 10], [-20, 2]]), 18);
+      seams(g, [[-14, -6, 14, -6], [-8, -14, -8, 8], [8, -14, 8, 8]]);
+      g.save();
+      g.globalCompositeOperation = 'lighter';
+      for (const [w, a] of [[9, 0.16], [5, 0.32], [2.2, 0.95]]) {
+        g.strokeStyle = rgba(COLOR.cyan, a);
+        g.lineWidth = w;
+        g.lineCap = 'round';
+        g.beginPath();
+        g.arc(0, -2, 22, Math.PI * 0.16, Math.PI * 0.84);
+        g.stroke();
+      }
+      g.restore();
+      lamp(g, 0, -3, 4.5, COLOR.cyan);
     },
     lancer(g) {
-      hullPath(g, COLOR.steel, (p) => {
-        p.beginPath();
-        p.moveTo(0, 18);
-        p.lineTo(9, 6);
-        p.lineTo(16, -6);
-        p.lineTo(8, -16);
-        p.lineTo(-8, -16);
-        p.lineTo(-16, -6);
-        p.lineTo(-9, 6);
-        p.closePath();
-      });
-      g.fillStyle = rgba(COLOR.void, 0.5);
-      g.fillRect(-3, -14, 6, 26);
-      g.fillStyle = COLOR.cyan;
-      g.beginPath();
-      g.arc(0, 12, 4, 0, TAU);
-      g.fill();
+      lamp(g, -6, -17, 4.5, COLOR.cyan);
+      lamp(g, 6, -17, 4.5, COLOR.cyan);
+      hull(g, COLOR.steel, poly([[0, 18], [9, 6], [16, -6], [8, -16], [-8, -16], [-16, -6], [-9, 6]]), 18);
+      g.fillStyle = shade(COLOR.steel, -0.55);
+      g.fillRect(-3.5, -14, 7, 24);
+      lamp(g, 0, 12, 7.5, COLOR.cyan);
+    },
+    tank(g) {
+      lamp(g, -12, -22, 6.5, COLOR.orange);
+      lamp(g, 12, -22, 6.5, COLOR.orange);
+      hull(g, COLOR.steel, poly([[-23, -10], [-14, -21], [14, -21], [23, -10], [23, 12], [12, 22], [-12, 22], [-23, 12]]), 24);
+      seams(g, [[-18, -8, 18, -8], [-18, 2, 18, 2], [-8, -20, -8, -8], [8, -20, 8, -8]]);
+      hull(g, COLOR.steel, circlePath(0, 6, 8), 8);
+      g.fillStyle = shade(COLOR.steel, -0.6);
+      g.fillRect(-2.5, 10, 5, 14);
+      lamp(g, 0, 6, 4.5, COLOR.danger);
     },
     carrier(g) {
-      hullPath(g, COLOR.steel, (p) => {
-        p.beginPath();
-        p.moveTo(-32, -12);
-        p.lineTo(-20, -22);
-        p.lineTo(20, -22);
-        p.lineTo(32, -12);
-        p.lineTo(34, 10);
-        p.lineTo(24, 20);
-        p.lineTo(-24, 20);
-        p.lineTo(-34, 10);
-        p.closePath();
-      });
-      g.fillStyle = rgba(COLOR.void, 0.5);
-      g.fillRect(-14, 6, 28, 12);
-      g.fillStyle = COLOR.amber;
-      for (const x of [-22, -11, 0, 11, 22]) g.fillRect(x - 1.5, -14, 3, 3);
-      g.fillStyle = COLOR.danger;
-      g.beginPath();
-      g.arc(0, -6, 4, 0, TAU);
-      g.fill();
+      for (const x of [-20, 0, 20]) lamp(g, x, -23, 7, COLOR.orange);
+      hull(g, COLOR.steel, poly([[-32, -12], [-20, -22], [20, -22], [32, -12], [34, 10], [24, 20], [-24, 20], [-34, 10]]), 30);
+      g.fillStyle = shade(COLOR.steel, -0.65);
+      g.fillRect(-15, 5, 30, 13);
+      lamp(g, 0, 11, 6.5, COLOR.amber);
+      for (const x of [-22, -11, 0, 11, 22]) lamp(g, x, -13, 2.6, COLOR.amber);
+      seams(g, [[-30, -4, 30, -4], [-24, 14, -24, -14], [24, 14, 24, -14]]);
+      lamp(g, 0, -6, 5, COLOR.danger);
     },
     rock(g) {
       const pts = [[1, 0], [0.75, 0.62], [0.12, 1], [-0.6, 0.78], [-1, 0.1], [-0.72, -0.7], [0.05, -1], [0.7, -0.66]];
-      g.beginPath();
-      pts.forEach(([x, y], i) => {
+      hull(g, COLOR.rock, poly(pts.map(([x, y], i) => {
         const r = 15 * (0.82 + ((i * 37) % 7) / 30);
-        if (i) g.lineTo(x * r, y * r);
-        else g.moveTo(x * r, y * r);
-      });
-      g.closePath();
-      g.fillStyle = COLOR.rock;
-      g.fill();
-      g.lineWidth = 1.2;
-      g.strokeStyle = rgba(COLOR.void, 0.6);
-      g.stroke();
-      g.fillStyle = rgba(COLOR.void, 0.28);
+        return [x * r, y * r];
+      })), 15);
       for (const [x, y, r] of [[-5, -4, 3.5], [5, 4, 2.6], [2, -7, 2]]) {
+        g.fillStyle = rgba(COLOR.void, 0.3);
         g.beginPath();
         g.arc(x, y, r, 0, TAU);
         g.fill();
+        g.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+        g.lineWidth = 0.7;
+        g.beginPath();
+        g.arc(x, y, r, Math.PI * 0.1, Math.PI * 0.9);
+        g.stroke();
       }
     },
   };
+  // The player's ship, pointing up.
+  function paintPlayer(g) {
+    hull(g, COLOR.steel, (p) => {
+      p.beginPath();
+      p.rect(-7, 7, 5, 8);
+      p.rect(2, 7, 5, 8);
+    }, 12);
+    hull(g, COLOR.steel, poly([[0, -5], [18, 7], [18, 13], [7, 11], [-7, 11], [-18, 13], [-18, 7]]), 18);
+    seams(g, [[-6, 4, -15, 10], [6, 4, 15, 10]]);
+    hull(g, COLOR.ink, poly([[0, -22], [5, -10], [6, 6], [4, 14], [-4, 14], [-6, 6], [-5, -10]]), 20);
+    seams(g, [[0, -2, 0, 12]]);
+    g.fillStyle = COLOR.amber;
+    g.fillRect(12, 8, 4, 2);
+    g.fillRect(-16, 8, 4, 2);
+    const glass = g.createLinearGradient(0, -15, 0, -2);
+    glass.addColorStop(0, shade(COLOR.cyan, 0.45));
+    glass.addColorStop(1, shade(COLOR.cyan, -0.6));
+    g.fillStyle = glass;
+    g.beginPath();
+    g.ellipse(0, -8, 2.9, 6.2, 0, 0, TAU);
+    g.fill();
+    g.fillStyle = 'rgba(255, 255, 255, 0.75)';
+    g.beginPath();
+    g.ellipse(-0.9, -10, 0.9, 2.4, 0, 0, TAU);
+    g.fill();
+    lamp(g, -17, 10, 4, COLOR.danger);
+    lamp(g, 17, 10, 4, COLOR.teal);
+    lamp(g, -4.5, 15, 3.2, COLOR.cyan);
+    lamp(g, 4.5, 15, 3.2, COLOR.cyan);
+  }
+  function paintCruiser(g) {
+    for (const x of [-30, -12, 12, 30]) lamp(g, x, -26, 10, COLOR.orange);
+    hull(g, COLOR.steel, poly([[0, 32], [18, 14], [48, 6], [48, -6], [22, -14], [13, -30], [-13, -30], [-22, -14], [-48, -6], [-48, 6], [-18, 14]]), 44);
+    seams(g, [[-42, 0, 42, 0], [-8, -26, -8, 16], [8, -26, 8, 16], [-30, -8, -18, 10], [30, -8, 18, 10]]);
+    for (const side of [-1, 1]) {
+      hull(g, COLOR.steel, circlePath(side * 34, 4, 7), 8);
+      g.fillStyle = shade(COLOR.steel, -0.6);
+      g.fillRect(side * 34 - 2, 6, 4, 11);
+    }
+    g.fillStyle = rgba(COLOR.cyan, 0.85);
+    g.fillRect(-6, -19, 12, 3);
+  }
+  function paintMother(g) {
+    for (const side of [-1, 1]) {
+      lamp(g, side * 50, -7, 13, COLOR.cyan);
+      hull(g, COLOR.violet, (p) => {
+        p.beginPath();
+        p.ellipse(side * 50, 5, 17, 9, 0, 0, TAU);
+      }, 16);
+      seams(g, [[side * 37, 5, side * 63, 5]]);
+      lamp(g, side * 66, 5, 6, COLOR.cyan);
+    }
+    hull(g, '#5d4c9c', (p) => {
+      p.beginPath();
+      p.ellipse(0, 10, 42, 13, 0, 0, TAU);
+    }, 30);
+    hull(g, COLOR.violet, (p) => {
+      p.beginPath();
+      p.ellipse(0, 0, 62, 19, 0, 0, TAU);
+    }, 44);
+    g.save();
+    g.beginPath();
+    g.ellipse(0, 0, 62, 19, 0, 0, TAU);
+    g.clip();
+    g.strokeStyle = rgba(COLOR.void, 0.32);
+    g.lineWidth = 0.9;
+    g.beginPath();
+    for (let i = 0; i < 18; i++) {
+      const a = (i / 18) * TAU;
+      g.moveTo(Math.cos(a) * 30, Math.sin(a) * 9);
+      g.lineTo(Math.cos(a) * 70, Math.sin(a) * 22);
+    }
+    g.stroke();
+    g.strokeStyle = rgba(COLOR.void, 0.45);
+    g.lineWidth = 3;
+    g.beginPath();
+    g.ellipse(0, 2, 55, 14, 0, 0, TAU);
+    g.stroke();
+    g.restore();
+    g.save();
+    g.globalCompositeOperation = 'lighter';
+    for (const [w, a] of [[6, 0.18], [2, 0.8]]) {
+      g.strokeStyle = rgba(COLOR.cyan, a);
+      g.lineWidth = w;
+      g.beginPath();
+      g.ellipse(0, 15, 26, 6, 0, 0.15, Math.PI - 0.15);
+      g.stroke();
+    }
+    g.restore();
+    hull(g, '#cdbcff', (p) => {
+      p.beginPath();
+      p.ellipse(0, -5, 34, 10, 0, 0, TAU);
+    }, 24);
+    const dome = g.createRadialGradient(-8, -22, 2, 0, -12, 26);
+    dome.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+    dome.addColorStop(0.45, rgba(COLOR.cyan, 0.6));
+    dome.addColorStop(1, rgba(COLOR.deep, 0.9));
+    g.fillStyle = dome;
+    g.beginPath();
+    g.ellipse(0, -9, 22, 16, 0, Math.PI, TAU);
+    g.closePath();
+    g.fill();
+    g.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+    g.lineWidth = 0.9;
+    g.stroke();
+    lamp(g, 0, -15, 6, COLOR.coral);
+  }
+
+  // ---------- backdrop: noise nebula, a planet per region, glowing stars ----------
+  function seeded(seed) { // small deterministic random generator, so a region always looks the same
+    let a = seed >>> 0;
+    return () => {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  // Smooth value noise that wraps around on both axes, so the scrolling nebula has no seam.
+  function tileNoise(w, h, cx, cy, rnd, out, amp) {
+    const grid = new Float32Array(cx * cy);
+    for (let i = 0; i < grid.length; i++) grid[i] = rnd();
+    for (let y = 0; y < h; y++) {
+      const gy = (y / h) * cy;
+      const y0 = Math.floor(gy);
+      const fy = gy - y0;
+      const sy = fy * fy * (3 - 2 * fy);
+      const r0 = (y0 % cy) * cx;
+      const r1 = ((y0 + 1) % cy) * cx;
+      for (let x = 0; x < w; x++) {
+        const gx = (x / w) * cx;
+        const x0 = Math.floor(gx);
+        const fx = gx - x0;
+        const sx = fx * fx * (3 - 2 * fx);
+        const c0 = x0 % cx;
+        const c1 = (x0 + 1) % cx;
+        const top = grid[r0 + c0] + (grid[r0 + c1] - grid[r0 + c0]) * sx;
+        const bottom = grid[r1 + c0] + (grid[r1 + c1] - grid[r1 + c0]) * sx;
+        out[y * w + x] += (top + (bottom - top) * sy) * amp;
+      }
+    }
+  }
+  function fbm(w, h, rnd) {
+    const out = new Float32Array(w * h);
+    let amp = 0.5;
+    let total = 0;
+    for (const cells of [3, 6, 12, 24]) {
+      tileNoise(w, h, cells, Math.max(1, Math.round((cells * h) / w)), rnd, out, amp);
+      total += amp;
+      amp *= 0.5;
+    }
+    for (let i = 0; i < out.length; i++) out[i] /= total;
+    return out;
+  }
+  function paintNebula() {
+    const nw = 150;
+    const nh = Math.max(150, Math.round((nw * H) / W));
+    nebula.width = nw;
+    nebula.height = nh;
+    const g = nebula.getContext('2d');
+    const rnd = seeded(stageIndex * 7919 + 11);
+    const A = fbm(nw, nh, rnd);
+    const B = fbm(nw, nh, rnd);
+    const hexRgb = (hex) => {
+      const n = parseInt(hex.replace('#', ''), 16);
+      return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    };
+    const c1 = hexRgb(stage.neb[0]);
+    const c2 = hexRgb(stage.neb[1]);
+    const ramp = (v, lo, hi) => {
+      const u = clamp((v - lo) / (hi - lo), 0, 1);
+      return u * u * (3 - 2 * u);
+    };
+    const img = g.createImageData(nw, nh);
+    for (let i = 0; i < nw * nh; i++) {
+      const wa = ramp(A[i], 0.42, 0.8);
+      const wb = ramp(B[i], 0.5, 0.86) * 0.8;
+      const sum = wa + wb + 1e-6;
+      const o = i * 4;
+      img.data[o] = (c1[0] * wa + c2[0] * wb) / sum;
+      img.data[o + 1] = (c1[1] * wa + c2[1] * wb) / sum;
+      img.data[o + 2] = (c1[2] * wa + c2[2] * wb) / sum;
+      img.data[o + 3] = Math.min(0.55, wa * 0.44 + wb * 0.38) * 255;
+    }
+    g.putImageData(img, 0, 0);
+  }
+  function sphere(g, R, color, glowColor) {
+    const atm = g.createRadialGradient(0, 0, R * 0.92, 0, 0, R * 1.28);
+    atm.addColorStop(0, rgba(glowColor, 0.4));
+    atm.addColorStop(1, rgba(glowColor, 0));
+    g.fillStyle = atm;
+    g.beginPath();
+    g.arc(0, 0, R * 1.28, 0, TAU);
+    g.fill();
+    const body = g.createRadialGradient(-R * 0.45, -R * 0.45, R * 0.08, 0, 0, R * 1.05);
+    body.addColorStop(0, shade(color, 0.35));
+    body.addColorStop(0.55, color);
+    body.addColorStop(1, shade(color, -0.88));
+    g.fillStyle = body;
+    g.beginPath();
+    g.arc(0, 0, R, 0, TAU);
+    g.fill();
+  }
+  // One celestial body per region: a cratered moon, a ringed planet, a banded gas giant, a black hole, the galactic core.
+  function paintPlanet(g, idx, R) {
+    const rnd = seeded(idx * 977 + 13);
+    const color = stage.planet;
+    if (idx === 3) {
+      const halo = g.createRadialGradient(0, 0, R * 0.3, 0, 0, R * 1.6);
+      halo.addColorStop(0, rgba(color, 0.5));
+      halo.addColorStop(1, rgba(color, 0));
+      g.fillStyle = halo;
+      g.fillRect(-R * 1.6, -R * 1.6, R * 3.2, R * 3.2);
+      const disk = (from, to) => {
+        g.save();
+        g.globalCompositeOperation = 'lighter';
+        for (const [w, a] of [[R * 0.42, 0.18], [R * 0.22, 0.45], [R * 0.08, 0.9]]) {
+          g.strokeStyle = rgba(color, a);
+          g.lineWidth = w;
+          g.beginPath();
+          g.ellipse(0, 0, R * 1.25, R * 0.32, -0.25, from, to);
+          g.stroke();
+        }
+        g.restore();
+      };
+      disk(Math.PI, TAU);
+      g.fillStyle = COLOR.void;
+      g.beginPath();
+      g.arc(0, 0, R * 0.46, 0, TAU);
+      g.fill();
+      g.strokeStyle = rgba(COLOR.amber, 0.9);
+      g.lineWidth = 1.4;
+      g.beginPath();
+      g.arc(0, 0, R * 0.48, 0, TAU);
+      g.stroke();
+      disk(0, Math.PI);
+      return;
+    }
+    if (idx === 4) {
+      g.save();
+      g.rotate(-0.45);
+      g.globalCompositeOperation = 'lighter';
+      g.save();
+      g.scale(1, 0.5);
+      const halo = g.createRadialGradient(0, 0, 0, 0, 0, R * 1.6);
+      halo.addColorStop(0, rgba(color, 0.6));
+      halo.addColorStop(0.3, rgba(color, 0.2));
+      halo.addColorStop(1, rgba(color, 0));
+      g.fillStyle = halo;
+      g.fillRect(-R * 1.6, -R * 1.6, R * 3.2, R * 3.2);
+      g.restore();
+      for (let arm = 0; arm < 2; arm++) {
+        for (let i = 0; i < 520; i++) {
+          const t = rnd();
+          const a = arm * Math.PI + t * 4.6;
+          const r = R * (0.14 + t * 1.25);
+          const off = (rnd() - 0.5) * R * (0.06 + t * 0.22);
+          const x = Math.cos(a) * r + Math.cos(a + Math.PI / 2) * off;
+          const y = (Math.sin(a) * r + Math.sin(a + Math.PI / 2) * off) * 0.5;
+          const tint = rnd();
+          g.fillStyle = rgba(tint < 0.2 ? COLOR.cyan : tint < 0.35 ? COLOR.ink : color, 0.32 * (1 - t * 0.75));
+          g.beginPath();
+          g.arc(x, y, 0.5 + rnd() * 1.1, 0, TAU);
+          g.fill();
+        }
+      }
+      g.scale(1, 0.55);
+      const core = g.createRadialGradient(0, 0, 0, 0, 0, R * 0.32);
+      core.addColorStop(0, 'rgba(255, 255, 255, 1)');
+      core.addColorStop(0.35, rgba(color, 0.85));
+      core.addColorStop(1, rgba(color, 0));
+      g.fillStyle = core;
+      g.fillRect(-R * 0.32, -R * 0.32, R * 0.64, R * 0.64);
+      g.restore();
+      return;
+    }
+    if (idx === 1) { // the far half of the ring sits behind the planet
+      g.strokeStyle = rgba(color, 0.35);
+      g.lineWidth = R * 0.14;
+      g.beginPath();
+      g.ellipse(0, 0, R * 1.7, R * 0.42, -0.35, Math.PI, TAU);
+      g.stroke();
+    }
+    sphere(g, R, color, stage.color);
+    g.save();
+    g.beginPath();
+    g.arc(0, 0, R, 0, TAU);
+    g.clip();
+    if (idx === 0) {
+      for (let i = 0; i < 16; i++) {
+        const a = rnd() * TAU;
+        const d = Math.sqrt(rnd()) * R * 0.85;
+        const r = R * (0.04 + rnd() * 0.1);
+        const x = Math.cos(a) * d;
+        const y = Math.sin(a) * d;
+        g.fillStyle = rgba(COLOR.void, 0.22);
+        g.beginPath();
+        g.ellipse(x, y, r, r * 0.8, 0, 0, TAU);
+        g.fill();
+        g.strokeStyle = 'rgba(255, 255, 255, 0.14)';
+        g.lineWidth = 1;
+        g.beginPath();
+        g.ellipse(x, y, r, r * 0.8, 0, Math.PI * 1.1, Math.PI * 1.9);
+        g.stroke();
+      }
+    } else if (idx === 2) {
+      for (let i = 0; i < 11; i++) {
+        const y = -R + (i + rnd() * 0.6) * ((2 * R) / 11);
+        g.fillStyle = i % 2 ? 'rgba(255, 255, 255, 0.09)' : rgba(COLOR.void, 0.14);
+        g.fillRect(-R, y, R * 2, R * (0.08 + rnd() * 0.1));
+      }
+      g.fillStyle = rgba(COLOR.void, 0.25);
+      g.beginPath();
+      g.ellipse(R * 0.25, R * 0.3, R * 0.18, R * 0.09, 0, 0, TAU);
+      g.fill();
+    }
+    // night side
+    const night = g.createLinearGradient(-R, -R, R, R);
+    night.addColorStop(0.45, rgba(COLOR.void, 0));
+    night.addColorStop(1, rgba(COLOR.void, 0.65));
+    g.fillStyle = night;
+    g.fillRect(-R, -R, R * 2, R * 2);
+    g.restore();
+    if (idx === 1) {
+      g.strokeStyle = rgba(color, 0.7);
+      g.lineWidth = R * 0.14;
+      g.beginPath();
+      g.ellipse(0, 0, R * 1.7, R * 0.42, -0.35, 0, Math.PI);
+      g.stroke();
+      g.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+      g.lineWidth = 1;
+      g.stroke();
+    }
+  }
   function gemSprite(color, s, k) {
     return sprite(s * 4, k, (g) => {
       const grd = g.createRadialGradient(0, 0, 0, 0, 0, s * 2);
@@ -1791,66 +2104,79 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       grd.addColorStop(1, rgba(color, 0));
       g.fillStyle = grd;
       g.fillRect(-15, -15, 30, 30);
-      g.lineWidth = 1.4;
-      g.strokeStyle = rgba(COLOR.void, 0.7);
       if (kind === 'heal') {
-        g.fillStyle = color;
-        g.beginPath();
-        g.arc(0, 0, 9, 0, TAU);
-        g.fill();
-        g.fillStyle = COLOR.ink;
+        hull(g, color, circlePath(0, 0, 9.5), 10);
+        g.fillStyle = rgba(COLOR.void, 0.35);
+        g.fillRect(-1.2, -4.7, 3.6, 11);
+        g.fillRect(-4.9, -1.0, 11, 3.6);
+        g.fillStyle = '#ffffff';
         g.fillRect(-1.8, -5.5, 3.6, 11);
         g.fillRect(-5.5, -1.8, 11, 3.6);
-      } else if (kind === 'magnet') {
-        g.lineWidth = 5;
-        g.strokeStyle = color;
-        g.lineCap = 'butt';
-        g.beginPath();
-        g.arc(0, -1, 6.5, Math.PI, 0, true);
-        g.stroke();
-        g.beginPath();
-        g.moveTo(-6.5, -1);
-        g.lineTo(-6.5, 6);
-        g.moveTo(6.5, -1);
-        g.lineTo(6.5, 6);
-        g.stroke();
-        g.strokeStyle = COLOR.ink;
-        g.beginPath();
-        g.moveTo(-6.5, 4);
-        g.lineTo(-6.5, 7.5);
-        g.moveTo(6.5, 4);
-        g.lineTo(6.5, 7.5);
-        g.stroke();
+      } else if (kind === 'magnet') { // a horseshoe magnet, poles down
+        hull(g, color, (p) => {
+          p.beginPath();
+          p.arc(0, -1, 8.5, Math.PI, 0);
+          p.lineTo(8.5, 8);
+          p.lineTo(3.6, 8);
+          p.lineTo(3.6, -1);
+          p.arc(0, -1, 3.6, 0, Math.PI, true);
+          p.lineTo(-3.6, 8);
+          p.lineTo(-8.5, 8);
+          p.closePath();
+        }, 10);
+        for (const x of [-8.5, 3.6]) {
+          const tip = g.createLinearGradient(x, 0, x + 4.9, 0);
+          tip.addColorStop(0, '#ffffff');
+          tip.addColorStop(1, COLOR.steel);
+          g.fillStyle = tip;
+          g.fillRect(x, 3.5, 4.9, 4.5);
+          g.strokeStyle = rgba(COLOR.void, 0.85);
+          g.lineWidth = 1.2;
+          g.strokeRect(x, 3.5, 4.9, 4.5);
+        }
       } else if (kind === 'bomb') {
-        g.fillStyle = COLOR.void;
+        hull(g, '#3b4160', circlePath(0, 2, 8.5), 9);
+        g.fillStyle = shade(COLOR.steel, -0.2);
+        g.fillRect(-3, -8, 6, 3.5);
+        g.strokeStyle = COLOR.amber;
+        g.lineWidth = 1.6;
+        g.lineCap = 'round';
         g.beginPath();
-        g.arc(0, 2, 8, 0, TAU);
-        g.fill();
-        g.strokeStyle = color;
-        g.lineWidth = 2;
+        g.moveTo(0, -8);
+        g.quadraticCurveTo(2, -12, 6, -11);
         g.stroke();
+        lamp(g, 6.5, -11, 6, COLOR.orange);
+        g.fillStyle = 'rgba(255, 255, 255, 0.55)';
         g.beginPath();
-        g.moveTo(4, -4);
-        g.quadraticCurveTo(8, -9, 4, -11);
-        g.stroke();
-        g.fillStyle = COLOR.amber;
-        g.beginPath();
-        g.arc(4, -11, 2.2, 0, TAU);
+        g.ellipse(-3.2, -1.2, 2.2, 1.4, -0.6, 0, TAU);
         g.fill();
       } else if (kind === 'chest') {
-        g.fillStyle = color;
-        g.fillRect(-10, -6, 20, 14);
-        g.strokeRect(-10, -6, 20, 14);
+        hull(g, color, (p) => {
+          p.beginPath();
+          p.rect(-10.5, -3.5, 21, 11.5);
+        }, 11);
+        hull(g, '#ffdb8a', (p) => {
+          p.beginPath();
+          p.moveTo(-10.5, -3.5);
+          p.lineTo(-10.5, -6);
+          p.quadraticCurveTo(-10.5, -10, -6.5, -10);
+          p.lineTo(6.5, -10);
+          p.quadraticCurveTo(10.5, -10, 10.5, -6);
+          p.lineTo(10.5, -3.5);
+          p.closePath();
+        }, 11);
         g.fillStyle = rgba(COLOR.void, 0.4);
-        g.fillRect(-10, -6, 20, 4);
-        g.fillStyle = COLOR.ink;
-        g.fillRect(-2, -3, 4, 5);
+        g.fillRect(-7.5, -10, 2.4, 18);
+        g.fillRect(5.1, -10, 2.4, 18);
+        lamp(g, 0, -2, 7, COLOR.ink);
+        g.fillStyle = shade(COLOR.amber, -0.65);
+        g.fillRect(-1, -2.5, 2, 3.5);
       } else {
-        g.fillStyle = color;
-        g.beginPath();
-        g.ellipse(0, 0, 8, 10, 0, 0, TAU);
-        g.fill();
-        g.fillStyle = COLOR.ink;
+        hull(g, color, (p) => {
+          p.beginPath();
+          p.ellipse(0, 0, 8.5, 10, 0, 0, TAU);
+        }, 10);
+        g.fillStyle = '#ffffff';
         g.font = '700 13px "IBM Plex Sans KR", system-ui, sans-serif';
         g.textAlign = 'center';
         g.textBaseline = 'middle';
@@ -1859,14 +2185,19 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     });
   }
   const SPRITE_SIZE = {
-    tank: 52, gunner: 46, carrier: 74, shield: 50, spinner: 46, lancer: 42, bomber: 42, healer: 34, splitter: 38,
-    sniper: 36, phantom: 30, mine: 28, comet: 32, swarm: 18, fragment: 20,
+    scout: 38, swarm: 20, fragment: 22, seeker: 34, comet: 36, diver: 38, splitter: 40, sniper: 44, phantom: 36, mine: 30,
+    bomber: 48, healer: 36, gunner: 48, spinner: 46, shield: 54, lancer: 44, tank: 56, carrier: 78, rock: 34,
   };
   function buildSprites() {
     const k = Math.min(4, Math.max(1, scale * dpr));
     for (const kind of Object.keys(PAINT)) {
       const size = SPRITE_SIZE[kind] || 34;
       const img = sprite(size, k, PAINT[kind]);
+      SPR[kind] = { img, flash: whiteOf(img), size };
+    }
+    SPR.player = { img: sprite(56, k, paintPlayer), size: 56 };
+    for (const [kind, paint, size] of [['cruiser', paintCruiser, 132], ['mother', paintMother, 150]]) {
+      const img = sprite(size, k, paint);
       SPR[kind] = { img, flash: whiteOf(img), size };
     }
     SPR.gem = [gemSprite(COLOR.cyan, 4.5, k), gemSprite(COLOR.lime, 6, k), gemSprite(COLOR.amber, 8, k)];
@@ -1879,8 +2210,6 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   let scale = 1;
   let dpr = 1;
   let bgGrad = null;
-  let hullGrad = null;
-  let flameGrad = null;
   let state = 'title'; // title | stages | playing | choice | paused | dying | clearing | result
   let stageIndex = 0;
   let stage = STAGES[0];
@@ -1895,6 +2224,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   const gems = [];
   const items = [];
   const sparks = [];
+  const blooms = [];
+  const smokes = [];
+  const debris = [];
   const rings = [];
   const texts = [];
   const zaps = [];
@@ -1941,46 +2273,34 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const oldH = H;
     H = h / scale;
     player.y = clamp(player.y * (H / oldH), 74, H - 26);
-    hullGrad = ctx.createLinearGradient(0, -19, 0, 13);
-    hullGrad.addColorStop(0, '#ffffff');
-    hullGrad.addColorStop(1, COLOR.muted);
-    flameGrad = ctx.createLinearGradient(0, 10, 0, 28);
-    flameGrad.addColorStop(0, COLOR.cyan);
-    flameGrad.addColorStop(1, rgba(COLOR.cyan, 0));
     paintSky();
     buildSprites();
     hudDirty = true;
   }
-  // Sky and nebula take the current stage's colors.
+  // Sky, nebula and the region's planet take the current stage's colors.
   function paintSky() {
     bgGrad = ctx.createLinearGradient(0, 0, 0, H);
     bgGrad.addColorStop(0, stage.sky[0]);
     bgGrad.addColorStop(1, stage.sky[1]);
-    const nw = 90;
-    const nh = Math.max(90, Math.round((nw * H) / W));
-    nebula.width = nw;
-    nebula.height = nh;
-    const g = nebula.getContext('2d');
-    const blobs = [[0.18, 0.22, 0.75, stage.neb[0], 0.2], [0.88, 0.58, 0.6, stage.neb[1], 0.1], [0.42, 0.9, 0.55, stage.neb[2], 0.08]];
-    for (const [bx, by, br, color, a] of blobs) {
-      for (const shift of [-nh, 0, nh]) { // repeat above and below so the scroll has no seam
-        const cx = bx * nw;
-        const cy = by * nh + shift;
-        const grd = g.createRadialGradient(cx, cy, 0, cx, cy, br * nw);
-        grd.addColorStop(0, rgba(color, a));
-        grd.addColorStop(1, rgba(color, 0));
-        g.fillStyle = grd;
-        g.fillRect(0, 0, nw, nh);
-      }
-    }
+    paintNebula();
+    const big = stageIndex >= 3;
+    planet.size = big ? 250 : 210;
+    const R = big ? 70 : 64;
+    planet.img = sprite(planet.size, Math.min(2.5, Math.max(1, scale * dpr)), (g) => paintPlanet(g, stageIndex, R));
+    planet.x = W * (stageIndex % 2 ? 0.2 : 0.82);
+    planet.y = H * 0.28;
+    vignette = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.42, W / 2, H / 2, Math.hypot(W, H) * 0.62);
+    vignette.addColorStop(0, rgba(COLOR.void, 0));
+    vignette.addColorStop(1, rgba(COLOR.void, 0.6));
   }
   function makeStars() {
-    const layers = [[46, 14, 0.6, 1.1, 0.45], [28, 34, 0.9, 1.5, 0.7], [14, 72, 1.3, 2, 0.95]];
-    for (const [count, speed, smin, smax, alpha] of layers) {
+    const layers = [[50, 12, 0.7, 1.2, 0.5], [30, 30, 1, 1.6, 0.75], [14, 64, 1.4, 2.2, 1]];
+    layers.forEach(([count, speed, smin, smax, alpha], layer) => {
       for (let i = 0; i < count; i++) {
-        stars.push({ x: rand(0, W), y: rand(0, W * 2.1), s: rand(smin, smax), v: speed, a: alpha, tw: rand(0, TAU) });
+        const k = layer === 2 && Math.random() < 0.4 ? 3 : Math.floor(Math.random() * 3);
+        stars.push({ x: rand(0, W), y: rand(0, W * 2.1), s: rand(smin, smax), v: speed, a: alpha, tw: rand(0, TAU), k });
       }
-    }
+    });
   }
   function toWorld(e) {
     const box = ui.canvas.getBoundingClientRect();
@@ -3722,14 +4042,31 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   function explode(x, y, color, size, quiet) {
     const big = size === 'big';
     const mid = size === 'mid';
-    const room = sparks.length > 450 ? 0.35 : 1; // thin out when the screen is busy
-    const count = Math.round((big ? 70 : mid ? 26 : 10) * (motionOK() ? 1 : 0.5) * room);
+    const lite = !motionOK();
+    const room = sparks.length > 380 ? 0.35 : 1; // thin out when the screen is busy
+    const count = Math.round((big ? 56 : mid ? 22 : 9) * (lite ? 0.5 : 1) * room);
     const speed = big ? 300 : mid ? 210 : 150;
-    for (let i = 0; i < count && sparks.length < 700; i++) {
+    for (let i = 0; i < count && sparks.length < 520; i++) {
       const a = Math.random() * TAU;
       const s = speed * rand(0.25, 1);
       const life = rand(0.35, 1) * (big ? 1.1 : mid ? 0.7 : 0.45);
-      sparks.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life, max: life, color, w: big ? 2.2 : 1.6 });
+      sparks.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life, max: life, color, w: big ? 2.4 : 1.8 });
+    }
+    if (blooms.length < 70) {
+      const life = big ? 0.5 : mid ? 0.3 : 0.2;
+      blooms.push({ x, y, size: big ? 200 : mid ? 84 : 42, life, full: life, color });
+    }
+    if ((big || mid) && !lite) {
+      for (let i = 0; i < (big ? 8 : 3) && smokes.length < 90; i++) {
+        const life = rand(0.6, 1.1);
+        smokes.push({ x: x + rand(-8, 8), y: y + rand(-8, 8), vx: rand(-20, 20), vy: rand(-20, 20) + 12, r: rand(8, 14) * (big ? 1.8 : 1), grow: big ? 60 : 30, life, full: life });
+      }
+      for (let i = 0; i < (big ? 12 : 5) && debris.length < 140; i++) {
+        const a = rand(0, TAU);
+        const sp = rand(80, 220);
+        const life = rand(0.5, 1);
+        debris.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, rot: rand(0, TAU), vr: rand(-10, 10), s: rand(1.5, 3.5), life, full: life, color });
+      }
     }
     if (rings.length < 60) {
       const life = big ? 0.7 : 0.35;
@@ -3744,7 +4081,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
   }
   function spark(x, y, color, count) {
-    for (let i = 0; i < count && sparks.length < 700; i++) {
+    for (let i = 0; i < count && sparks.length < 520; i++) {
       const a = Math.random() * TAU;
       const s = rand(40, 120);
       const life = rand(0.12, 0.25);
@@ -3790,6 +4127,34 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       zaps[i].life -= dt;
       if (zaps[i].life <= 0) removeAt(zaps, i);
     }
+    for (let i = blooms.length - 1; i >= 0; i--) {
+      blooms[i].life -= dt;
+      if (blooms[i].life <= 0) removeAt(blooms, i);
+    }
+    for (let i = smokes.length - 1; i >= 0; i--) {
+      const m = smokes[i];
+      m.life -= dt;
+      if (m.life <= 0) {
+        removeAt(smokes, i);
+        continue;
+      }
+      m.x += m.vx * dt;
+      m.y += m.vy * dt;
+      m.r += m.grow * dt;
+    }
+    for (let i = debris.length - 1; i >= 0; i--) {
+      const d = debris[i];
+      d.life -= dt;
+      if (d.life <= 0) {
+        removeAt(debris, i);
+        continue;
+      }
+      d.x += d.vx * dt;
+      d.y += d.vy * dt;
+      d.vx *= Math.max(0, 1 - 1.5 * dt);
+      d.vy *= Math.max(0, 1 - 1.5 * dt);
+      d.rot += d.vr * dt;
+    }
     if (shake > 0) shake = Math.max(0, shake - dt * 30);
     if (flash > 0) flash = Math.max(0, flash - dt * 1.6);
     if (hurtFlash > 0) hurtFlash = Math.max(0, hurtFlash - dt * 1.8);
@@ -3805,6 +4170,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     if (warp > 0) warp = Math.max(0, warp - dt * 0.9);
     nebulaY = (nebulaY + 5 * dt) % H;
+    planet.y += 2.2 * boost * dt; // drifts past very slowly, then comes round again
+    if (planet.y - planet.size / 2 > H) planet.y = -planet.size / 2 - rand(0, H);
   }
 
   // ---------- drawing ----------
@@ -3826,6 +4193,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     drawEnemyShots();
     drawTexts();
     ctx.restore();
+    if (vignette) {
+      ctx.fillStyle = vignette;
+      ctx.fillRect(0, 0, W, H);
+    }
     if (flash > 0) {
       ctx.globalAlpha = Math.min(0.5, flash);
       ctx.fillStyle = COLOR.ink;
@@ -3844,13 +4215,20 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ctx.fillRect(0, 0, W, H);
     ctx.drawImage(nebula, 0, nebulaY - H, W, H);
     ctx.drawImage(nebula, 0, nebulaY, W, H);
-    const streak = 1 + warp * 10;
+    if (planet.img) ctx.drawImage(planet.img, planet.x - planet.size / 2, planet.y - planet.size / 2, planet.size, planet.size);
+    ctx.globalCompositeOperation = 'lighter';
     ctx.fillStyle = COLOR.ink;
     for (const s of stars) {
-      if (s.y > H + 2) continue;
-      ctx.globalAlpha = s.a * (0.75 + 0.25 * Math.sin(clock * 2 + s.tw));
-      ctx.fillRect(s.x, s.y, s.s, s.s * streak);
+      if (s.y > H + 6) continue;
+      ctx.globalAlpha = s.a * (0.65 + 0.35 * Math.sin(clock * (1.2 + s.tw * 0.4) + s.tw * 7));
+      const d = s.s * (s.k === 3 ? 7 : 4.5);
+      ctx.drawImage(STAR_SPR[s.k], s.x - d / 2, s.y - d / 2, d, d);
+      if (warp > 0.05) { // streaks while warping between waves
+        const len = warp * s.v * 0.35;
+        ctx.fillRect(s.x - s.s * 0.2, s.y - len, s.s * 0.4, len);
+      }
     }
+    ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
   }
   const inPlay = () => state === 'playing' || state === 'choice' || state === 'paused' || state === 'dying' || state === 'clearing';
@@ -3860,40 +4238,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ctx.save();
     ctx.translate(player.x, player.y);
     ctx.globalCompositeOperation = 'lighter';
-    ctx.fillStyle = flameGrad;
-    ctx.beginPath();
-    ctx.moveTo(-4.5, 10);
-    ctx.lineTo(4.5, 10);
-    ctx.lineTo(0, 20 + Math.random() * 7);
-    ctx.closePath();
-    ctx.fill();
+    for (const x of [-4.5, 4.5]) ctx.drawImage(FLAME, x - 4, 13, 8, 12 + Math.random() * 8);
+    glow(ORB.cyan, 0, 18, 26, 0.35);
     ctx.globalCompositeOperation = 'source-over';
     ctx.scale(1 - Math.abs(player.bank) * 0.25, 1);
-    ctx.beginPath();
-    ctx.moveTo(0, -19);
-    ctx.lineTo(5, -7);
-    ctx.lineTo(16, 7);
-    ctx.lineTo(16, 12);
-    ctx.lineTo(5, 9);
-    ctx.lineTo(3.5, 13);
-    ctx.lineTo(-3.5, 13);
-    ctx.lineTo(-5, 9);
-    ctx.lineTo(-16, 12);
-    ctx.lineTo(-16, 7);
-    ctx.lineTo(-5, -7);
-    ctx.closePath();
-    ctx.fillStyle = hullGrad;
-    ctx.fill();
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = rgba(COLOR.void, 0.7);
-    ctx.stroke();
-    ctx.fillStyle = COLOR.amber;
-    ctx.fillRect(11, 7.5, 4, 2.2);
-    ctx.fillRect(-15, 7.5, 4, 2.2);
-    ctx.fillStyle = COLOR.cyan;
-    ctx.beginPath();
-    ctx.ellipse(0, -6, 2.6, 5.4, 0, 0, TAU);
-    ctx.fill();
+    const spr = SPR.player;
+    if (spr) ctx.drawImage(spr.img, -spr.size / 2, -spr.size / 2, spr.size, spr.size);
     ctx.restore();
     // the glowing core is the only part that can be hit
     ctx.fillStyle = rgba(COLOR.void, 0.85);
@@ -3925,7 +4275,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
       const spr = SPR[e.kind];
       if (!spr) continue;
-      const img = e.flash > 0 ? spr.flash : spr.img;
+      const img = spr.img;
       const size = e.kind === 'rock' ? spr.size * e.size : spr.size;
       if (e.kind === 'diver' && e.step === 'hover') { // charging glow warns that a dash is coming
         const k = Math.min(1, e.st / e.hover);
@@ -3961,9 +4311,17 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           ctx.globalCompositeOperation = 'source-over';
         }
         ctx.drawImage(img, -size / 2, -size / 2, size, size);
+        if (e.flash > 0) {
+          ctx.globalAlpha = alpha * 0.5;
+          ctx.drawImage(spr.flash, -size / 2, -size / 2, size, size);
+        }
         ctx.restore();
       } else {
         ctx.drawImage(img, e.x - size / 2, e.y - size / 2, size, size);
+        if (e.flash > 0) {
+          ctx.globalAlpha = alpha * 0.5;
+          ctx.drawImage(spr.flash, e.x - size / 2, e.y - size / 2, size, size);
+        }
       }
       ctx.globalAlpha = 1;
       if (e.kind === 'mine') glow(ORB.red, e.x, e.y, e.armed ? 30 : 16, 0.5 + 0.5 * Math.sin(e.t * (e.armed ? 30 : 4)));
@@ -4041,14 +4399,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         const k = Math.min(1, b.active / 0.15, (b.full - b.active) / 0.06 + 0.3);
         ctx.save();
         ctx.globalCompositeOperation = 'lighter';
-        ctx.fillStyle = COLOR.danger;
-        ctx.globalAlpha = 0.35 * k;
-        ctx.fillRect(b.x - b.width * 0.8, b.y, b.width * 1.6, h);
-        ctx.globalAlpha = 0.9 * k;
-        ctx.fillRect(b.x - b.width / 2, b.y, b.width, h);
-        ctx.fillStyle = '#ffffff';
         ctx.globalAlpha = k;
-        ctx.fillRect(b.x - b.width * 0.15, b.y, b.width * 0.3, h);
+        ctx.fillStyle = beamFill(b.x - b.width * 0.9, b.x + b.width * 0.9, COLOR.danger, 0.22);
+        ctx.fillRect(b.x - b.width * 0.9, b.y, b.width * 1.8, h);
+        ctx.drawImage(dot(COLOR.danger), b.x - b.width, b.y - b.width, b.width * 2, b.width * 2);
         ctx.restore();
       }
     }
@@ -4075,81 +4429,42 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
   }
-  function bossHull(e, color, path) {
-    path();
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.lineWidth = 1.2;
-    ctx.strokeStyle = rgba(COLOR.void, 0.55);
-    ctx.stroke();
+  // A beam's cross-section from x0 to x1: soft edges, a solid body from `edge` inwards, a white core.
+  function beamFill(x0, x1, color, edge) {
+    const grd = ctx.createLinearGradient(x0, 0, x1, 0);
+    grd.addColorStop(0, rgba(color, 0));
+    grd.addColorStop(edge * 0.55, rgba(color, 0.35));
+    grd.addColorStop(edge, rgba(color, 0.9));
+    grd.addColorStop(0.44, 'rgba(255, 255, 255, 0.95)');
+    grd.addColorStop(0.56, 'rgba(255, 255, 255, 0.95)');
+    grd.addColorStop(1 - edge, rgba(color, 0.9));
+    grd.addColorStop(1 - edge * 0.55, rgba(color, 0.35));
+    grd.addColorStop(1, rgba(color, 0));
+    return grd;
+  }
+  function drawBossSprite(e, spr) {
+    ctx.drawImage(spr.img, e.x - spr.size / 2, e.y - spr.size / 2, spr.size, spr.size);
     if (e.flash > 0) {
-      ctx.globalAlpha = 0.28;
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
+      ctx.globalAlpha = 0.3;
+      ctx.drawImage(spr.flash, e.x - spr.size / 2, e.y - spr.size / 2, spr.size, spr.size);
       ctx.globalAlpha = 1;
     }
   }
   function drawCruiser(e) {
-    ctx.save();
-    ctx.translate(e.x, e.y);
-    glow(ORB.amber, 0, 0, 130, 0.22);
-    bossHull(e, COLOR.steel, () => {
-      ctx.beginPath();
-      ctx.moveTo(0, 30);
-      ctx.lineTo(18, 14);
-      ctx.lineTo(46, 6);
-      ctx.lineTo(46, -6);
-      ctx.lineTo(20, -14);
-      ctx.lineTo(12, -28);
-      ctx.lineTo(-12, -28);
-      ctx.lineTo(-20, -14);
-      ctx.lineTo(-46, -6);
-      ctx.lineTo(-46, 6);
-      ctx.lineTo(-18, 14);
-      ctx.closePath();
-    });
-    ctx.fillStyle = rgba(COLOR.void, 0.35);
-    ctx.fillRect(-40, -2, 80, 4);
-    ctx.fillRect(-8, -24, 16, 40);
-    ctx.fillStyle = rgba(COLOR.void, 0.6);
-    for (const side of [-1, 1]) {
-      ctx.beginPath();
-      ctx.arc(side * 34, 4, 6, 0, TAU);
-      ctx.fill();
-    }
-    glow(ORB.amber, 0, 8, 26, 0.6 + 0.4 * Math.sin(clock * 6));
-    ctx.restore();
+    glow(ORB.amber, e.x, e.y, 150, 0.18);
+    if (SPR.cruiser) drawBossSprite(e, SPR.cruiser);
+    for (const x of [-30, -12, 12, 30]) glow(ORB.amber, e.x + x, e.y - 27, 14 + Math.random() * 6, 0.75);
+    glow(ORB.amber, e.x, e.y + 8, 30, 0.6 + 0.4 * Math.sin(clock * 6));
   }
   function drawMother(e) {
-    ctx.save();
-    ctx.translate(e.x, e.y);
-    glow(ORB.violet, 0, 0, 170, 0.35);
-    bossHull(e, COLOR.violet, () => {
-      ctx.beginPath();
-      ctx.ellipse(-46, 6, 14, 10, 0, 0, TAU);
-      ctx.moveTo(60, 6);
-      ctx.ellipse(46, 6, 14, 10, 0, 0, TAU);
-    });
-    bossHull(e, COLOR.violet, () => {
-      ctx.beginPath();
-      ctx.ellipse(0, 0, 58, 22, 0, 0, TAU);
-    });
-    ctx.fillStyle = rgba(COLOR.void, 0.45);
-    ctx.beginPath();
-    ctx.ellipse(0, 4, 50, 9, 0, 0, TAU);
-    ctx.fill();
-    ctx.fillStyle = rgba(COLOR.ink, 0.85);
-    ctx.beginPath();
-    ctx.ellipse(0, -12, 22, 14, 0, Math.PI, TAU);
-    ctx.fill();
-    for (let i = 0; i < 10; i++) {
-      const a = (i / 10) * TAU + clock * 1.2;
+    glow(ORB.violet, e.x, e.y, 190, 0.32);
+    if (SPR.mother) drawBossSprite(e, SPR.mother);
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * TAU + clock * 1.2;
       if (Math.sin(a) <= 0) continue;
-      ctx.fillStyle = i % 2 ? COLOR.amber : COLOR.cyan;
-      ctx.fillRect(Math.cos(a) * 50 - 1.5, 4 + Math.sin(a) * 9 - 1.5, 3, 3);
+      glow(i % 2 ? ORB.amber : ORB.cyan, e.x + Math.cos(a) * 52, e.y + 4 + Math.sin(a) * 9, 10, 0.95);
     }
-    glow(ORB.coral, 0, 18, 34, 0.6 + 0.4 * Math.sin(clock * 6));
-    ctx.restore();
+    glow(ORB.coral, e.x, e.y + 18, 40, 0.6 + 0.4 * Math.sin(clock * 6));
   }
   function drawWeapons() {
     if (!player.alive || !inPlay()) return;
@@ -4174,14 +4489,13 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         ctx.save();
         ctx.translate(g.x, g.y);
         ctx.rotate(g.a + Math.PI / 2);
+        const tone = w.evolved ? COLOR.amber : COLOR.cyan;
+        const half = g.half * (1 + 0.06 * Math.sin(clock * 50));
         ctx.globalCompositeOperation = 'lighter';
-        ctx.globalAlpha = 0.35 * fade;
-        ctx.fillStyle = w.evolved ? COLOR.amber : COLOR.cyan;
-        ctx.fillRect(-g.half * 1.6, -1000, g.half * 3.2, 1000);
-        ctx.globalAlpha = 0.9 * fade;
-        ctx.fillRect(-g.half * 0.7, -1000, g.half * 1.4, 1000);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(-g.half * 0.25, -1000, g.half * 0.5, 1000);
+        ctx.globalAlpha = fade;
+        ctx.fillStyle = beamFill(-half * 1.7, half * 1.7, tone, 0.29);
+        ctx.fillRect(-half * 1.7, -1000, half * 3.4, 1000);
+        ctx.drawImage(dot(tone), -half * 2.2, -half * 2.2, half * 4.4, half * 4.4);
         ctx.restore();
       }
     }
@@ -4194,16 +4508,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         ctx.save();
         ctx.translate(s.x, s.y);
         ctx.rotate(a);
-        ctx.fillStyle = COLOR.orange;
-        ctx.globalAlpha = 0.6;
-        ctx.beginPath();
-        ctx.moveTo(-4, -2.5);
-        ctx.lineTo(-16, 0);
-        ctx.lineTo(-4, 2.5);
-        ctx.fill();
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = COLOR.ink;
-        ctx.fillRect(-4, -1.8, 9, 3.6);
+        ctx.drawImage(dot(COLOR.orange), -19, -7, 14, 14);
+        ctx.rotate(Math.PI / 2);
+        ctx.drawImage(FLAME_HOT, -3.5, 5, 7, 9 + Math.random() * 7);
+        ctx.rotate(-Math.PI / 2);
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.drawImage(MISSILE, -8, -8, 16, 16);
         ctx.restore();
         continue;
       }
@@ -4248,29 +4558,41 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
   }
   function drawFx() {
-    ctx.globalCompositeOperation = 'lighter';
-    ctx.lineCap = 'round';
-    for (const p of sparks) {
-      ctx.globalAlpha = Math.max(0, p.life / p.max);
-      ctx.strokeStyle = p.color;
-      ctx.lineWidth = p.w;
-      ctx.beginPath();
-      ctx.moveTo(p.x, p.y);
-      ctx.lineTo(p.x - p.vx * 0.035, p.y - p.vy * 0.035);
-      ctx.stroke();
+    for (const m of smokes) { // smoke stays under the glow
+      ctx.globalAlpha = Math.max(0, m.life / m.full) * 0.85;
+      ctx.drawImage(SMOKE, m.x - m.r, m.y - m.r, m.r * 2, m.r * 2);
     }
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'lighter';
+    for (const b of blooms) {
+      const k = Math.max(0, b.life / b.full);
+      const d = b.size * (1.25 - 0.45 * k);
+      ctx.globalAlpha = k;
+      ctx.drawImage(dot(b.color), b.x - d / 2, b.y - d / 2, d, d);
+    }
+    for (const p of sparks) {
+      const k = Math.max(0, p.life / p.max);
+      const d = p.w * 4.2 * (0.35 + 0.65 * k);
+      ctx.globalAlpha = k;
+      ctx.drawImage(dot(p.color), p.x - d / 2, p.y - d / 2, d, d);
+    }
+    ctx.lineCap = 'round';
     for (const r of rings) {
-      ctx.globalAlpha = Math.max(0, r.life / r.full) * 0.8;
+      const k = Math.max(0, r.life / r.full);
       ctx.strokeStyle = r.color;
-      ctx.lineWidth = r.wide ? 4 : 2;
+      ctx.globalAlpha = k * 0.25;
+      ctx.lineWidth = r.wide ? 10 : 6;
       ctx.beginPath();
       ctx.arc(r.x, r.y, r.r, 0, TAU);
+      ctx.stroke();
+      ctx.globalAlpha = k * 0.85;
+      ctx.lineWidth = r.wide ? 3 : 1.6;
       ctx.stroke();
     }
     for (const z of zaps) {
       const a = Math.max(0, z.life / z.max);
-      for (const [width, color] of [[5, COLOR.cyan], [1.8, '#ffffff']]) {
-        ctx.globalAlpha = a * (width > 2 ? 0.5 : 1);
+      for (const [width, color] of [[7, COLOR.cyan], [3, COLOR.cyan], [1.4, '#ffffff']]) {
+        ctx.globalAlpha = a * (width > 5 ? 0.25 : width > 2 ? 0.6 : 1);
         ctx.strokeStyle = color;
         ctx.lineWidth = width;
         ctx.beginPath();
@@ -4278,14 +4600,23 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         ctx.stroke();
       }
     }
-    ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
+    for (const d of debris) {
+      ctx.globalAlpha = Math.max(0, d.life / d.full);
+      ctx.save();
+      ctx.translate(d.x, d.y);
+      ctx.rotate(d.rot);
+      ctx.fillStyle = d.color;
+      ctx.fillRect(-d.s, -d.s * 0.45, d.s * 2, d.s * 0.9);
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
   }
   function drawTexts() {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     for (const t of texts) {
-      ctx.font = `${t.size}px ${FONT_DATA}`;
+      ctx.font = `600 ${t.size}px ${FONT_DATA}`;
       const half = ctx.measureText(t.text).width / 2;
       const x = clamp(t.x, half + 6, W - half - 6);
       ctx.globalAlpha = Math.min(1, (t.life / t.max) * 2);
@@ -4408,6 +4739,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     items.length = 0;
     texts.length = 0;
     zaps.length = 0;
+    blooms.length = 0;
+    smokes.length = 0;
+    debris.length = 0;
     beams.length = 0;
     warns.length = 0;
     boss = null;
