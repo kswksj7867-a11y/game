@@ -121,7 +121,7 @@ button { font: inherit; color: inherit; }
   -webkit-user-select: none;
   -webkit-touch-callout: none;
 }
-.frame canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.frame #sky { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 
 /* ---------- instruments ---------- */
 .hud {
@@ -702,6 +702,40 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .board .name-form { margin: 6px 0 10px; }
 .rank-name { margin-right: 8px; font-family: var(--font-ui); font-weight: 700; }
 
+/* ---------- hangar ---------- */
+.ship-pill { font-family: var(--font-ui); font-size: 0.75rem; font-weight: 600; color: var(--cyan); }
+.ship-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ship-card {
+  appearance: none;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 8px 4px 9px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #11163f;
+  color: var(--ink);
+  cursor: pointer;
+}
+.ship-card .ship-art { width: 64px; height: 64px; }
+.ship-name { font-weight: 700; font-size: 0.8125rem; text-align: center; }
+.ship-state { display: flex; align-items: center; gap: 3px; font-family: var(--font-data); font-size: 0.75rem; color: var(--muted); }
+.ship-state svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.2; }
+.ship-card.is-locked .ship-art { filter: grayscale(0.7) brightness(0.75); }
+.ship-card.is-flying { border-color: var(--tone); }
+.ship-card.is-flying .ship-state { color: var(--tone); }
+.ship-card.is-selected { box-shadow: 0 0 0 2px var(--tone), 0 0 18px -4px var(--tone); }
+.ship-detail { display: grid; gap: 8px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255, 255, 255, 0.04); }
+.sd-head { display: flex; align-items: center; gap: 12px; }
+.sd-head .ship-art { width: 96px; height: 96px; flex: none; }
+.sd-head div { display: grid; gap: 2px; }
+.sd-name { font-family: var(--font-display); font-weight: 400; font-size: 1.5rem; line-height: 1.1; }
+.sd-gun { font-size: 0.875rem; font-weight: 700; color: var(--tone); }
+.sd-bars { display: grid; gap: 5px; }
+.sd-bar { display: grid; grid-template-columns: 2.6rem minmax(0, 1fr); align-items: center; gap: 8px; font-size: 0.8125rem; color: var(--muted); }
+.sd-bar i { position: relative; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.sd-bar i::after { content: ""; position: absolute; inset: 0; width: calc(var(--v) * 100%); border-radius: 4px; background: var(--tone); }
+
 /* ---------- coins and the skill tree ---------- */
 .coin-pill {
   display: inline-flex;
@@ -899,7 +933,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           <button type="button" class="btn pilot-btn" id="pilot-edit">이름 정하기</button>
         </div>
         <button type="button" class="btn btn-primary btn-launch" id="start">출격</button>
-        <div class="row">
+        <div class="row row-3">
+          <button type="button" class="btn btn-tree" id="open-hangar">격납고<span class="ship-pill" id="title-ship">스타라이트</span></button>
           <button type="button" class="btn btn-tree" id="open-tree-1">스킬 트리<span class="coin-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5v9M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4" /></svg><span id="title-coins">0</span></span></button>
           <button type="button" class="btn" id="open-records-1">순위·기록</button>
         </div>
@@ -915,6 +950,20 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         <h2 class="panel-title" id="stages-title">어디로 출격할까요?</h2>
         <div class="stage-list" id="stage-list"></div>
         <button type="button" class="btn btn-quiet" id="stages-back">처음 화면</button>
+      </section>
+
+      <section class="overlay is-tree" id="screen-hangar" aria-labelledby="hangar-title" hidden>
+        <div class="tree-head">
+          <div>
+            <p class="eyebrow">격납고</p>
+            <h2 class="panel-title" id="hangar-title">전투기</h2>
+          </div>
+          <p class="wallet" aria-label="보유 코인"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5v9M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4" /></svg><span id="hangar-coins">0</span></p>
+        </div>
+        <p class="lede">코인으로 전투기를 사서 골라 타요. 전투기마다 고유 공격과 능력치가 달라요.</p>
+        <div class="ship-grid" id="ship-grid"></div>
+        <div class="ship-detail" id="ship-detail" aria-live="polite"></div>
+        <button type="button" class="btn" id="hangar-back">돌아가기</button>
       </section>
 
       <section class="overlay is-tree" id="screen-tree" aria-labelledby="tree-title" hidden>
@@ -1130,8 +1179,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     banner: $('banner'), bannerTitle: $('banner-title'), bannerSub: $('banner-sub'),
     screens: {
       title: $('screen-title'), stages: $('screen-stages'), choice: $('screen-choice'), pause: $('screen-pause'), result: $('screen-result'),
-      tree: $('screen-tree'),
+      tree: $('screen-tree'), hangar: $('screen-hangar'),
     },
+    openHangar: $('open-hangar'), titleShip: $('title-ship'), hangarCoins: $('hangar-coins'), shipGrid: $('ship-grid'),
+    shipDetail: $('ship-detail'), hangarBack: $('hangar-back'),
     coins: $('coins'), titleCoins: $('title-coins'), coinLine: $('coin-line'), reroll: $('reroll'),
     openTree1: $('open-tree-1'), openTree2: $('open-tree-2'), treeCoins: $('tree-coins'), treeTabs: $('tree-tabs'),
     tree: $('tree'), treeLinks: $('tree-links'), treeGrid: $('tree-grid'), treeDetail: $('tree-detail'), treeBack: $('tree-back'),
@@ -1164,7 +1215,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   // ---------- rules ----------
   const W = 360; // the play field is always 360 units wide; its height follows the screen
   const TAU = Math.PI * 2;
-  const HITBOX = 4;
+  let hitbox = 4; // the radius of the glowing core that can be hit; depends on the fighter
   const STAGE_TIME = 780; // survive 13:00, then the final boss arrives
   const MIDBOSS_AT = [180, 390, 600];
   const MAX_LEVEL = 5;
@@ -1336,6 +1387,17 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       evo: { name: '태양 플레어', dps: 96, range: 185, angle: 0.62, flare: 2.2 },
     },
   };
+  // Fighters: bought with coins in the hangar. bars = [체력, 화력, 연사, 회피] out of 5; hitbox is the core's radius.
+  const SHIPS = [
+    { id: 'star', name: '스타라이트', price: 0, hp: 120, dmg: 1, hitbox: 4, gun: 'twin', tone: '#7fe7ff', flame: 'cool', engines: [[-4.5, 13]], bars: [3, 2, 3, 3], gunName: '쌍발 광탄', about: '광탄 두 발을 곧게 쏴요. 레벨이 오르면 줄이 늘어나요.', perk: '무난한 기본 전투기예요.' },
+    { id: 'wasp', name: '와스프', price: 4000, hp: 100, dmg: 1, hitbox: 3, gun: 'fan', tone: '#b8f36b', flame: 'cool', engines: [[-3.5, 14]], bars: [2, 2, 5, 5], gunName: '부채 산탄', about: '다섯 갈래로 퍼지는 산탄을 빠르게 뿌려요.', perk: '맞는 점이 작아서 피하기 쉬워요. 체력은 낮아요.' },
+    { id: 'titan', name: '타이탄', price: 6000, hp: 170, dmg: 1.05, hitbox: 5, gun: 'shell', tone: '#ffa94d', flame: 'hot', engines: [[-9, 18]], bars: [5, 4, 1, 1], gunName: '중포탄', about: '느리지만 적을 꿰뚫고 마지막에 터지는 큰 포탄을 쏴요.', perk: '체력이 높고 받는 피해 −10%. 맞는 점이 커요.' },
+    { id: 'seraph', name: '세라프', price: 8000, hp: 130, dmg: 1, hitbox: 4, gun: 'homing', tone: '#ff6f91', flame: 'cool', engines: [[0, 15]], bars: [3, 3, 3, 3], gunName: '유도 광구', about: '적을 끝까지 쫓아가는 빛 구슬을 쏴요.', perk: '초당 체력 0.5 회복, 끌어오는 거리 +30%.' },
+    { id: 'nox', name: '녹스', price: 10000, hp: 110, dmg: 1.1, hitbox: 4, gun: 'rail', tone: '#a88bff', flame: 'cool', engines: [[-5, 14]], bars: [2, 5, 2, 3], gunName: '레일건', about: '가장 단단한 적을 노려 한 줄로 꿰뚫는 레일건을 쏴요.', perk: '치명타 확률 +15%.' },
+    { id: 'dragon', name: '노바 드래곤', price: 18000, hp: 150, dmg: 1.15, hitbox: 4, gun: 'dragon', tone: '#ff7a3d', flame: 'hot', engines: [[-4, 16]], bars: [4, 5, 4, 3], gunName: '용의 숨결', about: '불꽃 구슬이 둘레를 돌고, 화염탄을 쏴요.', perk: '모든 피해 +15%, 경험치 +10%.' },
+  ];
+  const shipOf = (id) => SHIPS.find((sd) => sd.id === id) || SHIPS[0];
+
   // Combined skills fall into three families; any two combined skills fuse into the ultimate their families point to.
   const FAMILY = { cannon: 'fire', missile: 'fire', flame: 'fire', laser: 'energy', lightning: 'energy', saw: 'energy', drones: 'guard', nova: 'guard', aura: 'guard' };
   const FAMILY_NAME = { fire: '화력', energy: '에너지', guard: '수호' };
@@ -1445,7 +1507,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         { id: 'sawM', name: '톱날 숙련', icon: 'saw', max: 5, cost: 60, row: 4, col: 0, req: ['lightningM', 1], about: mastery('saw') },
         { id: 'flameM', name: '화염 숙련', icon: 'flame', max: 5, cost: 60, row: 4, col: 1, req: ['auraM', 1], about: mastery('flame') },
         { id: 'evoM', name: '합체 숙련', icon: 'merge', max: 5, cost: 320, row: 5, col: 0, req: ['sawM', 2], about: (r) => `합체 스킬 피해 +${8 * r}%` },
-        { id: 'pick', name: '무기 골라 출격', icon: 'check', max: 1, cost: 1500, row: 5, col: 1, req: ['flameM', 2], about: () => '출격할 때 시작 무기를 직접 골라요' },
+        { id: 'pick', name: '무기 골라 출격', icon: 'check', max: 1, cost: 1500, row: 5, col: 1, req: ['flameM', 2], about: () => '출격할 때 무기 하나를 골라 들고 시작해요' },
         { id: 'evoFast', name: '빠른 합체', icon: 'merge', max: 1, cost: 3500, row: 6, req: ['evoM', 2], about: () => '무기가 Lv 4만 돼도 합체할 수 있어요' },
       ],
     },
@@ -1685,10 +1747,17 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       name: cleanName(raw.name),
       pid: typeof raw.pid === 'string' && /^[a-z0-9]{8,24}$/.test(raw.pid) ? raw.pid : newPid(),
       boardHost: typeof raw.boardHost === 'string' ? raw.boardHost : '',
+      ships: cleanShips(raw.ships),
+      ship: typeof raw.ship === 'string' ? raw.ship : 'star',
       rev: Math.max(0, Math.floor(Number(raw.rev) || 0)),
       account: cleanAccount(raw.account),
     };
   })();
+  function cleanShips(list) {
+    const out = ['star'];
+    if (Array.isArray(list)) for (const id of list) if (SHIPS.some((sd) => sd.id === id) && !out.includes(id)) out.push(id);
+    return out;
+  }
   function cleanAccount(a) {
     const hex64 = (v) => typeof v === 'string' && /^[0-9a-f]{64}$/.test(v);
     return a && typeof a === 'object' && hex64(a.key) && hex64(a.owner) ? { key: a.key, owner: a.owner, google: a.google === true } : null;
@@ -1718,6 +1787,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     return out;
   }
   const rank = (id) => saved.tree[id] || 0;
+  if (!saved.ships.includes(saved.ship)) saved.ship = 'star';
   if (saved.spent < 0) { // saved before refunds were tracked: count what the old prices were
     saved.spent = 0;
     for (const [id, r] of Object.entries(saved.tree)) {
@@ -1825,6 +1895,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           list.push({
             key, name: cleanName(r.name) || '이름 없음', score: r.score, time: Number(r.time) || 0, level: Number(r.level) || 0,
             kills: Number(r.kills) || 0, clear: r.clear === true, pid: typeof r.pid === 'string' ? r.pid : key, at: Number(r.at) || 0,
+            ship: typeof r.ship === 'string' ? r.ship : '',
           });
         }
         list.sort((a, b) => b.score - a.score || a.at - b.at);
@@ -1833,9 +1904,17 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       },
       async submit(stage, entry) {
         // sent as plain text so the browser skips the extra CORS check; the database reads the body as JSON anyway
-        const res = await call(`v1/scores/s${stage}.json`, {
-          method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify({ ...entry, at: { '.sv': 'timestamp' } }),
+        const send = (body) => call(`v1/scores/s${stage}.json`, {
+          method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify({ ...body, at: { '.sv': 'timestamp' } }),
         });
+        let res;
+        try {
+          res = await send(entry);
+        } catch (err) {
+          if (!entry.ship || !/HTTP 40[13]/.test(String(err && err.message))) throw err;
+          const { ship, ...rest } = entry; // rules from before fighters existed
+          res = await send(rest);
+        }
         cache.delete(stage);
         return res && typeof res.name === 'string' ? res.name : null;
       },
@@ -1864,6 +1943,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   function packProgress() {
     return JSON.stringify({
       unlocked: saved.unlocked, cleared: saved.cleared, coins: saved.coins, earned: saved.earned, tree: saved.tree, spent: saved.spent,
+      ships: saved.ships, ship: saved.ship,
       name: saved.name, pid: saved.pid, records: saved.records.slice(-120),
     });
   }
@@ -1882,6 +1962,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       earned: Math.max(0, Math.floor(Number(raw.earned) || 0)),
       tree: cleanTree(raw.tree),
       spent: Math.max(0, Math.floor(Number(raw.spent) || 0)),
+      ships: cleanShips(raw.ships),
+      ship: typeof raw.ship === 'string' ? raw.ship : 'star',
       name: cleanName(raw.name),
       pid: typeof raw.pid === 'string' && /^[a-z0-9]{8,24}$/.test(raw.pid) ? raw.pid : '',
       records: Array.isArray(raw.records) ? raw.records.filter(isRecord) : [],
@@ -1901,6 +1983,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     saved.earned = Math.max(saved.earned, p.earned);
     for (const [id, r] of Object.entries(p.tree)) saved.tree[id] = Math.max(rank(id), r);
     saved.spent = Math.max(saved.spent, p.spent);
+    for (const id of p.ships) if (!saved.ships.includes(id)) saved.ships.push(id);
+    if (saved.ship === 'star' && p.ships.includes(p.ship)) saved.ship = p.ship; // keep flying what the account flies
     mergeRecords(p.records);
     if (p.pid) saved.pid = p.pid;
   }
@@ -1912,6 +1996,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     saved.earned = p.earned;
     saved.tree = p.tree;
     saved.spent = p.spent;
+    saved.ships = p.ships;
+    if (p.ships.includes(p.ship)) saved.ship = p.ship;
     if (p.name) saved.name = p.name;
     if (p.pid) saved.pid = p.pid;
     mergeRecords(p.records);
@@ -2921,6 +3007,118 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     lamp(g, -4.5, 15, 3.2, COLOR.cyan);
     lamp(g, 4.5, 15, 3.2, COLOR.cyan);
   }
+  function shipGlass(g, y, rx, ry, color) {
+    const glass = g.createLinearGradient(0, y - ry, 0, y + ry);
+    glass.addColorStop(0, shade(color, 0.45));
+    glass.addColorStop(1, shade(color, -0.6));
+    g.fillStyle = glass;
+    g.beginPath();
+    g.ellipse(0, y, rx, ry, 0, 0, TAU);
+    g.fill();
+    g.fillStyle = 'rgba(255, 255, 255, 0.75)';
+    g.beginPath();
+    g.ellipse(-rx * 0.3, y - ry * 0.3, rx * 0.3, ry * 0.38, 0, 0, TAU);
+    g.fill();
+  }
+  function paintWasp(g) {
+    lamp(g, -3.5, 16, 4, COLOR.lime);
+    lamp(g, 3.5, 16, 4, COLOR.lime);
+    hull(g, '#86c44a', poly([[0, -6], [17, -19], [22, -15], [8, 6], [6, 13], [-6, 13], [-8, 6], [-22, -15], [-17, -19]]), 20);
+    g.fillStyle = rgba(COLOR.void, 0.55);
+    for (const side of [-1, 1]) {
+      for (const o of [0, 5]) {
+        g.beginPath();
+        g.moveTo(side * (8 + o), -8 - o * 0.5);
+        g.lineTo(side * (11 + o), -11 - o * 0.5);
+        g.lineTo(side * (12.5 + o), -9.5 - o * 0.5);
+        g.lineTo(side * (9.5 + o), -6.5 - o * 0.5);
+        g.closePath();
+        g.fill();
+      }
+    }
+    hull(g, '#dcf79a', poly([[0, -25], [4, -12], [5, 8], [3, 15], [-3, 15], [-5, 8], [-4, -12]]), 18);
+    seams(g, [[0, -4, 0, 12]]);
+    shipGlass(g, -12, 2.4, 5, COLOR.cyan);
+    lamp(g, -21, -16, 3, COLOR.amber);
+    lamp(g, 21, -16, 3, COLOR.amber);
+  }
+  function paintTitan(g) {
+    for (const x of [-9, 9]) lamp(g, x, 20, 6, COLOR.orange);
+    hull(g, COLOR.steel, poly([[-23, 0], [-15, -12], [-8, -18], [8, -18], [15, -12], [23, 0], [23, 13], [12, 20], [-12, 20], [-23, 13]]), 24);
+    for (const side of [-1, 1]) {
+      g.fillStyle = shade(COLOR.steel, -0.6);
+      g.fillRect(side * 15 - 2.6, -25, 5.2, 15);
+      g.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      g.fillRect(side * 15 - 2.6, -25, 1.5, 15);
+      lamp(g, side * 15, -25, 2.8, COLOR.orange);
+    }
+    hull(g, COLOR.orange, poly([[-7, -18], [7, -18], [9, 4], [5, 11], [-5, 11], [-9, 4]]), 16);
+    seams(g, [[-20, 4, -11, 4], [11, 4, 20, 4], [-15, -9, -15, 14], [15, -9, 15, 14], [0, -16, 0, 9]]);
+    g.fillStyle = shade(COLOR.cyan, -0.3);
+    g.fillRect(-4.5, -14, 9, 3.5);
+    g.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    g.fillRect(-4.5, -14, 9, 1.2);
+    lamp(g, 0, 2, 4, COLOR.amber);
+  }
+  function paintSeraph(g) {
+    lamp(g, 0, 18, 7, COLOR.coral);
+    for (const side of [-1, 1]) {
+      hull(g, '#f6eaff', (p) => {
+        p.beginPath();
+        p.moveTo(side * 3, -4);
+        p.quadraticCurveTo(side * 27, -22, side * 25, 7);
+        p.quadraticCurveTo(side * 17, -2, side * 5, 9);
+        p.closePath();
+      }, 22);
+      g.strokeStyle = rgba('#ffe08a', 0.9);
+      g.lineWidth = 1;
+      g.beginPath();
+      g.moveTo(side * 6, -2);
+      g.quadraticCurveTo(side * 22, -15, side * 23, 3);
+      g.stroke();
+      lamp(g, side * 23, 2, 3.2, COLOR.coral);
+    }
+    hull(g, '#ffffff', poly([[0, -24], [4, -10], [4, 12], [0, 17], [-4, 12], [-4, -10]]), 18);
+    shipGlass(g, -10, 2.3, 5, COLOR.coral);
+    lamp(g, 0, 3, 4, '#ffe08a');
+  }
+  function paintNox(g) {
+    lamp(g, -5, 15, 4, COLOR.violet);
+    lamp(g, 5, 15, 4, COLOR.violet);
+    hull(g, '#3b3266', poly([[0, -25], [6, -8], [24, 9], [22, 12], [7, 8], [3, 15], [-3, 15], [-7, 8], [-22, 12], [-24, 9], [-6, -8]]), 24);
+    g.save();
+    g.globalCompositeOperation = 'lighter';
+    g.strokeStyle = rgba(COLOR.violet, 0.95);
+    g.lineWidth = 1.2;
+    g.beginPath();
+    for (const side of [-1, 1]) {
+      g.moveTo(0, -21);
+      g.lineTo(side * 5, -8);
+      g.lineTo(side * 20, 8);
+    }
+    g.stroke();
+    g.restore();
+    g.fillStyle = '#1a1533';
+    g.fillRect(-1.6, -28, 3.2, 13);
+    lamp(g, 0, -27, 3.2, COLOR.violet);
+    shipGlass(g, -7, 2, 4, COLOR.violet);
+    lamp(g, 0, 4, 3.5, COLOR.violet);
+  }
+  function paintDragon(g) {
+    lamp(g, -4, 17, 5, '#ff7a3d');
+    lamp(g, 4, 17, 5, '#ff7a3d');
+    for (const side of [-1, 1]) {
+      hull(g, '#c2412d', poly([[side * 4, -8], [side * 25, -15], [side * 27, 0], [side * 21, -2], [side * 18, 8], [side * 13, 3], [side * 6, 10]]), 22);
+      seams(g, [[side * 5, -6, side * 25, -14], [side * 5, -2, side * 21, -2], [side * 5, 2, side * 13, 3]]);
+      hull(g, '#ffe08a', poly([[side * 3, -17], [side * 9, -27], [side * 6, -16]]), 6);
+    }
+    hull(g, '#ffb347', poly([[0, -23], [5, -12], [6, 8], [3, 17], [-3, 17], [-6, 8], [-5, -12]]), 18);
+    seams(g, [[0, -10, 0, 12], [-4, 0, 4, 0]]);
+    lamp(g, -2.6, -15, 2.6, '#ff3b2e');
+    lamp(g, 2.6, -15, 2.6, '#ff3b2e');
+    lamp(g, 0, -2, 4.2, '#ffe08a');
+  }
+  const SHIP_PAINT = { star: paintPlayer, wasp: paintWasp, titan: paintTitan, seraph: paintSeraph, nox: paintNox, dragon: paintDragon };
   function paintCruiser(g) {
     for (const x of [-30, -12, 12, 30]) lamp(g, x, -26, 10, COLOR.orange);
     hull(g, COLOR.steel, poly([[0, 32], [18, 14], [48, 6], [48, -6], [22, -14], [13, -30], [-13, -30], [-22, -14], [-48, -6], [-48, 6], [-18, 14]]), 44);
@@ -3350,6 +3548,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       SPR[kind] = { img, flash: whiteOf(img), size };
     }
     SPR.player = { img: sprite(56, k, paintPlayer), size: 56 };
+    SPR.ships = {};
+    for (const sd of SHIPS) SPR.ships[sd.id] = { img: sprite(56, k, SHIP_PAINT[sd.id]), size: 56 };
     for (const [kind, paint, size] of [['cruiser', paintCruiser, 132], ['mother', paintMother, 150]]) {
       const img = sprite(size, k, paint);
       SPR[kind] = { img, flash: whiteOf(img), size };
@@ -3364,12 +3564,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   let scale = 1;
   let dpr = 1;
   let bgGrad = null;
-  let state = 'title'; // title | stages | tree | playing | choice | paused | dying | clearing | result
+  let state = 'title'; // title | stages | tree | hangar | playing | choice | paused | dying | clearing | result
   let stageIndex = 0;
   let stage = STAGES[0];
   let stats = null;
   const player = { x: W / 2, y: 550, hp: 120, invuln: 0, bank: 0, prevX: W / 2, alive: true, shield: false, shieldT: 0 };
-  const run = { t: 0, score: 0, kills: 0, level: 1, xp: 0, need: 9, coins: 0, rerolls: 0, revives: 0, magT: 0, ults: 0, fused: [] };
+  const run = { t: 0, score: 0, kills: 0, level: 1, xp: 0, need: 9, coins: 0, rerolls: 0, revives: 0, magT: 0, ults: 0, fused: [], ship: 'star' };
+  const gun = { cd: 0.3, a: 0 }; // the fighter's built-in gun
+  const rails = []; // railgun lines fading out
   let chestSkip = false; // the player passed on a combination: this crate gives an ordinary pick
   let cine = 0; // seconds of slow motion left after an ultimate fusion
   const build = { weapons: [], passives: [] };
@@ -3528,13 +3730,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   function recompute() {
     const prevMax = stats ? stats.maxHp : 120;
+    const sd = shipOf(run.ship);
     stats = {
-      maxHp: Math.round((120 + 20 * passiveLv('armor') + 8 * rank('hull')) * (1 + 0.04 * rank('bulwark'))),
-      regen: 0.4 * passiveLv('repair') + 0.1 * rank('regen'),
+      maxHp: Math.round((sd.hp + 20 * passiveLv('armor') + 8 * rank('hull')) * (1 + 0.04 * rank('bulwark'))),
+      regen: 0.4 * passiveLv('repair') + 0.1 * rank('regen') + (sd.id === 'seraph' ? 0.5 : 0),
       cdMul: Math.pow(0.93, passiveLv('coolant')) * (1 - 0.02 * rank('haste')),
-      dmgMul: (1 + 0.1 * passiveLv('amp')) * (1 + 0.03 * rank('might')),
+      dmgMul: (1 + 0.1 * passiveLv('amp')) * (1 + 0.03 * rank('might')) * sd.dmg * (sd.id === 'dragon' ? 1.1 : 1),
       area: (1 + 0.1 * passiveLv('spread')) * (1 + 0.03 * rank('reach')),
-      pickup: 46 * (1 + 0.35 * passiveLv('tractor')) * (1 + 0.08 * rank('pull')),
+      pickup: 46 * (1 + 0.35 * passiveLv('tractor')) * (1 + 0.08 * rank('pull')) * (sd.id === 'seraph' ? 1.3 : 1),
       luck: (1 + 0.2 * passiveLv('luck')) * (1 + 0.05 * rank('fortune')),
       leech: 0.08 * passiveLv('leech'),
       speedMul: (1 + 0.12 * passiveLv('gyro')) * (1 + 0.06 * rank('velocity')),
@@ -3546,14 +3749,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       elite: 0.08 * rank('elite'),
       dodge: 0.03 * rank('dodge'),
       // from the skill tree only
-      crit: 0.03 * rank('crit'),
+      crit: 0.03 * rank('crit') + (sd.id === 'nox' ? 0.15 : 0),
       critMul: 2 + 0.2 * rank('critdmg'),
       bossMul: 1 + 0.06 * rank('bossdmg'),
       fury: 0.05 * rank('fury'),
-      taken: 1 - 0.02 * rank('plating'),
+      taken: (1 - 0.02 * rank('plating')) * (sd.id === 'titan' ? 0.9 : 1),
       invuln: 0.8 + 0.08 * rank('evade'),
       healMul: 1 + 0.15 * rank('medic'),
-      xpMul: 1 + 0.04 * rank('study'),
+      xpMul: (1 + 0.04 * rank('study')) * (sd.id === 'dragon' ? 1.1 : 1),
       coinMul: (1 + 0.08 * rank('greed')) * stage.mul,
       chestMul: 1 + 0.12 * rank('supply'),
       bombMul: 1 + 0.3 * rank('bombplus'),
@@ -4073,7 +4276,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           if (b.warn <= 0) sfx.play('beam');
         } else {
           b.active -= dt;
-          if (state === 'playing' && player.invuln <= 0 && Math.abs(player.x - b.x) < b.width / 2 + HITBOX && player.y > b.y) hurt(b.dmg);
+          if (state === 'playing' && player.invuln <= 0 && Math.abs(player.x - b.x) < b.width / 2 + hitbox && player.y > b.y) hurt(b.dmg);
           if (b.active <= 0) b.done = true;
         }
       }
@@ -4799,6 +5002,103 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
     }
   }
+  // ---------- the fighter's built-in gun: always firing, stronger as the run's level climbs ----------
+  const gunTier = () => (run.level >= 40 ? 3 : run.level >= 25 ? 2 : run.level >= 10 ? 1 : 0);
+  function updateGun(dt, cdMul) {
+    const sd = shipOf(run.ship);
+    const tier = gunTier();
+    const D = stats.dmgMul * (1 + Math.min(1.5, (run.level - 1) * 0.03));
+    const sp = stats.speedMul;
+    gun.cd -= dt;
+    gun.a += dt;
+    if (sd.gun === 'dragon') dragonOrbs(dt, tier, D);
+    if (gun.cd > 0) return;
+    const bolt = (x, ang, dmg, size, spr, speed = 640, pierce = 0, extra = {}) => pShots.push({
+      kind: 'bolt', x, y: player.y - 16, vx: Math.sin(ang) * speed * sp, vy: -Math.cos(ang) * speed * sp, a: ang,
+      dmg, pierce: pierce + rank('pierce'), size: size * stats.area, plasma: false, spr, last: null, ...extra,
+    });
+    if (sd.gun === 'twin') {
+      gun.cd += 0.18 * cdMul;
+      const n = 2 + tier;
+      for (let k = 0; k < n; k++) bolt(player.x + (k - (n - 1) / 2) * 6, (k - (n - 1) / 2) * 0.03, 9 * D, 0.9, null);
+      sfx.play('shot');
+    } else if (sd.gun === 'fan') {
+      gun.cd += 0.24 * cdMul;
+      const n = 5 + 2 * tier;
+      const spread = 0.42 + 0.04 * tier;
+      for (let k = 0; k < n; k++) bolt(player.x, -spread + (2 * spread * k) / (n - 1), 5 * D, 0.7, boltOf('#b8f36b'), 600);
+      sfx.play('shot');
+    } else if (sd.gun === 'shell') {
+      gun.cd += 0.62 * cdMul;
+      const n = tier >= 2 ? 2 : 1;
+      for (let k = 0; k < n; k++) bolt(player.x + (k - (n - 1) / 2) * 12, 0, 46 * D, 1.9, boltOf('#ffa94d'), 480, 2 + tier, { shell: 34 * stats.area * (1 + 0.15 * tier) });
+      sfx.play('missile');
+    } else if (sd.gun === 'homing') {
+      gun.cd += 0.5 * cdMul;
+      const n = 2 + tier;
+      for (let k = 0; k < n; k++) {
+        const ang = -Math.PI / 2 + (k - (n - 1) / 2) * 0.5;
+        pShots.push({ kind: 'orb', x: player.x, y: player.y - 12, vx: Math.cos(ang) * 260 * sp, vy: Math.sin(ang) * 260 * sp, dmg: 15 * D, life: 2.6, size: 1, target: null });
+      }
+      sfx.play('gem');
+    } else if (sd.gun === 'rail') {
+      gun.cd += (0.9 - 0.08 * tier) * cdMul;
+      railShot(70 * D);
+      if (tier >= 2) window.setTimeout(() => { if (state === 'playing') railShot(70 * D); }, 120);
+    } else if (sd.gun === 'dragon') {
+      gun.cd += 0.2 * cdMul;
+      for (const x of [-7, 7]) bolt(player.x + x, x * 0.004, 8 * D, 1, boltOf('#ff7a3d'), 620);
+      sfx.play('shot');
+    }
+  }
+  // The railgun picks the toughest ship in sight and cuts a line through everything in the way.
+  function railShot(dmg) {
+    let best = liveBoss();
+    if (!best) {
+      for (const e of enemies) {
+        if (e.dead || e.t < 0 || e.ghost || e.y < 0 || e.y > player.y) continue;
+        if (!best || e.hp > best.hp) best = e;
+      }
+    }
+    const ang = best ? Math.atan2(best.y - player.y, best.x - player.x) : -Math.PI / 2;
+    const x1 = player.x;
+    const y1 = player.y - 18;
+    const x2 = x1 + Math.cos(ang) * 900;
+    const y2 = y1 + Math.sin(ang) * 900;
+    const vx = x2 - x1;
+    const vy = y2 - y1;
+    const L2 = vx * vx + vy * vy;
+    for (const e of enemies) {
+      if (e.dead || e.t < 0 || e.ghost) continue;
+      const u = clamp(((e.x - x1) * vx + (e.y - y1) * vy) / L2, 0, 1);
+      const reach = e.boss ? 40 : e.r;
+      if ((x1 + vx * u - e.x) ** 2 + (y1 + vy * u - e.y) ** 2 < (reach + 5) ** 2) damage(e, dmg, e.x, e.y);
+    }
+    rails.push({ x1, y1, x2, y2, life: 0.28, full: 0.28 });
+    sfx.play('snipe');
+  }
+  function dragonOrbs(dt, tier, D) {
+    const n = 3 + tier;
+    const R = 36 * stats.area;
+    for (let k = 0; k < n; k++) {
+      const a = gun.a * 3.4 + (k / n) * TAU;
+      const x = player.x + Math.cos(a) * R;
+      const y = player.y + Math.sin(a) * R;
+      for (const e of gather(x, y, 40)) {
+        if (e.orbT > clock) continue;
+        if ((e.x - x) ** 2 + (e.y - y) ** 2 < (e.r + 9) ** 2) {
+          e.orbT = clock + 0.25;
+          damage(e, 14 * D, x, y);
+        }
+      }
+    }
+  }
+  const BOLTS = new Map();
+  function boltOf(color) {
+    if (!BOLTS.has(color)) BOLTS.set(color, boltSprite(color));
+    return BOLTS.get(color);
+  }
+
   // Rotating blades fly out in a fan and come back to the ship, cutting through everything on the way.
   function throwSaws(s, evolved) {
     const spread = evolved ? TAU / s.n : 0.32;
@@ -5537,6 +5837,19 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       if (s.kind === 'missile') {
         steerMissile(s, dt);
         s.life -= dt;
+      } else if (s.kind === 'orb') {
+        s.life -= dt;
+        if (!s.target || s.target.dead) s.target = randomTarget();
+        if (s.target) {
+          let a = Math.atan2(s.vy, s.vx);
+          let d = Math.atan2(s.target.y - s.y, s.target.x - s.x) - a;
+          while (d > Math.PI) d -= TAU;
+          while (d < -Math.PI) d += TAU;
+          a += clamp(d, -5 * dt, 5 * dt);
+          const sp = Math.min(380 * stats.speedMul, Math.hypot(s.vx, s.vy) + 240 * dt);
+          s.vx = Math.cos(a) * sp;
+          s.vy = Math.sin(a) * sp;
+        }
       }
       s.x += s.vx * dt;
       s.y += s.vy * dt;
@@ -5544,7 +5857,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         removeAt(pShots, i);
         continue;
       }
-      const hitR = s.kind === 'missile' ? 5 : 3 * s.size;
+      const hitR = s.kind === 'missile' || s.kind === 'orb' ? 6 : 3 * s.size;
       let hit = null;
       for (const e of gather(s.x, s.y, hitR + 30)) {
         if (e === s.last) continue;
@@ -5556,9 +5869,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
       if (!hit && b && b !== s.last && inBoss(b, s.x, s.y, hitR)) hit = b;
       if (!hit) continue;
-      if (s.kind === 'missile') {
+      if (s.kind === 'missile' || s.kind === 'orb') {
         damage(hit, s.dmg * frontArmor(hit, s), s.x, s.y);
         if (s.blast > 0) blastAt(s.x, s.y, s.blast, s.dmg * 0.6, hit);
+        if (s.kind === 'orb') spark(s.x, s.y, '#ff6f91', 3);
         removeAt(pShots, i);
         continue;
       }
@@ -5567,6 +5881,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         s.pierce -= 1;
         s.last = hit;
       } else {
+        if (s.shell) blastAt(s.x, s.y, s.shell, s.dmg * 0.6, hit);
         removeAt(pShots, i);
       }
     }
@@ -5614,7 +5929,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         continue;
       }
       if (!canHit) continue;
-      const rr = b.r + HITBOX - 1;
+      const rr = b.r + hitbox - 1;
       if ((b.x - player.x) ** 2 + (b.y - player.y) ** 2 < rr * rr) {
         removeAt(eShots, i);
         hurt(b.dmg);
@@ -5628,13 +5943,13 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (state !== 'playing' || player.invuln > 0) return;
     const b = liveBoss();
     const thorns = rank('thorns') * 60 * (1 + run.t / 200);
-    if (b && inBoss(b, player.x, player.y, HITBOX)) {
+    if (b && inBoss(b, player.x, player.y, hitbox)) {
       hurt(b.touch * hitScale());
       if (thorns) damage(b, thorns, player.x, player.y - 10);
       return;
     }
     for (const e of gather(player.x, player.y, 40)) {
-      const rr = e.r * 0.75 + HITBOX + 2;
+      const rr = e.r * 0.75 + hitbox + 2;
       if ((e.x - player.x) ** 2 + (e.y - player.y) ** 2 >= rr * rr) continue;
       hurt(e.touch * hitScale());
       if (ENEMY[e.kind].kamikaze) kill(e);
@@ -5912,6 +6227,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       flames.push({ x: player.x + rand(-3, 3), y: player.y - 18, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0.34, full: 0.34, size: evolved ? 15 : 11, hot: evolved ? 1 : 0 });
     }
   }
+  function updateRails(dt) {
+    for (let i = rails.length - 1; i >= 0; i--) {
+      rails[i].life -= dt;
+      if (rails[i].life <= 0) removeAt(rails, i);
+    }
+  }
   function updateFlames(dt) {
     for (let i = flames.length - 1; i >= 0; i--) {
       const f = flames[i];
@@ -6023,6 +6344,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     drawEnemies();
     drawWeapons();
     drawFlames();
+    drawRails();
     drawUltFx(false);
     drawPlayer();
     drawFx();
@@ -6075,14 +6397,20 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   function drawPlayer() {
     if (!player.alive || !inPlay()) return;
     if (state === 'playing' && player.invuln > 0 && Math.floor(clock * 14) % 2 === 0) return;
+    const sd = shipOf(run.ship);
+    if (sd.gun === 'dragon' && state !== 'title') drawDragonOrbs();
     ctx.save();
     ctx.translate(player.x, player.y);
     ctx.globalCompositeOperation = 'lighter';
-    for (const x of [-4.5, 4.5]) ctx.drawImage(FLAME, x - 4, 13, 8, 12 + Math.random() * 8);
-    glow(ORB.cyan, 0, 18, 26, 0.35);
+    const fl = sd.flame === 'hot' ? FLAME_HOT : FLAME;
+    const big = sd.id === 'titan' ? 1.4 : 1;
+    for (const [ex, ey] of sd.engines) {
+      for (const x of ex ? [ex, -ex] : [0]) ctx.drawImage(fl, x - 4 * big, ey, 8 * big, (12 + Math.random() * 8) * big);
+    }
+    glow(dot(sd.tone), 0, 18, 30, 0.4);
     ctx.globalCompositeOperation = 'source-over';
     ctx.scale(1 - Math.abs(player.bank) * 0.25, 1);
-    const spr = SPR.player;
+    const spr = SPR.ships && SPR.ships[sd.id];
     if (spr) ctx.drawImage(spr.img, -spr.size / 2, -spr.size / 2, spr.size, spr.size);
     ctx.restore();
     if (player.shield) {
@@ -6442,6 +6770,46 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ctx.restore();
   }
   // Ultimate effects drawn under the ships (black holes, fire on the ground) or over them.
+  function drawDragonOrbs() {
+    const n = 3 + gunTier();
+    const R = 36 * stats.area;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = fxAlpha();
+    for (let k = 0; k < n; k++) {
+      const a = gun.a * 3.4 + (k / n) * TAU;
+      const x = player.x + Math.cos(a) * R;
+      const y = player.y + Math.sin(a) * R;
+      for (let j = 1; j <= 3; j++) { // short fiery trail
+        const b = a - j * 0.18;
+        ctx.globalAlpha = (0.5 - j * 0.12) * fxAlpha();
+        ctx.drawImage(dot('#ff7a3d'), player.x + Math.cos(b) * R - 7, player.y + Math.sin(b) * R - 7, 14, 14);
+      }
+      ctx.globalAlpha = fxAlpha();
+      ctx.drawImage(dot('#ffb347'), x - 12, y - 12, 24, 24);
+      ctx.drawImage(dot('#ffffff'), x - 4, y - 4, 8, 8);
+    }
+    ctx.restore();
+  }
+  function drawRails() {
+    if (!rails.length) return;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.lineCap = 'round';
+    for (const r of rails) {
+      const k = r.life / r.full;
+      for (const [lw, col, al] of [[12 * k + 2, '#a88bff', 0.25], [4 * k + 1, '#c9b6ff', 0.8], [1.5, '#ffffff', 1]]) {
+        ctx.globalAlpha = al * k * fxAlpha();
+        ctx.strokeStyle = col;
+        ctx.lineWidth = lw;
+        ctx.beginPath();
+        ctx.moveTo(r.x1, r.y1);
+        ctx.lineTo(r.x2, r.y2);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
   function drawUltFx(under) {
     if (!ufx.length) return;
     const fx = fxAlpha();
@@ -6640,7 +7008,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         ctx.restore();
         continue;
       }
-      const img = s.plasma ? PLASMA : BOLT;
+      if (s.kind === 'orb') {
+        ctx.drawImage(dot('#ff6f91'), s.x - 11, s.y - 11, 22, 22);
+        ctx.drawImage(dot('#ffffff'), s.x - 4, s.y - 4, 8, 8);
+        continue;
+      }
+      const img = s.spr || (s.plasma ? PLASMA : BOLT);
       const w = 8 * s.size;
       const h = 24 * s.size;
       if (s.a) {
@@ -6901,7 +7274,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   // ---------- screens ----------
   function showScreen(name, focus = true) {
     for (const [key, el] of Object.entries(ui.screens)) el.hidden = key !== name;
-    ui.hud.hidden = ['title', 'stages', 'result', 'pause', 'tree'].includes(name);
+    ui.hud.hidden = ['title', 'stages', 'result', 'pause', 'tree', 'hangar'].includes(name);
     ui.pause.hidden = name !== null;
     if (name !== null && name !== 'choice') ui.banner.classList.remove('show');
     const target = { title: ui.start, pause: ui.resume, result: ui.again, stages: ui.stageList.querySelector('button:not(:disabled)'), tree: ui.treeTabs.querySelector('[aria-pressed="true"]') }[name];
@@ -6931,6 +7304,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     blasts.length = 0;
     flames.length = 0;
     ufx.length = 0;
+    rails.length = 0;
     boss = null;
     clearRadius = 0;
   }
@@ -6943,6 +7317,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const cleared = saved.cleared.filter(Boolean).length;
     ui.titleBest.textContent = best ? `최고 기록 ${num(best.score)}점 · 클리어 ${cleared}/${STAGES.length}` : '아직 기록이 없어요';
     ui.titleCoins.textContent = fmt(saved.coins);
+    ui.titleShip.textContent = shipOf(saved.ship).name;
     renderPilot();
     showScreen('title', focus);
   }
@@ -7068,7 +7443,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       t: 0, score: 0, kills: 0, level: 1 + head, xp: 0, need: xpNeed(1 + head), coins: 0, ults: 0, fused: [],
       rerolls: rank('reroll'), revives: rank('revive'), magT: AUTOMAG_EVERY[rank('automag') - 1] || 0, guard: rank('guardian'), panic: rank('panic'),
     });
-    build.weapons = rank('pick') ? [] : [newWeapon('cannon')];
+    run.ship = saved.ships.includes(saved.ship) ? saved.ship : 'star';
+    hitbox = shipOf(run.ship).hitbox;
+    Object.assign(gun, { cd: 0.4, a: 0 });
+    build.weapons = []; // the fighter's own gun opens the fight; weapons come with level-ups
     build.passives = [];
     stats = null;
     recompute();
@@ -7272,7 +7650,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const dur = countUp(ui.finalScore, score);
     if (!ui.finalSeal.hidden) stampSeal(dur + 80);
     lastRun = {
-      stage: stageIndex + 1, score, time: Math.round(timeMs / 1000), level: run.level, kills: run.kills, clear: cleared,
+      stage: stageIndex + 1, score, time: Math.round(timeMs / 1000), level: run.level, kills: run.kills, clear: cleared, ship: run.ship,
       eligible: timeMs >= 15000, status: 'idle', key: null, rank: 0, total: 0,
     };
     if (board.on && lastRun.eligible && saved.name) submitRun();
@@ -7301,6 +7679,99 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       { duration: 340, delay, easing: 'cubic-bezier(.2,1.3,.4,1)', fill: 'backwards' },
     );
     window.setTimeout(() => sfx.play('stamp'), delay + 200);
+  }
+
+  // ---------- hangar ----------
+  let hangarSel = 'star';
+  function showHangar() {
+    state = 'hangar';
+    hangarSel = saved.ship;
+    renderHangar();
+    showScreen('hangar');
+  }
+  function shipArt(id, size) {
+    const c = document.createElement('canvas');
+    const k = Math.min(3, (window.devicePixelRatio || 1) * 1.5);
+    c.width = c.height = Math.round(size * k);
+    c.className = 'ship-art';
+    c.style.setProperty('--tone', shipOf(id).tone);
+    const g = c.getContext('2d');
+    g.scale(k, k);
+    const glowG = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    glowG.addColorStop(0, rgba(shipOf(id).tone, 0.35));
+    glowG.addColorStop(1, rgba(shipOf(id).tone, 0));
+    g.fillStyle = glowG;
+    g.fillRect(0, 0, size, size);
+    const spr = SPR.ships && SPR.ships[id];
+    if (spr) g.drawImage(spr.img, size * 0.08, size * 0.08, size * 0.84, size * 0.84);
+    return c;
+  }
+  function renderHangar() {
+    ui.hangarCoins.textContent = fmt(saved.coins);
+    ui.shipGrid.replaceChildren(...SHIPS.map((sd) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      const own = saved.ships.includes(sd.id);
+      b.className = `ship-card${sd.id === hangarSel ? ' is-selected' : ''}${sd.id === saved.ship ? ' is-flying' : ''}${own ? '' : ' is-locked'}`;
+      b.dataset.ship = sd.id;
+      b.style.setProperty('--tone', sd.tone);
+      b.setAttribute('aria-pressed', String(sd.id === hangarSel));
+      const name = document.createElement('span');
+      name.className = 'ship-name';
+      name.textContent = sd.name;
+      const state2 = document.createElement('span');
+      state2.className = 'ship-state';
+      if (sd.id === saved.ship) state2.textContent = '출격 중';
+      else if (own) state2.textContent = '보유';
+      else {
+        state2.innerHTML = svgIcon('coin');
+        state2.append(fmt(sd.price));
+      }
+      b.append(shipArt(sd.id, 64), name, state2);
+      return b;
+    }));
+    renderShipDetail();
+  }
+  function renderShipDetail() {
+    const sd = shipOf(hangarSel);
+    const own = saved.ships.includes(sd.id);
+    const head = document.createElement('div');
+    head.className = 'sd-head';
+    const title = document.createElement('div');
+    title.innerHTML = '<b class="sd-name"></b><span class="sd-gun"></span>';
+    title.querySelector('.sd-name').textContent = sd.name;
+    title.querySelector('.sd-gun').textContent = `고유 공격 · ${sd.gunName}`;
+    head.append(shipArt(sd.id, 96), title);
+    const about = document.createElement('p');
+    about.className = 'td-line';
+    about.textContent = `${sd.about} ${sd.perk}`;
+    const bars = document.createElement('div');
+    bars.className = 'sd-bars';
+    ['체력', '화력', '연사', '회피'].forEach((label, i) => {
+      const row = document.createElement('div');
+      row.className = 'sd-bar';
+      row.innerHTML = '<span></span><i></i>';
+      row.querySelector('span').textContent = label;
+      row.querySelector('i').style.setProperty('--v', String(sd.bars[i] / 5));
+      bars.append(row);
+    });
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-primary td-buy';
+    if (sd.id === saved.ship) {
+      btn.textContent = '지금 이 전투기로 출격해요';
+      btn.disabled = true;
+    } else if (own) {
+      btn.textContent = '이 전투기로 출격';
+      btn.dataset.pickShip = sd.id;
+    } else {
+      btn.innerHTML = svgIcon('coin');
+      btn.append(saved.coins >= sd.price ? `${fmt(sd.price)} 코인으로 사기` : `코인 ${fmt(sd.price - saved.coins)}개가 모자라요`);
+      btn.disabled = saved.coins < sd.price;
+      btn.dataset.buyShip = sd.id;
+    }
+    ui.shipDetail.style.setProperty('--tone', sd.tone);
+    ui.shipDetail.replaceChildren(head, about, bars, btn);
   }
 
   // ---------- skill tree screen ----------
@@ -7507,7 +7978,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     r.status = 'sending';
     renderBoardResult();
     try {
-      r.key = await board.submit(r.stage, { name: saved.name, score: r.score, time: r.time, level: r.level, kills: r.kills, clear: r.clear, pid: saved.pid });
+      r.key = await board.submit(r.stage, { name: saved.name, score: r.score, time: r.time, level: r.level, kills: r.kills, clear: r.clear, pid: saved.pid, ship: r.ship });
       const list = bestPerPlayer(await board.top(r.stage, true));
       const i = list.findIndex((x) => x.pid === saved.pid);
       r.rank = i >= 0 ? i + 1 : 0;
@@ -7606,7 +8077,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       scoreEl.append(tag);
     }
     li.querySelector('.rank-date').textContent = r.at ? fmtDate(new Date(r.at).toISOString()) : '';
-    li.querySelector('.rank-meta').textContent = `${clockText(r.time)} 버팀 · Lv ${r.level} · 격추 ${fmt(r.kills)}대`;
+    li.querySelector('.rank-meta').textContent = `${r.ship && SHIPS.some((sd) => sd.id === r.ship) ? `${shipOf(r.ship).name} · ` : ''}${clockText(r.time)} 버팀 · Lv ${r.level} · 격추 ${fmt(r.kills)}대`;
     return li;
   }
   function saveName(value) {
@@ -7743,6 +8214,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (MOVE_KEYS.has(e.code)) {
       keys.add(e.code);
       if (state === 'playing') e.preventDefault();
+    }
+    if (state === 'hangar' && e.code === 'Escape') {
+      showTitle();
+      e.preventDefault();
+      return;
     }
     if (state === 'tree' && e.code === 'Escape') {
       treeBack();
@@ -7967,6 +8443,35 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   ui.again.addEventListener('click', () => startStage(Number(ui.again.dataset.stage) || 0));
   ui.toStages.addEventListener('click', showStages);
   ui.openTree1.addEventListener('click', showTree);
+  ui.openHangar.addEventListener('click', showHangar);
+  ui.hangarBack.addEventListener('click', () => showTitle());
+  ui.shipGrid.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-ship]');
+    if (!b) return;
+    hangarSel = b.dataset.ship;
+    renderHangar();
+  });
+  ui.shipDetail.addEventListener('click', (e) => {
+    const buy = e.target.closest('[data-buy-ship]');
+    const pickShip = e.target.closest('[data-pick-ship]');
+    if (buy && !buy.disabled) {
+      const sd = shipOf(buy.dataset.buyShip);
+      if (saved.coins < sd.price || saved.ships.includes(sd.id)) return;
+      saved.coins -= sd.price;
+      saved.ships.push(sd.id);
+      saved.ship = sd.id;
+      save();
+      audio.unlock();
+      sfx.play('evolve');
+      announce(`${sd.name}을 샀어요. 이 전투기로 출격해요.`);
+      renderHangar();
+    } else if (pickShip) {
+      saved.ship = pickShip.dataset.pickShip;
+      save();
+      sfx.play('item');
+      renderHangar();
+    }
+  });
   ui.openTree2.addEventListener('click', showTree);
   ui.treeBack.addEventListener('click', treeBack);
   ui.reroll.addEventListener('click', reroll);
@@ -8105,6 +8610,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       updatePlayer(dt);
       updateDirector(dt);
       updateWeapons(dt);
+      updateGun(dt, stats.cdMul * (liveBoss() ? stats.bossHaste : 1));
     }
     updateEnemies(dt);
     updatePlayerShots(dt);
@@ -8112,6 +8618,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     updateHazards(dt);
     updateUltFx(dt);
     updateFlames(dt);
+    updateRails(dt);
     if (blasts.length) {
       const list = blasts.splice(0);
       const dmg = 25 * stats.dmgMul * (1 + run.t / 200);
