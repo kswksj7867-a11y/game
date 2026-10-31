@@ -1,0 +1,1675 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="카드를 두 장씩 뒤집어 같은 그림을 찾는 기억력 게임. 점수는 이 기기에 기록돼요.">
+<meta name="theme-color" content="#eceff5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f121b" media="(prefers-color-scheme: dark)">
+<!-- page:start -->
+<title>같은 그림 찾기</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one-screen game table. A slim control column (stacked on top on phones, a left rail on wide screens)
+   sits beside a play mat that the card grid fills. The one bold note is the card back: indigo with a 색동 ribbon. */
+:root {
+  --paper: #eceff5;
+  --surface: #ffffff;
+  --mat: #dde2ec;
+  --ink: #171b2e;
+  --muted: #586078;
+  --line: #ccd3e0;
+  --indigo: #283a8f;
+  --indigo-hover: #213179;
+  --on-indigo: #ffffff;
+  --lattice: rgba(255, 255, 255, 0.07);
+  --frame: rgba(255, 255, 255, 0.28);
+  --scarlet: #d63f2c;
+  --on-scarlet: #ffffff;
+  --face: #fbfaf7;
+  --focus: #171b2e;
+  --tag-bg: #fcefc6;
+  --tag-ink: #5a4300;
+  --sd-1: #e2453c;
+  --sd-2: #f0bd2b;
+  --sd-3: #2e9a62;
+  --sd-4: #3a72d4;
+  --sd-5: #de669e;
+  --tint-1: #fbe0dd;
+  --tint-2: #fcefc6;
+  --tint-3: #d6eee0;
+  --tint-4: #dce5f8;
+  --tint-5: #f8deea;
+  --shadow-card: 0 1px 0 rgba(23, 27, 46, 0.08), 0 5px 12px -6px rgba(23, 27, 46, 0.45);
+  --shadow-flat: 0 1px 0 rgba(23, 27, 46, 0.1);
+  --shadow-pop: 0 24px 60px -18px rgba(23, 27, 46, 0.45);
+  --mat-shadow: inset 0 1px 3px rgba(23, 27, 46, 0.12);
+  --backdrop: rgba(16, 20, 38, 0.48);
+
+  --font-display: "Bagel Fat One", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-ui: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+  --font-emoji: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  --step--1: 0.75rem;
+  --step-0: 0.9375rem;
+  --step-1: 1.125rem;
+  --step-2: 1.5rem;
+  --step-3: 2.25rem;
+  --step-4: 3.5rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f121b;
+    --surface: #181c28;
+    --mat: #151926;
+    --ink: #e9ebf3;
+    --muted: #9aa1b6;
+    --line: #2b3142;
+    --indigo: #3a4db3;
+    --indigo-hover: #4558c4;
+    --on-indigo: #ffffff;
+    --lattice: rgba(255, 255, 255, 0.08);
+    --frame: rgba(255, 255, 255, 0.3);
+    --scarlet: #ff6b55;
+    --on-scarlet: #1b0f0c;
+    --face: #e7e5df;
+    --focus: #e9ebf3;
+    --tag-bg: #3d3317;
+    --tag-ink: #f4d77a;
+    --sd-1: #ec5249;
+    --sd-2: #f3c443;
+    --sd-3: #3aae72;
+    --sd-4: #4d84e4;
+    --sd-5: #e778ad;
+    --tint-1: #f3ceca;
+    --tint-2: #f3e2ae;
+    --tint-3: #c5e3d1;
+    --tint-4: #c9d6f1;
+    --tint-5: #efc9dc;
+    --shadow-card: 0 1px 0 rgba(0, 0, 0, 0.35), 0 6px 14px -6px rgba(0, 0, 0, 0.75);
+    --shadow-flat: 0 1px 0 rgba(0, 0, 0, 0.35);
+    --shadow-pop: 0 24px 60px -18px rgba(0, 0, 0, 0.8);
+    --mat-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45);
+    --backdrop: rgba(4, 6, 12, 0.62);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f121b;
+  --surface: #181c28;
+  --mat: #151926;
+  --ink: #e9ebf3;
+  --muted: #9aa1b6;
+  --line: #2b3142;
+  --indigo: #3a4db3;
+  --indigo-hover: #4558c4;
+  --on-indigo: #ffffff;
+  --lattice: rgba(255, 255, 255, 0.08);
+  --frame: rgba(255, 255, 255, 0.3);
+  --scarlet: #ff6b55;
+  --on-scarlet: #1b0f0c;
+  --face: #e7e5df;
+  --focus: #e9ebf3;
+  --tag-bg: #3d3317;
+  --tag-ink: #f4d77a;
+  --sd-1: #ec5249;
+  --sd-2: #f3c443;
+  --sd-3: #3aae72;
+  --sd-4: #4d84e4;
+  --sd-5: #e778ad;
+  --tint-1: #f3ceca;
+  --tint-2: #f3e2ae;
+  --tint-3: #c5e3d1;
+  --tint-4: #c9d6f1;
+  --tint-5: #efc9dc;
+  --shadow-card: 0 1px 0 rgba(0, 0, 0, 0.35), 0 6px 14px -6px rgba(0, 0, 0, 0.75);
+  --shadow-flat: 0 1px 0 rgba(0, 0, 0, 0.35);
+  --shadow-pop: 0 24px 60px -18px rgba(0, 0, 0, 0.8);
+  --mat-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45);
+  --backdrop: rgba(4, 6, 12, 0.62);
+  color-scheme: dark;
+}
+
+html {
+  height: 100%;
+  box-sizing: border-box;
+  -webkit-text-size-adjust: 100%;
+}
+*, *::before, *::after { box-sizing: inherit; }
+:root {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+body {
+  height: 100%;
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--step-0);
+  line-height: 1.5;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+[hidden] { display: none !important; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-synthesis: none;
+}
+
+/* ---------- page grid (phones first) ---------- */
+.app {
+  height: 100%;
+  max-width: 1400px;
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  grid-template-areas:
+    "brand actions"
+    "levels new"
+    "hud hud"
+    "table table";
+  gap: 12px 8px;
+  padding-block: 10px 14px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.side { display: contents; }
+.brand-block { grid-area: brand; min-width: 0; align-self: center; }
+.actions { grid-area: actions; display: flex; align-items: center; gap: 6px; }
+.levels { grid-area: levels; }
+.btn-new { grid-area: new; }
+.hud { grid-area: hud; }
+.rules { grid-area: rules; display: none; }
+.table { grid-area: table; }
+
+/* ---------- brand ---------- */
+.brand {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45em;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-synthesis: none;
+  font-size: clamp(1.3rem, 5.4vw, 1.7rem);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.brand-mark {
+  flex: none;
+  width: 0.78em;
+  height: 1.04em;
+  border-radius: 0.14em;
+  background:
+    linear-gradient(180deg,
+      transparent 0 38%,
+      var(--sd-1) 38% 43%,
+      var(--sd-2) 43% 48%,
+      var(--sd-3) 48% 53%,
+      var(--sd-4) 53% 58%,
+      var(--sd-5) 58% 63%,
+      transparent 63%),
+    var(--indigo);
+  rotate: -8deg;
+  box-shadow: var(--shadow-flat);
+}
+.tagline {
+  display: none;
+  margin: 8px 0 0;
+  max-width: 32ch;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+/* ---------- buttons ---------- */
+.btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 600;
+  font-size: var(--step-0);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, scale 0.1s;
+}
+.btn:active { scale: 0.97; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; scale: 1; }
+.btn-primary { background: var(--indigo); border-color: var(--indigo); color: var(--on-indigo); }
+.btn-danger { background: var(--scarlet); border-color: var(--scarlet); color: var(--on-scarlet); }
+.btn-quiet { background: transparent; border-color: transparent; }
+.btn-text-danger { color: var(--scarlet); padding-inline: 10px; }
+.btn-icon { width: 44px; padding: 0; }
+.btn svg { width: 20px; height: 20px; flex: none; }
+.icon {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+@media (hover: hover) {
+  .btn:not(:disabled):hover { border-color: var(--muted); }
+  .btn-primary:not(:disabled):hover { background: var(--indigo-hover); border-color: var(--indigo-hover); }
+  .btn-danger:not(:disabled):hover { border-color: var(--scarlet); filter: brightness(1.06); }
+  .btn-quiet:not(:disabled):hover { border-color: transparent; background: var(--paper); }
+}
+
+/* ---------- segmented control (levels + record tabs) ---------- */
+.segmented {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.seg {
+  appearance: none;
+  min-height: 44px;
+  padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--ink);
+  line-height: 1.15;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+.seg-name { font-weight: 700; }
+.seg-count { font-size: var(--step--1); color: var(--muted); font-variant-numeric: tabular-nums; }
+.seg[aria-pressed="true"],
+.seg[aria-selected="true"] { background: var(--indigo); color: var(--on-indigo); }
+.seg[aria-pressed="true"] .seg-count { color: inherit; opacity: 0.78; }
+@media (hover: hover) {
+  .seg[aria-pressed="false"]:hover,
+  .seg[aria-selected="false"]:hover { background: var(--paper); }
+}
+
+/* ---------- score strip ---------- */
+.hud {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 8px;
+  padding-inline: 4px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.stat { position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: 3px; min-width: 0; }
+.stat-head { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; }
+.stat-label {
+  font-size: var(--step--1);
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.stat-best { font-size: var(--step--1); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.stat-value {
+  display: block;
+  font-size: var(--step-1);
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.stat-score .stat-value {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-synthesis: none;
+  font-size: 1.75rem;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+.bonus-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -9px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line);
+  overflow: hidden;
+}
+.bonus-fill {
+  display: block;
+  height: 100%;
+  background: var(--sd-3);
+  transform-origin: left center;
+  transition: transform 0.25s linear, background-color 0.3s;
+}
+.bonus-fill.is-low { background: var(--scarlet); }
+
+/* ---------- play mat + cards ---------- */
+.table {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  padding: 10px;
+  border-radius: 20px;
+  background: var(--mat);
+  box-shadow: var(--mat-shadow);
+  overflow: auto;
+}
+.board {
+  margin: auto;
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 4), var(--card-w, 72px));
+  grid-auto-rows: var(--card-h, 96px);
+  gap: var(--gap, 8px);
+  --r: calc(min(var(--card-w, 72px), var(--card-h, 96px)) * 0.12);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.card {
+  appearance: none;
+  position: relative;
+  width: var(--card-w, 72px);
+  height: var(--card-h, 96px);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r);
+  background: none;
+  perspective: 900px;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  transition: translate 0.18s ease, scale 0.12s ease;
+}
+.card:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.card-inner {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  transform-style: preserve-3d;
+  transition: transform 0.42s cubic-bezier(0.3, 0.75, 0.35, 1.12);
+}
+.card.is-open .card-inner,
+.card.is-matched .card-inner { transform: rotateY(180deg); }
+.card-back,
+.card-face {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+.card-back {
+  transform: rotateY(0deg);
+  background-color: var(--indigo);
+  background-image:
+    repeating-linear-gradient(45deg, var(--lattice) 0 1px, transparent 1px 9px),
+    repeating-linear-gradient(-45deg, var(--lattice) 0 1px, transparent 1px 9px);
+  box-shadow: var(--shadow-card);
+}
+.card-back::before {
+  content: "";
+  position: absolute;
+  inset: 7%;
+  border: 1px solid var(--frame);
+  border-radius: calc(var(--r) * 0.55);
+}
+.card-back::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 40%;
+  height: 20%;
+  background: linear-gradient(180deg,
+    var(--sd-1) 0 20%,
+    var(--sd-2) 20% 40%,
+    var(--sd-3) 40% 60%,
+    var(--sd-4) 60% 80%,
+    var(--sd-5) 80% 100%);
+}
+.card-face {
+  transform: rotateY(180deg);
+  display: grid;
+  place-items: center;
+  background: var(--face);
+  box-shadow: var(--shadow-card);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+.glyph {
+  font-family: var(--font-emoji);
+  font-size: calc(min(var(--card-w, 72px), var(--card-h, 96px)) * 0.54);
+  line-height: 1;
+}
+.card.is-open .card-face { box-shadow: inset 0 0 0 2px var(--indigo), var(--shadow-card); }
+.card.is-wrong .card-face { box-shadow: inset 0 0 0 2px var(--scarlet), var(--shadow-card); }
+.card.is-matched { cursor: default; }
+.card.is-matched .card-face { background: var(--tone-tint); box-shadow: inset 0 0 0 2px var(--tone), var(--shadow-flat); }
+.card[data-tone="1"] { --tone: var(--sd-1); --tone-tint: var(--tint-1); }
+.card[data-tone="2"] { --tone: var(--sd-2); --tone-tint: var(--tint-2); }
+.card[data-tone="3"] { --tone: var(--sd-3); --tone-tint: var(--tint-3); }
+.card[data-tone="4"] { --tone: var(--sd-4); --tone-tint: var(--tint-4); }
+.card[data-tone="5"] { --tone: var(--sd-5); --tone-tint: var(--tint-5); }
+@media (hover: hover) {
+  .card:not(.is-open):not(.is-matched):hover { translate: 0 -3px; }
+}
+.card:not(.is-matched):active { scale: 0.96; }
+
+.toast {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  z-index: 2;
+  translate: -50% 0;
+  padding: 7px 16px 6px;
+  border-radius: 999px;
+  background: var(--scarlet);
+  color: var(--on-scarlet);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-synthesis: none;
+  font-size: var(--step-1);
+  line-height: 1.1;
+  white-space: nowrap;
+  box-shadow: var(--shadow-card);
+  pointer-events: none;
+  opacity: 0;
+}
+.toast.show { animation: toast 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+@keyframes toast {
+  0% { opacity: 0; translate: -50% 10px; scale: 0.8; }
+  15% { opacity: 1; translate: -50% 0; scale: 1.06; }
+  25% { scale: 1; }
+  70% { opacity: 1; translate: -50% -8px; }
+  100% { opacity: 0; translate: -50% -22px; }
+}
+@keyframes toast-fade {
+  0%, 100% { opacity: 0; }
+  10%, 80% { opacity: 1; }
+}
+
+/* ---------- side rail rules ---------- */
+.rules {
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-size: 0.8125rem;
+}
+.rules-title {
+  margin: 0 0 8px;
+  font-size: var(--step--1);
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.rules-list { margin: 0; display: grid; gap: 5px; }
+.rules-list div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.rules-list dt { color: var(--muted); white-space: nowrap; }
+.rules-list dd { margin: 0; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.rules-note { margin: 8px 0 0; color: var(--muted); }
+
+/* ---------- dialogs ---------- */
+dialog {
+  margin: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  max-width: none;
+  max-height: none;
+  overflow: visible;
+}
+dialog::backdrop { background: var(--backdrop, rgba(16, 20, 38, 0.5)); }
+.sheet {
+  position: relative;
+  z-index: 0;
+  width: min(400px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  overflow: auto;
+  padding: 22px 20px 20px;
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: var(--shadow-pop);
+}
+dialog[open] .sheet { animation: rise 0.34s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes rise { from { opacity: 0; translate: 0 18px; scale: 0.97; } }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: -6px -8px 14px 0; }
+.sheet-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-synthesis: none;
+  font-size: var(--step-2);
+  line-height: 1.15;
+  text-wrap: balance;
+}
+.eyebrow {
+  margin: 0 0 6px;
+  font-size: var(--step--1);
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.sheet-actions { display: flex; gap: 8px; margin-top: 20px; }
+.sheet-actions .btn { flex: 1; }
+.confirm-msg { margin: 10px 0 0; color: var(--muted); }
+
+.confetti {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+}
+.result-hero { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; margin-top: 10px; }
+.result-score {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-synthesis: none;
+  font-size: var(--step-4);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.result-score .unit { margin-left: 0.12em; font-size: 0.4em; letter-spacing: 0; }
+.seal {
+  display: inline-grid;
+  place-items: center;
+  padding: 7px 10px 6px;
+  border: 2.5px solid var(--scarlet);
+  border-radius: 10px;
+  color: var(--scarlet);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-synthesis: none;
+  font-size: var(--step-1);
+  line-height: 1;
+  rotate: -8deg;
+}
+.result-compare { margin: 10px 0 0; color: var(--muted); }
+.breakdown {
+  margin: 16px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 6px;
+}
+.breakdown div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.breakdown dt { color: var(--muted); }
+.breakdown dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.breakdown .is-minus dd { color: var(--scarlet); }
+.result-meta { margin: 12px 0 0; color: var(--muted); font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+.result-warn {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--tag-bg);
+  color: var(--tag-ink);
+  font-size: 0.875rem;
+}
+
+.summary { margin: 14px 0 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.summary div { min-width: 0; padding: 10px 12px; border-radius: 12px; background: var(--paper); }
+.summary dt { font-size: var(--step--1); font-weight: 600; color: var(--muted); }
+.summary dd { margin: 2px 0 0; font-size: var(--step-1); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ranks { list-style: none; margin: 10px 0 0; padding: 0; }
+.rank {
+  display: grid;
+  grid-template-columns: 1.6rem minmax(0, 1fr) auto;
+  grid-template-areas:
+    "no score date"
+    "no meta meta";
+  column-gap: 10px;
+  row-gap: 1px;
+  align-items: baseline;
+  padding: 10px 6px;
+  border-bottom: 1px solid var(--line);
+}
+.rank:last-child { border-bottom: 0; }
+.rank-no {
+  grid-area: no;
+  align-self: center;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-synthesis: none;
+  font-size: var(--step-1);
+  color: var(--muted);
+}
+.rank.is-top .rank-no { color: var(--scarlet); }
+.rank-score { grid-area: score; font-size: var(--step-1); font-weight: 700; font-variant-numeric: tabular-nums; }
+.rank-date { grid-area: date; font-size: 0.8125rem; color: var(--muted); white-space: nowrap; }
+.rank-meta { grid-area: meta; font-size: 0.8125rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.rank.is-latest { border-radius: 10px; background: var(--paper); }
+.tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 6px 1px;
+  border-radius: 6px;
+  background: var(--tag-bg);
+  color: var(--tag-ink);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  vertical-align: 2px;
+}
+.empty {
+  margin: 14px 0 4px;
+  padding: 18px 16px;
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+  color: var(--muted);
+  text-align: center;
+}
+.rules-mini { margin-top: 14px; font-size: 0.8125rem; }
+.rules-mini summary { padding: 6px 0; color: var(--muted); font-weight: 600; cursor: pointer; }
+.rules-mini .rules-list { margin-top: 6px; }
+.records-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.note { margin: 0; font-size: var(--step--1); color: var(--muted); }
+.noscript { margin: 24px 16px; }
+
+/* ---------- wide screens: left rail + mat ---------- */
+@media (min-width: 600px) and (orientation: landscape) {
+  .app {
+    grid-template-columns: clamp(232px, 23vw, 296px) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-areas: "side table";
+    column-gap: clamp(16px, 2.4vw, 32px);
+    padding-block: 16px;
+  }
+  .side {
+    grid-area: side;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto auto auto minmax(0, 1fr);
+    grid-template-areas:
+      "brand brand"
+      "levels levels"
+      "hud hud"
+      "new actions"
+      "rules rules";
+    gap: 18px 8px;
+  }
+  .brand { font-size: 1.85rem; }
+  .tagline { display: block; }
+  .hud { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 12px; padding: 0 2px 6px; }
+  .stat-score { grid-column: 1 / -1; }
+  .stat-score .stat-value { font-size: var(--step-3); }
+  .btn-new { width: 100%; }
+  .rules { display: block; }
+  .table { padding: clamp(12px, 2vw, 24px); border-radius: 26px; }
+}
+@media (min-width: 600px) and (orientation: landscape) and (max-height: 600px) {
+  .side { gap: 10px 8px; overflow-y: auto; padding: 3px; margin: -3px; }
+  .tagline,
+  .rules { display: none; }
+  .brand { font-size: 1.45rem; }
+  .stat-score .stat-value { font-size: var(--step-2); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .card-inner,
+  .card-face,
+  .btn,
+  .seg,
+  .bonus-fill { transition: none; }
+  .toast.show { animation: toast-fade 1.6s linear forwards; }
+  dialog[open] .sheet { animation: none; }
+}
+</style>
+</head>
+<body>
+<noscript><p class="noscript">이 게임은 자바스크립트를 켜야 할 수 있어요.</p></noscript>
+
+<div class="app" id="app">
+  <div class="side">
+    <header class="brand-block">
+      <h1 class="brand"><span class="brand-mark" aria-hidden="true"></span>같은 그림 찾기</h1>
+      <p class="tagline">카드를 두 장씩 뒤집어 같은 그림을 찾아보세요. 덜 틀리고 빨리 끝낼수록 점수가 높아요.</p>
+    </header>
+
+    <div class="actions">
+      <button type="button" class="btn" id="open-records">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 16.5V21M7 4h10v5a5 5 0 0 1-10 0z" /><path d="M17 6h2.5a1.5 1.5 0 0 1 0 3H17M7 6H4.5a1.5 1.5 0 0 0 0 3H7" /></svg>
+        기록
+      </button>
+      <button type="button" class="btn btn-icon" id="sound" aria-pressed="true" aria-label="소리">
+        <svg class="icon" id="sound-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5v5h3.5L12 18V6L7.5 9.5z" /><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" /></svg>
+        <svg class="icon" id="sound-off" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M4 9.5v5h3.5L12 18V6L7.5 9.5z" /><path d="M16 10l4 4M20 10l-4 4" /></svg>
+      </button>
+    </div>
+
+    <div class="segmented levels" id="levels" role="group" aria-label="난이도">
+      <button type="button" class="seg" id="level-easy" data-level="easy" aria-pressed="false"><span class="seg-name">쉬움</span><span class="seg-count">6쌍</span></button>
+      <button type="button" class="seg" id="level-normal" data-level="normal" aria-pressed="true"><span class="seg-name">보통</span><span class="seg-count">8쌍</span></button>
+      <button type="button" class="seg" id="level-hard" data-level="hard" aria-pressed="false"><span class="seg-name">어려움</span><span class="seg-count">12쌍</span></button>
+    </div>
+
+    <button type="button" class="btn btn-new" id="new-game">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3" /><path d="M4.5 4.5v3.8h3.8" /></svg>
+      새 게임
+    </button>
+
+    <section class="hud" aria-label="게임 현황">
+      <div class="stat stat-score">
+        <div class="stat-head"><span class="stat-label">점수</span><span class="stat-best" id="best">최고 —</span></div>
+        <output class="stat-value" id="score">0</output>
+      </div>
+      <div class="stat">
+        <span class="stat-label">시간</span>
+        <output class="stat-value" id="time">0:00</output>
+        <span class="bonus-track" id="bonus-track"><span class="bonus-fill" id="bonus"></span></span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">시도</span>
+        <output class="stat-value" id="moves">0</output>
+      </div>
+      <div class="stat">
+        <span class="stat-label">찾은 짝</span>
+        <output class="stat-value" id="pairs">0/8</output>
+      </div>
+    </section>
+
+    <section class="rules" aria-labelledby="rules-title">
+      <h2 class="rules-title" id="rules-title">점수 계산</h2>
+      <div id="rules-side"></div>
+    </section>
+  </div>
+
+  <main class="table" id="table">
+    <div class="board" id="board" aria-label="카드"></div>
+    <div class="toast" id="toast" aria-hidden="true"></div>
+  </main>
+</div>
+
+<p class="sr-only" id="live" aria-live="polite"></p>
+
+<dialog id="dlg-result" aria-labelledby="result-title">
+  <canvas class="confetti" id="confetti" aria-hidden="true"></canvas>
+  <form method="dialog" class="sheet">
+    <p class="eyebrow" id="r-level">보통 · 8쌍</p>
+    <h2 class="sheet-title" id="result-title">모두 찾았어요!</h2>
+    <div class="result-hero">
+      <p class="result-score"><span id="r-score">0</span><span class="unit">점</span></p>
+      <span class="seal" id="r-seal" hidden>신기록</span>
+    </div>
+    <p class="result-compare" id="r-compare"></p>
+    <dl class="breakdown" id="r-breakdown"></dl>
+    <p class="result-meta" id="r-meta"></p>
+    <p class="result-warn" id="r-warn" hidden>이 브라우저에서는 기록을 저장하지 못했어요. 시크릿 창이라면 일반 창에서 열어 주세요.</p>
+    <div class="sheet-actions">
+      <button class="btn" value="records" id="r-records">기록 보기</button>
+      <button class="btn btn-primary" value="again" id="r-again" autofocus>한 판 더</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlg-records" aria-labelledby="records-title">
+  <div class="sheet">
+    <div class="sheet-head">
+      <h2 class="sheet-title" id="records-title">내 기록</h2>
+      <button type="button" class="btn btn-icon btn-quiet" id="records-close" aria-label="닫기">
+        <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+      </button>
+    </div>
+    <div class="segmented" id="records-tabs" role="tablist" aria-label="난이도별 기록">
+      <button type="button" class="seg" role="tab" id="tab-easy" data-level="easy" aria-selected="false" aria-controls="records-panel"><span class="seg-name">쉬움</span></button>
+      <button type="button" class="seg" role="tab" id="tab-normal" data-level="normal" aria-selected="true" aria-controls="records-panel"><span class="seg-name">보통</span></button>
+      <button type="button" class="seg" role="tab" id="tab-hard" data-level="hard" aria-selected="false" aria-controls="records-panel"><span class="seg-name">어려움</span></button>
+    </div>
+    <div id="records-panel" role="tabpanel" aria-labelledby="tab-normal">
+      <dl class="summary">
+        <div><dt>플레이</dt><dd id="sum-plays">0판</dd></div>
+        <div><dt>최고 점수</dt><dd id="sum-best">—</dd></div>
+        <div><dt>가장 빠른 판</dt><dd id="sum-fast">—</dd></div>
+      </dl>
+      <ol class="ranks" id="records-list"></ol>
+      <p class="empty" id="records-empty" hidden>아직 끝낸 게임이 없어요. 한 판을 끝내면 점수가 여기에 쌓여요.</p>
+    </div>
+    <details class="rules-mini">
+      <summary>점수 계산 방법</summary>
+      <div id="rules-mini"></div>
+    </details>
+    <div class="records-foot">
+      <p class="note">기록은 이 기기의 이 브라우저에만 저장돼요.</p>
+      <button type="button" class="btn btn-quiet btn-text-danger" id="records-clear">기록 지우기</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="dlg-confirm" aria-labelledby="confirm-title" aria-describedby="confirm-msg">
+  <form method="dialog" class="sheet">
+    <h2 class="sheet-title" id="confirm-title"></h2>
+    <p class="confirm-msg" id="confirm-msg"></p>
+    <div class="sheet-actions">
+      <button class="btn" value="cancel" id="confirm-cancel">취소</button>
+      <button class="btn btn-primary" value="ok" id="confirm-ok">확인</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(() => {
+  'use strict';
+
+  document.documentElement.lang = 'ko';
+
+  // ---------- rules ----------
+  const LEVELS = {
+    easy: { name: '쉬움', pairs: 6, par: 60 },
+    normal: { name: '보통', pairs: 8, par: 90 },
+    hard: { name: '어려움', pairs: 12, par: 150 },
+  };
+  // Match +100, each extra step of a streak +50, a miss -10, every second under par +10.
+  const SCORE = { match: 100, comboStep: 50, miss: 10, perSecond: 10 };
+  const FACES = [
+    ['🐶', '강아지'], ['🐱', '고양이'], ['🐰', '토끼'], ['🦊', '여우'], ['🐻', '곰'],
+    ['🐼', '판다'], ['🐨', '코알라'], ['🐯', '호랑이'], ['🦁', '사자'], ['🐮', '소'],
+    ['🐷', '돼지'], ['🐸', '개구리'], ['🐵', '원숭이'], ['🐔', '닭'], ['🐧', '펭귄'],
+    ['🐙', '문어'], ['🦋', '나비'], ['🐢', '거북이'], ['🐳', '고래'], ['🦄', '유니콘'],
+  ];
+  const MISMATCH_MS = 900;
+  const STORE_KEY = 'same-picture:v1';
+  const MAX_RECORDS = 300;
+
+  const isLevel = (k) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(LEVELS, k);
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const motionOK = () => !reduceMotion.matches;
+  const $ = (id) => document.getElementById(id);
+
+  const ui = {
+    board: $('board'), table: $('table'), toast: $('toast'), live: $('live'),
+    score: $('score'), best: $('best'), time: $('time'), bonus: $('bonus'), bonusTrack: $('bonus-track'),
+    moves: $('moves'), pairs: $('pairs'), levels: $('levels'), newGame: $('new-game'),
+    openRecords: $('open-records'), sound: $('sound'), soundOn: $('sound-on'), soundOff: $('sound-off'),
+    rulesSide: $('rules-side'), rulesMini: $('rules-mini'),
+    result: $('dlg-result'), confetti: $('confetti'), rLevel: $('r-level'), rScore: $('r-score'),
+    rSeal: $('r-seal'), rCompare: $('r-compare'), rBreakdown: $('r-breakdown'), rMeta: $('r-meta'), rWarn: $('r-warn'),
+    records: $('dlg-records'), recordsTabs: $('records-tabs'), recordsPanel: $('records-panel'),
+    recordsClose: $('records-close'), sumPlays: $('sum-plays'), sumBest: $('sum-best'), sumFast: $('sum-fast'),
+    recordsList: $('records-list'), recordsEmpty: $('records-empty'), recordsClear: $('records-clear'),
+    confirm: $('dlg-confirm'), cTitle: $('confirm-title'), cMsg: $('confirm-msg'), cOk: $('confirm-ok'), cCancel: $('confirm-cancel'),
+  };
+
+  // ---------- saved data (this browser only) ----------
+  function isRecord(r) {
+    return !!r && typeof r === 'object' && typeof r.id === 'string' && isLevel(r.level) &&
+      Number.isFinite(r.score) && Number.isFinite(r.timeMs) && Number.isFinite(r.moves) && typeof r.at === 'string';
+  }
+  const saved = (() => {
+    let raw = null;
+    try {
+      raw = JSON.parse(window.localStorage.getItem(STORE_KEY) || 'null');
+    } catch {
+      raw = null;
+    }
+    raw = raw && typeof raw === 'object' ? raw : {};
+    return {
+      records: Array.isArray(raw.records) ? raw.records.filter(isRecord).slice(-MAX_RECORDS) : [],
+      sound: typeof raw.sound === 'boolean' ? raw.sound : true,
+      level: isLevel(raw.level) ? raw.level : 'normal',
+    };
+  })();
+  function save() {
+    try {
+      window.localStorage.setItem(STORE_KEY, JSON.stringify(saved));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  function bestRecord(level) {
+    let best = null;
+    for (const r of saved.records) {
+      if (r.level !== level) continue;
+      if (!best || r.score > best.score || (r.score === best.score && r.timeMs < best.timeMs)) best = r;
+    }
+    return best;
+  }
+
+  // ---------- formatting ----------
+  const fmtNum = (n) => Math.round(n).toLocaleString('ko-KR');
+  function fmtTime(ms) {
+    const s = Math.floor(ms / 1000);
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  }
+  function fmtDate(iso) {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    const now = new Date();
+    const day = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+    const daysAgo = Math.round((day(now) - day(d)) / 86400000);
+    const hm = `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+    if (daysAgo === 0) return `오늘 ${hm}`;
+    if (daysAgo === 1) return `어제 ${hm}`;
+    const md = `${d.getMonth() + 1}월 ${d.getDate()}일`;
+    return d.getFullYear() === now.getFullYear() ? md : `${d.getFullYear()}년 ${md}`;
+  }
+  function shuffle(list) {
+    for (let i = list.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [list[i], list[j]] = [list[j], list[i]];
+    }
+    return list;
+  }
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  function announce(text) {
+    ui.live.textContent = '';
+    window.setTimeout(() => { ui.live.textContent = text; }, 30);
+  }
+
+  // ---------- sound (synthesized, starts on the first tap) ----------
+  const sound = (() => {
+    let ctx = null;
+    function unlock() {
+      if (!saved.sound) return;
+      try {
+        if (!ctx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return;
+          ctx = new AC();
+        }
+        if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+      } catch {
+        ctx = null;
+      }
+    }
+    function tone(freq, at, dur, type, peak, glideTo) {
+      const t0 = ctx.currentTime + at;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, t0);
+      if (glideTo) osc.frequency.exponentialRampToValueAtTime(glideTo, t0 + dur);
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(peak, t0 + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + dur + 0.03);
+    }
+    function play(name) {
+      if (!saved.sound || !ctx) return;
+      try {
+        if (name === 'flip') tone(660, 0, 0.07, 'triangle', 0.06, 420);
+        else if (name === 'match') { tone(784, 0, 0.18, 'sine', 0.12); tone(1175, 0.07, 0.26, 'sine', 0.1); }
+        else if (name === 'miss') tone(240, 0, 0.2, 'sine', 0.1, 150);
+        else if (name === 'win') [523.25, 659.25, 783.99, 1046.5].forEach((f, k) => tone(f, k * 0.1, 0.34, 'triangle', 0.1));
+        else if (name === 'stamp') tone(130, 0, 0.16, 'sine', 0.22, 55);
+      } catch {
+        /* audio is optional */
+      }
+    }
+    return { unlock, play };
+  })();
+
+  // ---------- game state ----------
+  const game = {
+    level: saved.level, deck: [], matched: [], tone: [], open: [],
+    moves: 0, matches: 0, misses: 0, combo: 0, maxCombo: 0, comboBonus: 0,
+    elapsedMs: 0, runningSince: 0, started: false, finished: false, result: null,
+  };
+  let cards = [];
+  let mismatchTimer = 0;
+  let ticker = 0;
+  let lastRecordId = null;
+  let recordsLevel = saved.level;
+  let confettiRaf = 0;
+
+  const elapsed = () => game.elapsedMs + (game.runningSince ? performance.now() - game.runningSince : 0);
+  const liveScore = () => Math.max(0, game.matches * SCORE.match + game.comboBonus - game.misses * SCORE.miss);
+
+  // The clock runs only while a game is in progress, the page is visible and no dialog is open.
+  function syncClock() {
+    const run = game.started && !game.finished && !document.hidden && !document.querySelector('dialog[open]');
+    if (run && !game.runningSince) {
+      game.runningSince = performance.now();
+      ticker = window.setInterval(renderClock, 250);
+    } else if (!run && game.runningSince) {
+      game.elapsedMs += performance.now() - game.runningSince;
+      game.runningSince = 0;
+      window.clearInterval(ticker);
+      ticker = 0;
+    }
+    renderClock();
+  }
+
+  function newGame(level) {
+    window.clearTimeout(mismatchTimer);
+    mismatchTimer = 0;
+    window.clearInterval(ticker);
+    ticker = 0;
+    const L = LEVELS[level];
+    const picks = shuffle(FACES.map((_, i) => i)).slice(0, L.pairs);
+    Object.assign(game, {
+      level, deck: shuffle([...picks, ...picks]), open: [],
+      moves: 0, matches: 0, misses: 0, combo: 0, maxCombo: 0, comboBonus: 0,
+      elapsedMs: 0, runningSince: 0, started: false, finished: false, result: null,
+    });
+    game.matched = game.deck.map(() => false);
+    game.tone = game.deck.map(() => 0);
+    if (saved.level !== level) {
+      saved.level = level;
+      save();
+    }
+    buildBoard(true);
+    renderHud();
+  }
+
+  function flip(i) {
+    if (game.finished || game.matched[i] || game.open.includes(i)) return;
+    sound.unlock();
+    if (game.open.length === 2) settleMismatch();
+    game.open.push(i);
+    if (!game.started) {
+      game.started = true;
+      syncClock();
+    }
+    sound.play('flip');
+    renderCard(i);
+    if (game.open.length === 2) judge();
+    renderHud();
+  }
+
+  function judge() {
+    const [a, b] = game.open;
+    const nameA = FACES[game.deck[a]][1];
+    game.moves += 1;
+    if (game.deck[a] === game.deck[b]) {
+      game.matches += 1;
+      game.combo += 1;
+      game.maxCombo = Math.max(game.maxCombo, game.combo);
+      const bonus = game.combo > 1 ? SCORE.comboStep * (game.combo - 1) : 0;
+      game.comboBonus += bonus;
+      const tone = ((game.matches - 1) % 5) + 1;
+      game.matched[a] = game.matched[b] = true;
+      game.tone[a] = game.tone[b] = tone;
+      game.open = [];
+      renderCard(a);
+      renderCard(b);
+      animatePop([a, b]);
+      sound.play('match');
+      if (bonus) showToast(`${game.combo}연속 +${bonus}`, b);
+      announce(`${nameA} 짝을 찾았어요.${bonus ? ` ${game.combo}연속 보너스 ${bonus}점.` : ''}`);
+      if (game.matches === LEVELS[game.level].pairs) finish();
+    } else {
+      game.misses += 1;
+      game.combo = 0;
+      cards[a].classList.add('is-wrong');
+      cards[b].classList.add('is-wrong');
+      animateShake([a, b]);
+      sound.play('miss');
+      announce(`${nameA}, ${FACES[game.deck[b]][1]}. 서로 달라요.`);
+      mismatchTimer = window.setTimeout(settleMismatch, MISMATCH_MS);
+    }
+  }
+
+  // Turns a missed pair back over. A tap on a third card calls this early, so play never waits on the timer.
+  function settleMismatch() {
+    window.clearTimeout(mismatchTimer);
+    mismatchTimer = 0;
+    const pair = game.open;
+    game.open = [];
+    for (const i of pair) {
+      cards[i].classList.remove('is-wrong');
+      renderCard(i);
+    }
+  }
+
+  function finish() {
+    game.finished = true;
+    syncClock();
+    const L = LEVELS[game.level];
+    const timeMs = Math.round(game.elapsedMs);
+    const remaining = Math.max(0, L.par - Math.floor(timeMs / 1000));
+    const parts = {
+      base: game.matches * SCORE.match,
+      combo: game.comboBonus,
+      penalty: game.misses * SCORE.miss,
+      time: remaining * SCORE.perSecond,
+      remaining,
+    };
+    const score = Math.max(0, parts.base + parts.combo - parts.penalty + parts.time);
+    const prev = bestRecord(game.level);
+    const record = {
+      id: uid(), level: game.level, score, timeMs, moves: game.moves, misses: game.misses,
+      maxCombo: game.maxCombo, at: new Date().toISOString(),
+    };
+    saved.records.push(record);
+    if (saved.records.length > MAX_RECORDS) saved.records.splice(0, saved.records.length - MAX_RECORDS);
+    const stored = save();
+    lastRecordId = record.id;
+    game.result = {
+      record, parts, stored,
+      prevBest: prev ? prev.score : null,
+      isFirst: !prev,
+      isBest: !prev || score > prev.score,
+    };
+    renderHud();
+    sound.play('win');
+    announce(`모두 찾았어요! ${fmtNum(score)}점.`);
+    window.setTimeout(showResult, motionOK() ? 700 : 150);
+  }
+
+  // ---------- board ----------
+  function buildBoard(deal) {
+    const frag = document.createDocumentFragment();
+    cards = game.deck.map((face, i) => {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'card';
+      card.id = `card-${i}`;
+      card.dataset.index = String(i);
+      card.innerHTML = '<span class="card-inner"><span class="card-back"></span><span class="card-face"><span class="glyph"></span></span></span>';
+      card.querySelector('.glyph').textContent = FACES[face][0];
+      frag.append(card);
+      return card;
+    });
+    ui.board.replaceChildren(frag);
+    ui.board.setAttribute('aria-label', `카드 ${cards.length}장`);
+    layoutBoard();
+    cards.forEach((_, i) => renderCard(i));
+    if (deal) animateDeal();
+  }
+
+  // Picks the grid (columns × rows) that gives the biggest cards in the space left on screen.
+  function layoutBoard() {
+    const n = game.deck.length;
+    if (!n) return;
+    const cs = window.getComputedStyle(ui.table);
+    const W = ui.table.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const H = ui.table.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    if (W <= 0 || H <= 0) return;
+    const gap = Math.round(Math.max(6, Math.min(14, Math.min(W, H) / 42)));
+    let best = null;
+    for (let cols = 2; cols <= n; cols++) {
+      if (n % cols) continue;
+      const rows = n / cols;
+      let w = (W - gap * (cols - 1)) / cols;
+      let h = (H - gap * (rows - 1)) / rows;
+      if (w > h) w = h; // never wider than square
+      else if (w / h < 5 / 7) h = (w * 7) / 5; // never taller than 5:7
+      if (w > 184) { h = (h * 184) / w; w = 184; }
+      if (!best || w * h > best.w * best.h) best = { cols, w, h };
+    }
+    const w = Math.max(36, Math.floor(best.w));
+    const h = Math.max(36, Math.floor(best.h));
+    ui.board.style.setProperty('--cols', String(best.cols));
+    ui.board.style.setProperty('--card-w', `${w}px`);
+    ui.board.style.setProperty('--card-h', `${h}px`);
+    ui.board.style.setProperty('--gap', `${gap}px`);
+  }
+
+  function renderCard(i) {
+    const card = cards[i];
+    const name = FACES[game.deck[i]][1];
+    const open = game.open.includes(i);
+    const matched = game.matched[i];
+    card.classList.toggle('is-open', open);
+    card.classList.toggle('is-matched', matched);
+    if (matched) card.dataset.tone = String(game.tone[i]);
+    else delete card.dataset.tone;
+    card.setAttribute('aria-label', matched ? `카드 ${i + 1}: ${name}, 짝 찾음` : open ? `카드 ${i + 1}: ${name}` : `카드 ${i + 1}`);
+    card.setAttribute('aria-disabled', String(matched || open));
+  }
+
+  function animateDeal() {
+    if (!motionOK()) return;
+    cards.forEach((card, i) => {
+      card.animate(
+        [{ opacity: 0, translate: '0 14px', scale: 0.9 }, { opacity: 1, translate: '0 0', scale: 1 }],
+        { duration: 420, delay: i * 22, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' },
+      );
+    });
+  }
+  function animatePop(list) {
+    if (!motionOK()) return;
+    for (const i of list) {
+      cards[i].animate([{ scale: 1 }, { scale: 1.08, offset: 0.4 }, { scale: 1 }], { duration: 460, delay: 260, easing: 'ease-out' });
+    }
+  }
+  function animateShake(list) {
+    if (!motionOK()) return;
+    for (const i of list) {
+      cards[i].animate(
+        [{ translate: '0 0' }, { translate: '-5px 0' }, { translate: '5px 0' }, { translate: '-3px 0' }, { translate: '3px 0' }, { translate: '0 0' }],
+        { duration: 380, delay: 320, easing: 'ease-in-out' },
+      );
+    }
+  }
+  // The bonus pill rises from the card that completed the streak, kept inside the mat.
+  function showToast(text, anchor) {
+    const toast = ui.toast;
+    toast.textContent = text;
+    toast.classList.remove('show');
+    const card = cards[anchor];
+    if (card) {
+      const mat = ui.table.getBoundingClientRect();
+      const box = card.getBoundingClientRect();
+      const half = toast.offsetWidth / 2;
+      const x = box.left - mat.left + ui.table.scrollLeft + box.width / 2;
+      const minX = ui.table.scrollLeft + half + 6;
+      const maxX = ui.table.scrollLeft + ui.table.clientWidth - half - 6;
+      toast.style.left = `${Math.min(Math.max(x, minX), maxX)}px`;
+      toast.style.top = `${box.top - mat.top + ui.table.scrollTop + box.height * 0.3}px`;
+    }
+    void toast.offsetWidth;
+    toast.classList.add('show');
+  }
+
+  // ---------- score strip ----------
+  function renderHud() {
+    const L = LEVELS[game.level];
+    ui.score.textContent = fmtNum(game.result ? game.result.record.score : liveScore());
+    const best = bestRecord(game.level);
+    ui.best.textContent = best ? `최고 ${fmtNum(best.score)}` : '최고 —';
+    ui.moves.textContent = String(game.moves);
+    ui.pairs.textContent = `${game.matches}/${L.pairs}`;
+    for (const b of ui.levels.querySelectorAll('[data-level]')) {
+      b.setAttribute('aria-pressed', String(b.dataset.level === game.level));
+    }
+    renderClock();
+  }
+  function renderClock() {
+    const ms = elapsed();
+    const par = LEVELS[game.level].par;
+    const left = Math.max(0, par - ms / 1000);
+    ui.time.textContent = fmtTime(ms);
+    ui.bonus.style.transform = `scaleX(${(left / par).toFixed(4)})`;
+    ui.bonus.classList.toggle('is-low', left / par < 0.25);
+    ui.bonusTrack.title = left > 0 ? `시간 보너스 ${Math.floor(left)}초 남음` : '시간 보너스 끝';
+  }
+  function renderRules(container) {
+    const pars = Object.values(LEVELS).map((L) => `${L.name} ${L.par}초`).join(' · ');
+    container.innerHTML = `
+      <dl class="rules-list">
+        <div><dt>짝 맞추기</dt><dd>+${SCORE.match}</dd></div>
+        <div><dt>연속 보너스</dt><dd>2연속 +${SCORE.comboStep}, 3연속 +${SCORE.comboStep * 2} …</dd></div>
+        <div><dt>틀린 시도</dt><dd>−${SCORE.miss}</dd></div>
+        <div><dt>시간 보너스</dt><dd>남은 1초당 +${SCORE.perSecond}</dd></div>
+      </dl>
+      <p class="rules-note">기준 시간: ${pars}</p>`;
+  }
+  function renderSound() {
+    ui.sound.setAttribute('aria-pressed', String(saved.sound));
+    ui.sound.title = saved.sound ? '소리 끄기' : '소리 켜기';
+    ui.soundOn.hidden = !saved.sound;
+    ui.soundOff.hidden = saved.sound;
+  }
+
+  // ---------- dialogs ----------
+  function openModal(dialog) {
+    if (!dialog.open) {
+      dialog.returnValue = '';
+      dialog.showModal();
+    }
+    syncClock();
+  }
+  function confirmDialog({ title, message, ok, cancel = '취소', danger = false }) {
+    return new Promise((resolve) => {
+      ui.cTitle.textContent = title;
+      ui.cMsg.textContent = message;
+      ui.cOk.textContent = ok;
+      ui.cCancel.textContent = cancel;
+      ui.cOk.classList.toggle('btn-danger', danger);
+      ui.cOk.classList.toggle('btn-primary', !danger);
+      ui.confirm.addEventListener('close', () => resolve(ui.confirm.returnValue === 'ok'), { once: true });
+      openModal(ui.confirm);
+    });
+  }
+
+  function showResult() {
+    const r = game.result;
+    if (!r) return;
+    const L = LEVELS[r.record.level];
+    ui.rLevel.textContent = `${L.name} · ${L.pairs}쌍`;
+    ui.rSeal.textContent = r.isFirst ? '첫 기록' : '신기록';
+    ui.rSeal.hidden = !r.isBest;
+    ui.rCompare.textContent = r.isFirst
+      ? '이 난이도의 첫 기록이에요.'
+      : r.isBest
+        ? `이전 최고 ${fmtNum(r.prevBest)}점을 넘었어요.`
+        : `최고 기록은 ${fmtNum(r.prevBest)}점이에요.`;
+    const rows = [
+      [`짝 ${L.pairs}개 × ${SCORE.match}`, `+${fmtNum(r.parts.base)}`, false],
+      ['연속 보너스', `+${fmtNum(r.parts.combo)}`, false],
+      [`틀린 시도 ${r.record.misses}번 × ${SCORE.miss}`, r.parts.penalty ? `−${fmtNum(r.parts.penalty)}` : '0', r.parts.penalty > 0],
+      [`시간 보너스 ${r.parts.remaining}초 × ${SCORE.perSecond}`, `+${fmtNum(r.parts.time)}`, false],
+    ];
+    ui.rBreakdown.replaceChildren(...rows.map(([label, value, minus]) => {
+      const row = document.createElement('div');
+      if (minus) row.className = 'is-minus';
+      const dt = document.createElement('dt');
+      dt.textContent = label;
+      const dd = document.createElement('dd');
+      dd.textContent = value;
+      row.append(dt, dd);
+      return row;
+    }));
+    ui.rMeta.textContent = `걸린 시간 ${fmtTime(r.record.timeMs)} · 시도 ${r.record.moves}번` +
+      (r.record.maxCombo > 1 ? ` · 최대 ${r.record.maxCombo}연속` : '');
+    ui.rWarn.hidden = r.stored;
+    openModal(ui.result);
+    const countMs = countUp(ui.rScore, r.record.score);
+    if (r.isBest) stampSeal(countMs + 80);
+    rainConfetti();
+  }
+
+  function countUp(node, to) {
+    if (!motionOK() || to <= 0) {
+      node.textContent = fmtNum(to);
+      return 0;
+    }
+    const dur = Math.min(1100, 500 + to / 5);
+    const t0 = performance.now();
+    node.textContent = '0';
+    const step = (t) => {
+      const p = Math.min(1, (t - t0) / dur);
+      node.textContent = fmtNum(to * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) window.requestAnimationFrame(step);
+    };
+    window.requestAnimationFrame(step);
+    return dur;
+  }
+  function stampSeal(delay) {
+    if (!motionOK()) return;
+    ui.rSeal.animate(
+      [{ opacity: 0, scale: 1.9, rotate: '-1deg' }, { opacity: 1, scale: 1, rotate: '-8deg' }],
+      { duration: 340, delay, easing: 'cubic-bezier(.2,1.3,.4,1)', fill: 'backwards' },
+    );
+    window.setTimeout(() => sound.play('stamp'), delay + 200);
+  }
+
+  // 색동 paper strips falling over the result card.
+  function rainConfetti() {
+    if (!motionOK()) return;
+    const canvas = ui.confetti;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const css = window.getComputedStyle(document.documentElement);
+    const colors = [1, 2, 3, 4, 5].map((k) => css.getPropertyValue(`--sd-${k}`).trim() || '#e2453c');
+    const bits = Array.from({ length: Math.round(Math.min(150, Math.max(60, W / 7))) }, () => ({
+      x: Math.random() * W,
+      y: -20 - Math.random() * H * 0.7,
+      vx: (Math.random() - 0.5) * 1.6,
+      vy: 2.2 + Math.random() * 2.6,
+      w: 5 + Math.random() * 4,
+      h: 10 + Math.random() * 10,
+      rot: Math.random() * Math.PI * 2,
+      vr: (Math.random() - 0.5) * 0.16,
+      sway: Math.random() * Math.PI * 2,
+      color: colors[Math.floor(Math.random() * colors.length)],
+    }));
+    const t0 = performance.now();
+    let last = t0;
+    window.cancelAnimationFrame(confettiRaf);
+    const frame = (t) => {
+      const dt = Math.min(3, (t - last) / 16.67);
+      last = t;
+      ctx.clearRect(0, 0, W, H);
+      let alive = false;
+      for (const b of bits) {
+        b.sway += 0.05 * dt;
+        b.x += (b.vx + Math.sin(b.sway) * 0.8) * dt;
+        b.y += b.vy * dt;
+        b.rot += b.vr * dt;
+        if (b.y < H + 30) alive = true;
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        ctx.rotate(b.rot);
+        ctx.fillStyle = b.color;
+        ctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h * Math.abs(Math.cos(b.sway)) + 1);
+        ctx.restore();
+      }
+      if (alive && t - t0 < 6000 && ui.result.open) confettiRaf = window.requestAnimationFrame(frame);
+      else ctx.clearRect(0, 0, W, H);
+    };
+    confettiRaf = window.requestAnimationFrame(frame);
+  }
+
+  function openRecords(level) {
+    recordsLevel = isLevel(level) ? level : game.level;
+    renderRecords();
+    openModal(ui.records);
+  }
+  function rankRow(r, rank) {
+    const li = document.createElement('li');
+    li.className = 'rank' + (rank === 1 ? ' is-top' : '') + (r.id === lastRecordId ? ' is-latest' : '');
+    li.innerHTML = '<span class="rank-no"></span><span class="rank-score"></span><span class="rank-date"></span><span class="rank-meta"></span>';
+    li.querySelector('.rank-no').textContent = String(rank);
+    const scoreEl = li.querySelector('.rank-score');
+    scoreEl.textContent = `${fmtNum(r.score)}점`;
+    if (r.id === lastRecordId) {
+      const tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.textContent = '방금';
+      scoreEl.append(tag);
+    }
+    li.querySelector('.rank-date').textContent = fmtDate(r.at);
+    li.querySelector('.rank-meta').textContent = `${fmtTime(r.timeMs)} · 시도 ${r.moves}번`;
+    return li;
+  }
+  function renderRecords() {
+    for (const tab of ui.recordsTabs.querySelectorAll('[data-level]')) {
+      const on = tab.dataset.level === recordsLevel;
+      tab.setAttribute('aria-selected', String(on));
+      tab.tabIndex = on ? 0 : -1;
+    }
+    ui.recordsPanel.setAttribute('aria-labelledby', `tab-${recordsLevel}`);
+    const list = saved.records.filter((r) => r.level === recordsLevel);
+    const sorted = list.slice().sort((a, b) => b.score - a.score || a.timeMs - b.timeMs || (a.at < b.at ? -1 : 1));
+    const fastest = list.reduce((m, r) => (!m || r.timeMs < m.timeMs ? r : m), null);
+    ui.sumPlays.textContent = `${list.length}판`;
+    ui.sumBest.textContent = sorted.length ? `${fmtNum(sorted[0].score)}점` : '—';
+    ui.sumFast.textContent = fastest ? fmtTime(fastest.timeMs) : '—';
+    const rows = sorted.slice(0, 10).map((r, k) => rankRow(r, k + 1));
+    const latestRank = sorted.findIndex((r) => r.id === lastRecordId);
+    if (latestRank >= 10) rows.push(rankRow(sorted[latestRank], latestRank + 1));
+    ui.recordsList.replaceChildren(...rows);
+    ui.recordsList.hidden = rows.length === 0;
+    ui.recordsEmpty.hidden = rows.length > 0;
+    ui.recordsClear.disabled = saved.records.length === 0;
+  }
+
+  async function requestNewGame(level) {
+    if (game.started && !game.finished) {
+      const ok = await confirmDialog({
+        title: '새 게임을 시작할까요?',
+        message: '지금 하던 게임은 기록되지 않아요.',
+        ok: '새로 시작',
+        cancel: '계속하기',
+      });
+      if (!ok) return;
+    }
+    newGame(level);
+  }
+
+  // ---------- hot reload (keeps a game in progress when the page is republished) ----------
+  function snapshot() {
+    return {
+      game: {
+        level: game.level, deck: game.deck, matched: game.matched, tone: game.tone,
+        moves: game.moves, matches: game.matches, misses: game.misses, combo: game.combo,
+        maxCombo: game.maxCombo, comboBonus: game.comboBonus, elapsedMs: elapsed(),
+        started: game.started, finished: game.finished, result: game.result,
+      },
+    };
+  }
+  function restore(g) {
+    try {
+      if (!g || !isLevel(g.level)) return false;
+      const n = LEVELS[g.level].pairs * 2;
+      const okDeck = Array.isArray(g.deck) && g.deck.length === n &&
+        g.deck.every((f) => Number.isInteger(f) && f >= 0 && f < FACES.length);
+      if (!okDeck || !Array.isArray(g.matched) || g.matched.length !== n || !Array.isArray(g.tone) || g.tone.length !== n) return false;
+      window.clearTimeout(mismatchTimer);
+      mismatchTimer = 0;
+      window.clearInterval(ticker);
+      ticker = 0;
+      Object.assign(game, {
+        level: g.level, deck: g.deck.slice(), matched: g.matched.map(Boolean),
+        tone: g.tone.map((t) => (Number.isInteger(t) && t >= 0 && t <= 5 ? t : 0)), open: [],
+        moves: Number(g.moves) || 0, matches: Number(g.matches) || 0, misses: Number(g.misses) || 0,
+        combo: Number(g.combo) || 0, maxCombo: Number(g.maxCombo) || 0, comboBonus: Number(g.comboBonus) || 0,
+        elapsedMs: Number(g.elapsedMs) || 0, runningSince: 0, started: !!g.started, finished: !!g.finished,
+        result: g.result && g.result.record ? g.result : null,
+      });
+      buildBoard(false);
+      renderHud();
+      syncClock();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // ---------- events ----------
+  ui.board.addEventListener('click', (e) => {
+    const card = e.target.closest('.card');
+    if (card) flip(Number(card.dataset.index));
+  });
+  ui.board.addEventListener('keydown', (e) => {
+    const card = e.target.closest('.card');
+    if (!card) return;
+    const i = Number(card.dataset.index);
+    const cols = Number(ui.board.style.getPropertyValue('--cols')) || 4;
+    const moves = { ArrowRight: i + 1, ArrowLeft: i - 1, ArrowDown: i + cols, ArrowUp: i - cols, Home: 0, End: cards.length - 1 };
+    const j = moves[e.key];
+    if (j === undefined || j < 0 || j >= cards.length) return;
+    e.preventDefault();
+    cards[j].focus();
+  });
+  ui.levels.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-level]');
+    if (!b) return;
+    if (b.dataset.level === game.level && !game.finished) return;
+    requestNewGame(b.dataset.level);
+  });
+  ui.newGame.addEventListener('click', () => requestNewGame(game.level));
+  ui.openRecords.addEventListener('click', () => openRecords(game.level));
+  ui.sound.addEventListener('click', () => {
+    saved.sound = !saved.sound;
+    save();
+    renderSound();
+    if (saved.sound) {
+      sound.unlock();
+      sound.play('flip');
+    }
+  });
+
+  ui.result.addEventListener('close', () => {
+    window.cancelAnimationFrame(confettiRaf);
+    const choice = ui.result.returnValue;
+    if (choice === 'again') newGame(game.level);
+    else if (choice === 'records') openRecords(game.level);
+  });
+  ui.recordsClose.addEventListener('click', () => ui.records.close());
+  ui.recordsTabs.addEventListener('click', (e) => {
+    const tab = e.target.closest('[data-level]');
+    if (!tab) return;
+    recordsLevel = tab.dataset.level;
+    renderRecords();
+  });
+  ui.recordsTabs.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    const keys = Object.keys(LEVELS);
+    const k = keys.indexOf(recordsLevel) + (e.key === 'ArrowRight' ? 1 : -1);
+    recordsLevel = keys[(k + keys.length) % keys.length];
+    renderRecords();
+    $(`tab-${recordsLevel}`).focus();
+    e.preventDefault();
+  });
+  ui.recordsClear.addEventListener('click', async () => {
+    const ok = await confirmDialog({
+      title: '기록을 모두 지울까요?',
+      message: '쉬움, 보통, 어려움의 기록이 모두 지워져요. 되돌릴 수 없어요.',
+      ok: '지우기',
+      danger: true,
+    });
+    if (!ok) return;
+    saved.records = [];
+    lastRecordId = null;
+    save();
+    renderRecords();
+    renderHud();
+  });
+  for (const dialog of [ui.result, ui.records, ui.confirm]) {
+    dialog.addEventListener('close', syncClock);
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) dialog.close();
+    });
+  }
+  document.addEventListener('visibilitychange', syncClock);
+  if ('ResizeObserver' in window) new ResizeObserver(layoutBoard).observe(ui.table);
+  else window.addEventListener('resize', layoutBoard);
+
+  // ---------- start ----------
+  renderRules(ui.rulesSide);
+  renderRules(ui.rulesMini);
+  renderSound();
+  newGame(saved.level);
+
+  window.claude?.hot?.snapshot?.(snapshot);
+  const start = (data) => {
+    if (data && data.game) restore(data.game);
+  };
+  if (window.claude?.hot?.ready) window.claude.hot.ready(start);
+  else start(window.claude?.hot?.data ?? {});
+})();
+</script>
+<!-- page:end -->
+</body>
+</html>
