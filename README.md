@@ -302,6 +302,7 @@
 1. Firebase 콘솔 왼쪽 메뉴 **보안 → Authentication**에서 **시작하기**를 눌러요.
 2. **로그인 방법** 탭에서 **Google**을 고르고 **사용 설정**을 켠 뒤, 프로젝트 지원 이메일을 골라 **저장**해요.
 3. **설정** 탭의 **승인된 도메인**에서 **도메인 추가**를 눌러 `kswksj7867-a11y.github.io`를 넣어요.
-4. **프로젝트 설정**(톱니바퀴) → **내 앱**에서 웹 아이콘(`</>`)을 눌러 앱을 등록하고, 나오는 `firebaseConfig` 값을 `space/index.html`의 `const FIREBASE_CONFIG = null;` 자리에 넣어요. 예: `const FIREBASE_CONFIG = { apiKey: '…', authDomain: '…', projectId: '…', appId: '…' };`
+4. **프로젝트 설정**(톱니바퀴) → **내 앱**에서 웹 아이콘(`</>`)을 눌러 앱을 등록하고, 나오는 `firebaseConfig` 값을 `space/index.html`의 `FIREBASE_CONFIG`에 넣어요(지금은 `galaxy-defense-5e34a` 프로젝트 값이 들어 있어요).
+   이 값(apiKey 포함)은 원래 공개되는 값이에요. 데이터는 보안 규칙과 승인된 도메인이 지켜요.
 
 구글 계정과 게임 계정의 연결은 `v1/users/<구글 사용자 번호>`에 저장되고, 위 규칙에 따라 본인만 읽고 쓸 수 있어요.

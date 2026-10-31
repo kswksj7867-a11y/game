@@ -1147,7 +1147,16 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   // Left empty, the game keeps records on this device only and hides the shared ranking.
   const BOARD_DB = 'galaxy-defense-5e34a-default-rtdb';
   // Google sign-in: the web app settings from the Firebase console (프로젝트 설정 → 내 앱). Left null, the Google button stays hidden.
-  const FIREBASE_CONFIG = null;
+  // These values identify the project and are public by design; the database rules and authorized domains protect it.
+  const FIREBASE_CONFIG = {
+    apiKey: 'AIzaSyBnYK-UQgdj0QT6J6RRazJwIBXOMd91Sak',
+    authDomain: 'galaxy-defense-5e34a.firebaseapp.com',
+    databaseURL: 'https://galaxy-defense-5e34a-default-rtdb.asia-southeast1.firebasedatabase.app',
+    projectId: 'galaxy-defense-5e34a',
+    storageBucket: 'galaxy-defense-5e34a.firebasestorage.app',
+    messagingSenderId: '971318250262',
+    appId: '1:971318250262:web:221c714ab1ab3e7eaa9e37',
+  };
   const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/10.12.2';
   const STORE_KEY = 'galaxy-defense:v2';
   const OLD_KEY = 'galaxy-defense:v1';
