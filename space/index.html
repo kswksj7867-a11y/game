@@ -1254,7 +1254,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         <details class="recipes-box">
           <summary>궁극 합체</summary>
           <ul class="recipes" id="ult-guide"></ul>
-          <p class="note" id="ult-note">합체 스킬 2개를 가진 채 보급 상자를 열면 두 스킬을 하나의 궁극기로 합칠 수 있어요. 한 판에 한 번이에요.</p>
+          <p class="note" id="ult-note">합체 스킬 2개를 가진 채 보급 상자를 열면 궁극기가 하나 더 생겨요. 두 합체 스킬도 그대로 계속 나가고, 궁극기에 쓴 스킬에는 ★ 표시가 붙어요. 한 판에 한 번이에요.</p>
         </details>
         <button type="button" class="btn btn-primary" id="resume">계속하기</button>
         <div class="row row-3">
@@ -3948,6 +3948,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   };
   // endless mode has room for one more weapon and one more piece of gear
   const weaponSlots = () => WEAPON_SLOTS + (run.endless ? 1 : 0);
+  // Weapon slots hold the ordinary weapons; ultimates come on top of them and take no slot.
+  const slotted = () => build.weapons.filter((w) => w.id !== 'ult');
+  // Combined skills not yet put into an ultimate: each one can go into one ultimate.
+  const fusable = () => build.weapons.filter((w) => w.evolved && w.id !== 'ult' && !w.used);
   const passiveSlots = () => PASSIVE_SLOTS + (run.endless ? 1 : 0);
   // Endless mode: each sector raises the points per kill, and an unbroken combo doubles or triples them.
   const comboMul = () => 1 + Math.min(2, run.combo / 150);
@@ -3964,6 +3968,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   const gems = [];
   const items = [];
   const sparks = [];
+  // Frame pacing: when the phone falls behind (many skills at once, a crowded screen) the effects thin out
+  // to half until it catches up again.
+  let frameAvg = 16.7;
+  let fxHeavy = false;
+  const fxCap = (n) => (fxHeavy ? n >> 1 : n);
   const blooms = [];
   const smokes = [];
   const debris = [];
@@ -4195,7 +4204,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const out = [];
     const pool = [];
     for (const w of build.weapons) if (!w.evolved && w.lv < MAX_LEVEL) pool.push({ kind: 'weapon', id: w.id, lv: w.lv + 1 });
-    if (build.weapons.length < weaponSlots()) {
+    if (slotted().length < weaponSlots()) {
       for (const id of Object.keys(WEAPONS)) if (!owned('weapon', id) && !run.fused.includes(id)) pool.push({ kind: 'weapon', id, lv: 1 });
     }
     for (const p of build.passives) if (p.lv < MAX_LEVEL) pool.push({ kind: 'passive', id: p.id, lv: p.lv + 1 });
@@ -4261,7 +4270,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     if (o.kind === 'ult') {
       const u = ULTS[o.ult];
-      return { icon: u.icon, name: u.name, tag: '궁극 합체!', desc: `${WEAPONS[o.a].evo.name} + ${WEAPONS[o.b].evo.name}: ${u.about}. 한 판에 한 번만 할 수 있어요.`, cls: 'is-ult' };
+      return { icon: u.icon, name: u.name, tag: '궁극 합체!', desc: `${WEAPONS[o.a].evo.name} + ${WEAPONS[o.b].evo.name}: ${u.about}. 두 합체 스킬도 그대로 계속 나가요!${run.endless ? '' : ' 한 판에 한 번만 할 수 있어요.'}`, cls: 'is-ult' };
     }
     if (o.kind === 'skip') {
       return { icon: 'skip', name: '건너뛰기', tag: '', desc: '지금은 합체하지 않아요. 대신 이번 상자에서 스킬 하나를 골라요.', cls: 'is-skip' };
@@ -4298,7 +4307,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       run.need = xpNeed(run.level);
       pendingLevels += 1;
       if (coop.ally) coop.ally.levels += 1; // levels are shared: both ships pick
-      if (stats && rings.length < 60) rings.push({ x: player.x, y: player.y, r: 8, max: 64, life: 0.5, full: 0.5, color: COLOR.cyan, wide: true });
+      if (stats && rings.length < fxCap(60)) rings.push({ x: player.x, y: player.y, r: 8, max: 64, life: 0.5, full: 0.5, color: COLOR.cyan, wide: true });
       if (rank('vital') && stats) heal(1.5 * rank('vital'), true);
     }
     hudDirty = true;
@@ -5556,7 +5565,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     rails.push({ x1, y1, x2, y2, life: 0.3, full: 0.3 });
     muzzle(x1, y1, '#c9b6ff', 40);
-    for (let k = 0; k < 10 && sparks.length < 420; k++) { // sparks shed along the line
+    for (let k = 0; k < 10 && sparks.length < fxCap(420); k++) { // sparks shed along the line
       const u = Math.random() * 0.8;
       sparks.push({ x: x1 + (x2 - x1) * u, y: y1 + (y2 - y1) * u, vx: rand(-60, 60), vy: rand(-60, 60), life: 0.3, max: 0.3, color: '#c9b6ff', w: 1.6 });
     }
@@ -5656,7 +5665,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     return SAWS.get(color);
   }
   function muzzle(x, y, color, size) { // a quick flash where a shot leaves the ship
-    if (blooms.length < 64) blooms.push({ x, y, size, life: 0.07, full: 0.07, color });
+    if (blooms.length < fxCap(64)) blooms.push({ x, y, size, life: 0.07, full: 0.07, color });
   }
 
   // Rotating blades fly out in a fan and come back to the ship, cutting through everything on the way.
@@ -5680,7 +5689,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const a = b.spiral ? b.a + u * 3.2 : b.a + Math.sin(Math.PI * u) * 0.35;
     b.trail.unshift(b.x, b.y);
     if (b.trail.length > 14) b.trail.length = 14;
-    if (b.tier >= 3 && sparks.length < 420 && Math.random() < 0.35) { // sparks thrown off the rim
+    if (b.tier >= 3 && sparks.length < fxCap(420) && Math.random() < 0.35) { // sparks thrown off the rim
       const a = rand(0, TAU);
       sparks.push({ x: b.x + Math.cos(a) * b.size, y: b.y + Math.sin(a) * b.size, vx: Math.cos(a) * 120, vy: Math.sin(a) * 120, life: 0.2, max: 0.2, color: b.tone, w: 1.4 });
     }
@@ -5781,9 +5790,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     return best * 40 + 20;
   }
   function fuseUltimate(o) {
-    const a = owned('weapon', o.a);
-    const b = owned('weapon', o.b);
-    build.weapons = build.weapons.filter((w) => w !== a && w !== b);
+    // the two combined skills keep firing as before: the ultimate is added on top of them
+    for (const w of [owned('weapon', o.a), owned('weapon', o.b)]) if (w) w.used = true;
     build.weapons.push({ id: 'ult', ult: o.ult, from: [o.a, o.b], lv: 1, evolved: true, cd: 0.6, cd2: 2, t: 0, charge: 0 });
     run.ults += 1;
     run.fused.push(o.a, o.b);
@@ -5964,12 +5972,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           hitArea(f.tx, f.ty, f.r, f.dmg);
           blooms.push({ x: f.tx, y: f.ty, size: f.r * 3.2, life: 0.35, full: 0.35, color: '#ff9b4a' });
           rings.push({ x: f.tx, y: f.ty, r: 6, max: f.r * 1.2, life: 0.35, full: 0.35, color: '#ffd27a', wide: true });
-          for (let k = 0; k < 10 && sparks.length < 520; k++) {
+          for (let k = 0; k < 10 && sparks.length < fxCap(520); k++) {
             const a = rand(0, TAU);
             const sp = rand(80, 240);
             sparks.push({ x: f.tx, y: f.ty, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: rand(0.3, 0.6), max: 0.6, color: k % 2 ? '#ffb347' : '#ff5a3d', w: 2.2 });
           }
-          if (smokes.length < 90) smokes.push({ x: f.tx, y: f.ty, vx: 0, vy: 10, r: f.r * 0.6, grow: 40, life: 0.8, full: 0.8 });
+          if (smokes.length < fxCap(90)) smokes.push({ x: f.tx, y: f.ty, vx: 0, vy: 10, r: f.r * 0.6, grow: 40, life: 0.8, full: 0.8 });
           shakeBy(3);
           sfx.play('boom');
           removeAt(ufx, i);
@@ -6218,7 +6226,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const tone = s.heal ? COLOR.teal : TIER_TONES.nova[t];
     rings.push({ x: player.x, y: player.y, r: 6, max: R, life: 0.35, full: 0.35, color: tone, wide: true });
     if (t >= 2) rings.push({ x: player.x, y: player.y, r: 2, max: R * 0.62, life: 0.5, full: 0.5, color: '#ffffff' }); // a second, slower wave
-    if (t >= 3 && sparks.length < 420) { // shards fly out with the wave
+    if (t >= 3 && sparks.length < fxCap(420)) { // shards fly out with the wave
       for (let k = 0; k < 16; k++) {
         const a = (k / 16) * TAU + rand(-0.1, 0.1);
         sparks.push({ x: player.x, y: player.y, vx: Math.cos(a) * R * 2.8, vy: Math.sin(a) * R * 2.8, life: 0.32, max: 0.32, color: tone, w: 2.6 });
@@ -6440,7 +6448,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       if (s.kind === 'missile') {
         steerMissile(s, dt);
         s.life -= dt;
-        if (s.tier >= 2 && sparks.length < 420 && Math.random() < 0.7) { // a glowing exhaust trail
+        if (s.tier >= 2 && sparks.length < fxCap(420) && Math.random() < 0.7) { // a glowing exhaust trail
           sparks.push({ x: s.x, y: s.y, vx: rand(-14, 14) - s.vx * 0.08, vy: rand(-14, 14) - s.vy * 0.08, life: 0.32, max: 0.32, color: s.tone, w: s.tier >= 3 ? 2 : 1.5 });
         }
       } else if (s.kind === 'orb') {
@@ -6478,7 +6486,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       if (s.kind === 'missile' || s.kind === 'orb') {
         damage(hit, s.dmg * frontArmor(hit, s), s.x, s.y);
         if (s.blast > 0) blastAt(s.x, s.y, s.blast, s.dmg * 0.6, hit, s.tone);
-        if (s.tier >= 3 && blooms.length < 64) blooms.push({ x: s.x, y: s.y, size: s.blast * 2.4, life: 0.22, full: 0.22, color: s.tone });
+        if (s.tier >= 3 && blooms.length < fxCap(64)) blooms.push({ x: s.x, y: s.y, size: s.blast * 2.4, life: 0.22, full: 0.22, color: s.tone });
         if (s.kind === 'orb') spark(s.x, s.y, '#ff6f91', 3);
         removeAt(pShots, i);
         continue;
@@ -6580,7 +6588,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     else sfx.play('hit');
     if (crit) {
       spark(x, y, COLOR.amber, 2);
-      if (blooms.length < 64) blooms.push({ x, y, size: 30, life: 0.1, full: 0.1, color: '#fff3b0' });
+      if (blooms.length < fxCap(64)) blooms.push({ x, y, size: 30, life: 0.1, full: 0.1, color: '#fff3b0' });
     }
     else if (Math.random() < 0.3) spark(x, y, KIND_COLOR[e.kind], 1);
   }
@@ -6701,7 +6709,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       let chance = p * big * (kind === 'mystery' ? 1 : stats.luck);
       if (kind === 'chest') {
         chance *= stats.chestMul;
-        if (rank('ultready') && run.ults < ultLimit() && build.weapons.filter((w) => w.evolved && w.id !== 'ult').length >= 2) chance *= 1 + 0.3 * rank('ultready');
+        if (rank('ultready') && run.ults < ultLimit() && fusable().length >= 2) chance *= 1 + 0.3 * rank('ultready');
       }
       else if (kind === 'bomb') chance *= 1 + 0.2 * rank('bombplus');
       if (Math.random() < chance) {
@@ -6830,33 +6838,33 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const big = size === 'big';
     const mid = size === 'mid';
     const lite = !motionOK();
-    const room = sparks.length > 380 ? 0.35 : 1; // thin out when the screen is busy
+    const room = sparks.length > fxCap(380) ? 0.35 : 1; // thin out when the screen is busy
     const count = Math.round((big ? 56 : mid ? 22 : 9) * (lite ? 0.5 : 1) * room);
     const speed = big ? 300 : mid ? 210 : 150;
-    for (let i = 0; i < count && sparks.length < 520; i++) {
+    for (let i = 0; i < count && sparks.length < fxCap(520); i++) {
       const a = Math.random() * TAU;
       const s = speed * rand(0.25, 1);
       const life = rand(0.35, 1) * (big ? 1.1 : mid ? 0.7 : 0.45);
       sparks.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life, max: life, color, w: big ? 2.4 : 1.8 });
     }
-    if (blooms.length < 70) {
+    if (blooms.length < fxCap(70)) {
       const life = big ? 0.5 : mid ? 0.3 : 0.2;
       blooms.push({ x, y, size: big ? 200 : mid ? 84 : 42, life, full: life, color });
       if (big || mid) blooms.push({ x, y, size: big ? 110 : 46, life: 0.12, full: 0.12, color: '#ffffff' }); // a white-hot core
     }
     if ((big || mid) && !lite) {
-      for (let i = 0; i < (big ? 8 : 3) && smokes.length < 90; i++) {
+      for (let i = 0; i < (big ? 8 : 3) && smokes.length < fxCap(90); i++) {
         const life = rand(0.6, 1.1);
         smokes.push({ x: x + rand(-8, 8), y: y + rand(-8, 8), vx: rand(-20, 20), vy: rand(-20, 20) + 12, r: rand(8, 14) * (big ? 1.8 : 1), grow: big ? 60 : 30, life, full: life });
       }
-      for (let i = 0; i < (big ? 12 : 5) && debris.length < 140; i++) {
+      for (let i = 0; i < (big ? 12 : 5) && debris.length < fxCap(140); i++) {
         const a = rand(0, TAU);
         const sp = rand(80, 220);
         const life = rand(0.5, 1);
         debris.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, rot: rand(0, TAU), vr: rand(-10, 10), s: rand(1.5, 3.5), life, full: life, color });
       }
     }
-    if (rings.length < 60) {
+    if (rings.length < fxCap(60)) {
       const life = big ? 0.7 : 0.35;
       rings.push({ x, y, r: 3, max: big ? 110 : mid ? 40 : 20, life, full: life, color });
     }
@@ -6869,7 +6877,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
   }
   function spark(x, y, color, count) {
-    for (let i = 0; i < count && sparks.length < 520; i++) {
+    for (let i = 0; i < count && sparks.length < fxCap(520); i++) {
       const a = Math.random() * TAU;
       const s = rand(40, 120);
       const life = rand(0.12, 0.25);
@@ -7831,6 +7839,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   function drawPlayerShots() {
     ctx.globalCompositeOperation = 'lighter';
     ctx.globalAlpha = fxAlpha();
+    // with a crowd of shots on screen (many combined skills at once) the after-images go, so phones keep up
+    const busy = fxHeavy || pShots.length > 90;
     for (const s of pShots) {
       if (s.kind === 'saw') {
         const tone = s.tone || COLOR.cyan;
@@ -7886,7 +7896,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         const r = 10 * s.size;
         ctx.drawImage(dot('#ff9b4a'), s.x - r, s.y - r, r * 2, r * 2);
       }
-      if (s.trail) { // mastered guns leave two fading after-images
+      if (s.trail && !busy) { // mastered guns leave two fading after-images
         for (const [k, al] of [[0.02, 0.42], [0.04, 0.18]]) {
           ctx.globalAlpha = al * fxAlpha();
           ctx.save();
@@ -8103,7 +8113,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         chip.innerHTML = svgIcon(def.icon);
         chip.append(s.evolved ? def.evo.name : def.name);
         const lv = document.createElement('b');
-        lv.textContent = s.evolved ? '합체' : `Lv ${s.lv}`;
+        lv.textContent = s.evolved ? (s.used ? '합체 ★' : '합체') : `Lv ${s.lv}`;
         chip.append(lv);
       }
       row.append(chip);
@@ -8111,7 +8121,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     return row;
   }
   function renderSlots(el) {
-    el.replaceChildren(chipsFor(build.weapons, 'weapon', weaponSlots()), chipsFor(build.passives, 'passive', passiveSlots()));
+    const ults = build.weapons.filter((w) => w.id === 'ult');
+    const list = [...ults, ...build.weapons.filter((w) => w.id !== 'ult')];
+    el.replaceChildren(chipsFor(list, 'weapon', weaponSlots() + ults.length), chipsFor(build.passives, 'passive', passiveSlots()));
   }
   // Each recipe shows how far along it is; recipes touched by the cards on offer are highlighted.
   // On the level-up screen the ones that have nothing to do with this run yet fold away.
@@ -8146,10 +8158,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 
   function renderUltGuide() {
     const fam = (f) => `${FAMILY_NAME[f]}(${Object.keys(FAMILY).filter((id) => FAMILY[id] === f).map((id) => WEAPONS[id].name).join('·')})`;
-    const have = build.weapons.find((w) => w.id === 'ult');
+    const have = new Set(build.weapons.filter((w) => w.id === 'ult').map((w) => w.ult));
     ui.ultGuide.replaceChildren(...Object.entries(ULTS).map(([id, u]) => {
       const li = document.createElement('li');
-      li.className = `recipe${have && have.ult === id ? ' is-ready' : ''}`;
+      li.className = `recipe${have.has(id) ? ' is-ready' : ''}`;
       const left = document.createElement('span');
       left.textContent = u.pair[0] === u.pair[1] ? `${fam(u.pair[0])} 둘` : `${fam(u.pair[0])} + ${fam(u.pair[1])}`;
       const right = document.createElement('b');
@@ -8328,7 +8340,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     b.className = 'stage-card is-endless';
     b.dataset.stage = String(ENDLESS);
     b.innerHTML = '<span class="stage-no"><svg viewBox="0 0 48 24" aria-hidden="true"><defs><linearGradient id="inf-g" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#ff4fd8" /><stop offset="0.55" stop-color="#a88bff" /><stop offset="1" stop-color="#7fe7ff" /></linearGradient></defs><path d="M24 12c-3.5-4.2-6.6-6.5-10-6.5a6.5 6.5 0 0 0 0 13c3.4 0 6.5-2.3 10-6.5s6.6-6.5 10-6.5a6.5 6.5 0 0 1 0 13c-3.4 0-6.5-2.3-10-6.5z" /></svg></span><span class="stage-body"><span class="stage-name">무한 모드</span><span class="stage-about"></span><span class="stage-best"></span></span><span class="stage-state">도전</span>';
-    b.querySelector('.stage-about').textContent = '처음부터 어렵고 끝이 없어요. 3분마다 구역이 바뀌며 더 세져요. 궁극 합체 무제한, 콤보로 점수를 쌓아요.';
+    b.querySelector('.stage-about').textContent = '처음부터 어렵고 끝이 없어요. 3분마다 구역이 바뀌며 더 세져요. 궁극 합체 여러 번, 콤보로 점수를 쌓아요.';
     const best = bestRecord(saved.records.filter((r) => r.stage === ENDLESS + 1));
     b.querySelector('.stage-best').textContent = best ? `최고 ${fmt(best.score)}점 · ${clockText(best.timeMs / 1000)} 버팀` : '';
     b.setAttribute('aria-label', '무한 모드, 도전 가능');
@@ -8452,13 +8464,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     } else pendingStart = false;
     proceed();
   }
-  // Two combined skills that could fuse now (one ultimate per run, or any number in endless mode).
+  // Two combined skills that could fuse now (one ultimate per run; in endless mode every two combined
+  // skills not used yet make one more). Both keep working after the fusion.
   function ultPair() {
     if (run.ults >= ultLimit()) return null;
-    const evolved = build.weapons.filter((w) => w.evolved && w.id !== 'ult');
-    if (evolved.length < 2) return null;
-    const a = pick(evolved);
-    const b = pick(evolved.filter((w) => w !== a));
+    const ready = fusable();
+    if (ready.length < 2) return null;
+    const a = pick(ready);
+    const b = pick(ready.filter((w) => w !== a));
     return [a.id, b.id];
   }
   const ultLimit = () => (run.endless ? Infinity : 1);
@@ -8502,7 +8515,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ui.quitNote.textContent = coop.on ? (coop.pauseRemote ? `${coop.partner || '친구'}님이 일시정지했어요. ` : '친구 화면도 같이 멈춰요. ') + (coopGuest() ? '나가면 지금까지 점수와 코인을 받아요.' : '끝내면 둘 다 지금 점수와 코인을 받아요.')
       : run.vs ? '대결은 계속돼요. 끝내면 지금 점수로 대결 순위에 남아요.'
       : run.endless ? '끝내면 지금까지 모은 점수와 코인을 받아요.' : '그만하면 이번 판의 기록과 코인은 남지 않아요.';
-    ui.ultNote.textContent = `합체 스킬 2개를 가진 채 보급 상자를 열면 두 스킬을 하나의 궁극기로 합칠 수 있어요. ${run.endless ? '무한 모드에서는 몇 번이든 할 수 있어요.' : '한 판에 한 번이에요.'}`;
+    ui.ultNote.textContent = `합체 스킬 2개를 가진 채 보급 상자를 열면 궁극기가 하나 더 생겨요. 두 합체 스킬도 그대로 계속 나가고, 궁극기에 쓴 스킬에는 ★ 표시가 붙어요. ${run.endless ? '무한 모드에서는 아직 안 쓴 합체 스킬 2개마다 한 번씩 할 수 있어요.' : '한 판에 한 번이에요.'}`;
     renderSlots(ui.pauseSlots);
     renderRecipes(ui.recipes);
     renderUltGuide();
@@ -10336,7 +10349,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   const coopWaiting = () => !!coop.ally && coopHost() && (!!coop.ally.asking || coop.ally.levels > 0 || coop.ally.chests > 0 || coop.ally.start);
   function buildView(c) {
     return {
-      weapons: c.build.weapons.map((w) => ({ id: w.id, lv: w.lv, evolved: w.evolved, ult: w.ult, from: w.from })),
+      weapons: c.build.weapons.map((w) => ({ id: w.id, lv: w.lv, evolved: w.evolved, ult: w.ult, from: w.from, used: !!w.used })),
       passives: c.build.passives.map((p) => ({ id: p.id, lv: p.lv })),
     };
   }
@@ -10433,7 +10446,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       st: st ? { area: st.area, ultArea: st.ultArea, reachMul: st.reachMul, speedMul: st.speedMul, maxHp: st.maxHp } : null,
       w: b.weapons.map((w) => [w.id, w.ult || '', w.lv, w.evolved ? 1 : 0, Math.round((w.angle || 0) * 1000) / 1000, Math.round((w.active || 0) * 1000) / 1000,
         Math.round((w.sweepT || 0) * 1000) / 1000, Math.round((w.charge || 0) * 100) / 100, Math.round((w.t || 0) * 100) / 100,
-        w.ph ? [Math.round(w.ph.x), Math.round(w.ph.y), Math.round(w.ph.ang * 100) / 100] : 0]),
+        w.ph ? [Math.round(w.ph.x), Math.round(w.ph.y), Math.round(w.ph.ang * 100) / 100] : 0, w.used ? 1 : 0]),
       pv: b.passives.map((q) => [q.id, q.lv]),
     };
   }
@@ -10763,9 +10776,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   // weapons as the host has them, keeping the moving parts we animate between snapshots
   function syncWeapons(b, list, passives) {
     const old = b.weapons;
-    b.weapons = (list || []).map(([id, ult, lv, evo, angle, active, sweepT, charge, t, ph], k) => {
+    b.weapons = (list || []).map(([id, ult, lv, evo, angle, active, sweepT, charge, t, ph, used], k) => {
       const w = old[k] && old[k].id === id && (old[k].ult || '') === ult ? old[k] : { id, cd: 0, tick: 0 };
-      Object.assign(w, { id, lv, evolved: !!evo, angle, active, sweepT, charge, t });
+      Object.assign(w, { id, lv, evolved: !!evo, angle, active, sweepT, charge, t, used: !!used });
       if (ult) w.ult = ult;
       if (ph) {
         w.ph = w.ph || { mode: 'orbit' };
@@ -12132,8 +12145,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
   }
   function tick(now) {
-    let dt = (now - lastFrame) / 1000;
+    const ms = now - lastFrame;
+    let dt = ms / 1000;
     lastFrame = now;
+    if (state === 'playing' && ms > 0 && ms < 250) {
+      frameAvg += (ms - frameAvg) * 0.05;
+      if (!fxHeavy && frameAvg > 24) fxHeavy = true;
+      else if (fxHeavy && frameAvg < 19) fxHeavy = false;
+    }
     if (!(dt > 0)) dt = 0;
     if (dt > 0.05) dt = 0.05;
     if (cine > 0) { // an ultimate fusion plays out in slow motion
