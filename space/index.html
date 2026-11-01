@@ -741,6 +741,35 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .period-btn[aria-pressed="true"] { border-color: var(--amber); color: var(--amber); background: rgba(255, 194, 75, 0.1); }
 .period-note { margin-left: auto; font-size: 0.75rem; color: var(--muted); }
 .tag.is-title { margin-right: 6px; background: rgba(168, 139, 255, 0.18); color: var(--violet); }
+.tt { font-weight: 700; }
+.tt-0 { color: var(--violet); }
+.tt-1 { color: var(--cyan); }
+.tt-2 { color: #ffd27a; text-shadow: 0 0 10px rgba(255, 194, 75, 0.55); }
+.tt-3 {
+  background: linear-gradient(90deg, #ff5a6e, #ffa94d, #ffe08a, #b8f36b, #7fe7ff, #a88bff, #ff5a6e);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: tt-rainbow 3s linear infinite;
+}
+@keyframes tt-rainbow { to { background-position: 200% 0; } }
+.tag.is-title.tt-1 { background: rgba(127, 231, 255, 0.16); }
+.tag.is-title.tt-2 { background: rgba(255, 194, 75, 0.18); }
+.tag.is-title.tt-3 {
+  background: linear-gradient(90deg, #ff5a6e, #ffa94d, #ffe08a, #b8f36b, #7fe7ff, #a88bff, #ff5a6e);
+  background-size: 200% 100%;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: #1a1033;
+  text-shadow: none;
+}
+.achv-filter { display: flex; flex-wrap: wrap; gap: 6px; }
+.achv-filter .period-btn { min-height: 34px; padding: 0 11px; font-size: 0.8125rem; }
+.goal-tier.tf-1, .period-btn.tf-1[aria-pressed="true"] { color: var(--cyan); }
+.goal-tier.tf-2, .period-btn.tf-2[aria-pressed="true"] { color: #ffd27a; }
+.goal-tier.tf-3 { color: #ff8ae4; }
+.pilot .tt { font-size: 0.875em; }
 
 /* ---------- missions and achievements ---------- */
 .row-goals { grid-template-columns: 1fr 1fr; }
@@ -1115,6 +1144,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         </div>
         <div class="goals-pane" id="goals-achv" hidden>
           <p class="note" id="achv-sum"></p>
+          <div class="achv-filter" id="achv-filter" role="group" aria-label="업적 고르기"></div>
           <ol class="goal-list" id="achv-list"></ol>
         </div>
         <button type="button" class="btn" id="goals-back">돌아가기</button>
@@ -1405,7 +1435,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     quitNote: $('quit-note'), ultNote: $('ult-note'), toast: $('toast'), achvLine: $('achv-line'),
     openGoals: $('open-goals'), goalsBadge: $('goals-badge'), goalsPill: $('goals-pill'), goalsTabs: document.querySelectorAll('[data-goals]'),
     goalsDaily: $('goals-daily'), goalsAchv: $('goals-achv'), missionList: $('mission-list'), missionBonus: $('mission-bonus'),
-    missionReset: $('mission-reset'), achvSum: $('achv-sum'), achvList: $('achv-list'), goalsBack: $('goals-back'),
+    missionReset: $('mission-reset'), achvSum: $('achv-sum'), achvList: $('achv-list'), goalsBack: $('goals-back'), achvFilter: $('achv-filter'),
     openTogether: $('open-together'), tgLede: $('tg-lede'), tgTitle: $('together-title'), tgTabs: document.querySelectorAll('[data-tg-mode]'), tgEntry: $('tg-entry'), tgCreate: $('tg-create'), tgJoin: $('tg-join'), tgCode: $('tg-code'),
     tgLobby: $('tg-lobby'), tgRoomCode: $('tg-room-code'), tgInvite: $('tg-invite'), tgPlayers: $('tg-players'), tgStageLabel: $('tg-stage-label'),
     tgStages: $('tg-stages'), tgGo: $('tg-go'), tgLeave: $('tg-leave'), tgNote: $('tg-note'), tgBack: $('tg-back'), tgHangar: $('tg-hangar'),
@@ -1987,7 +2017,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       return null;
     }
   }
-  const LIFE_KEYS = ['runs', 'kills', 'bosses', 'evolves', 'maxLevel', 'maxSector', 'bestCombo', 'vsWins', 'coopRuns', 'coopClears', 'events', 'risks', 'missions', 'golds'];
+  const LIFE_KEYS = ['runs', 'kills', 'bosses', 'evolves', 'maxLevel', 'maxSector', 'bestCombo', 'vsWins', 'coopRuns', 'coopClears', 'events', 'risks', 'missions', 'golds',
+    'playTime', 'clears', 'bestScore', 'endlessTime', 'noHit', 'chests', 'treasures', 'duds', 'magnets', 'chats', 'vsPlays', 'dailyAll', 'bestStreak', 'streak'];
+  const LIFE_SETS = ['ults', 'evos', 'shipClears', 'flags'];
   const saved = (() => {
     const raw = readJson(STORE_KEY) || {};
     const old = readJson(OLD_KEY) || {};
@@ -2019,7 +2051,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   function cleanLife(raw) {
     const L = {};
     for (const k of LIFE_KEYS) L[k] = Math.max(0, Math.floor(Number(raw && raw[k]) || 0));
-    L.ults = raw && Array.isArray(raw.ults) ? raw.ults.filter((u) => typeof u === 'string' && u.length < 16).slice(0, 12) : [];
+    for (const k of LIFE_SETS) L[k] = raw && Array.isArray(raw[k]) ? [...new Set(raw[k].filter((u) => typeof u === 'string' && u.length < 16))].slice(0, 40) : [];
+    L.lastDay = raw && typeof raw.lastDay === 'string' && /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(raw.lastDay) ? raw.lastDay : '';
     return L;
   }
   function cleanDaily(raw) {
@@ -2287,7 +2320,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   // Goals from two places: the larger lifetime numbers, every achievement, and today's missions at their best.
   function mergeGoals(p) {
     for (const k of LIFE_KEYS) saved.life[k] = Math.max(saved.life[k], p.life[k]);
-    for (const u of p.life.ults) if (!saved.life.ults.includes(u)) saved.life.ults.push(u);
+    for (const k of LIFE_SETS) for (const u of p.life[k]) if (!saved.life[k].includes(u)) saved.life[k].push(u);
+    if (p.life.lastDay > saved.life.lastDay) saved.life.lastDay = p.life.lastDay;
     for (const id of p.achv) if (!saved.achv.includes(id)) saved.achv.push(id);
     const a = saved.daily;
     const b = p.daily;
@@ -3907,7 +3941,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   const run = {
     t: 0, score: 0, kills: 0, level: 1, xp: 0, need: 9, coins: 0, rerolls: 0, revives: 0, magT: 0, ults: 0, fused: [], ship: 'star',
     endless: false, sector: 0, combo: 0, comboT: 0, bestCombo: 0,
-    stat: { bosses: 0, evolves: 0, events: 0, risks: 0, golds: 0, chests: 0, ults: [] },
+    stat: { bosses: 0, evolves: 0, events: 0, risks: 0, golds: 0, chests: 0, ults: [], treasures: 0, coinPicks: 0, evoIds: [], missed: false },
+    died: false, lastHit: 0, noHit: 0,
     risk: { enemyHp: 1, bullet: 1, taken: 1, dmg: 1, spawn: 1, xp: 1, coin: 1, score: 1, maxHp: 1, n: 0 },
     ev: { t: 99, id: '', left: 0, tick: 0, last: '' },
   };
@@ -4186,6 +4221,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       vsSend(1);
       if (!ctxNow) {
         run.stat.evolves += 1;
+        run.stat.evoIds.push(o.id);
         mission('evolve');
       }
       const tone = toneOf(o.id, true);
@@ -4797,7 +4833,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           e.x += e.vx * dt + e.ox;
           e.y += e.vy * dt + e.oy;
           e.ox = e.oy = 0;
-          if (e.y > H + 40 || e.y < -90 || e.x < -60 || e.x > W + 60) e.dead = true;
+          if (e.y > H + 40 || e.y < -90 || e.x < -60 || e.x > W + 60) {
+            if (e.treasure) run.stat.missed = true; // the treasure ship got away
+            e.dead = true;
+          }
           break;
         case 'ring': {
           const a = e.a0 + e.spin * e.t;
@@ -6299,6 +6338,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     player.hp -= amount * stats.taken;
     player.invuln = stats.invuln;
+    if (!ctxNow) { // the longest stretch without a hit
+      run.noHit = Math.max(run.noHit, run.t - run.lastHit);
+      run.lastHit = run.t;
+    }
     if (run.endless && run.combo > 0) { // a hit breaks the combo
       if (run.combo >= 30) addText(player.x, player.y - 40, `콤보 ${num(run.combo)} 끊김`, COLOR.coral, 1.2, 13);
       run.combo = 0;
@@ -6343,6 +6386,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     hudDirty = true;
   }
   function die() {
+    run.died = true;
     state = 'dying';
     endT = 1.8;
     player.alive = false;
@@ -6707,6 +6751,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   function collect(kind, value) {
     const at = (text, color) => addText(player.x, player.y - 30, text, color, 1.1, 13);
     if (kind === 'coin') {
+      if (!ctxNow) run.stat.coinPicks += 1;
       run.coins += value * stats.coinMul;
       sfx.play('coin');
       hudDirty = true;
@@ -6718,6 +6763,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       at(`체력 +${amount}`, COLOR.teal);
       sfx.play('item');
     } else if (kind === 'magnet') {
+      if (!ctxNow) saved.life.magnets += 1;
       for (const g of gems) g.pulled = true;
       at('자석! 경험치를 모두 끌어와요', COLOR.coral);
       sfx.play('item');
@@ -6739,6 +6785,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       const r = Math.random();
       const u = (r - dud) / (1 - dud);
       if (r < dud) {
+        if (!ctxNow) saved.life.duds += 1;
         at('꽝!', COLOR.muted);
         sfx.play('dud');
       } else if (u < 0.4) {
@@ -8167,7 +8214,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   function renderPilot() {
     ui.pilot.hidden = !board.on;
-    ui.pilotName.textContent = saved.name ? (saved.title ? `${saved.name} · ${titleOf(saved.title)}` : saved.name) : '순위표에 쓸 이름을 정해 주세요';
+    if (saved.name && saved.title) ui.pilotName.replaceChildren(`${saved.name} `, titleSpan(saved.title));
+    else ui.pilotName.textContent = saved.name || '순위표에 쓸 이름을 정해 주세요';
     ui.pilotName.classList.toggle('is-empty', !saved.name);
     ui.pilotState.textContent = saved.account ? (saved.account.google ? '· 구글 계정' : '· 계정 연결됨') : saved.name ? '· 이 기기에만 저장' : '';
     ui.pilotState.className = saved.account ? 'is-linked' : '';
@@ -8301,7 +8349,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const head = rank('headstart') + (run.endless ? 2 * rank('endstart') : 0);
     Object.assign(run, {
       t: 0, score: 0, kills: 0, level: 1 + head, xp: 0, need: xpNeed(1 + head), coins: 0, ults: 0, fused: [], sector: 0, combo: 0, comboT: 0, bestCombo: 0,
-      stat: { bosses: 0, evolves: 0, events: 0, risks: 0, golds: 0, chests: 0, ults: [] }, risk: freshRisk(), ev: { t: nextEventIn(), id: '', left: 0, tick: 0, last: '' },
+      stat: { bosses: 0, evolves: 0, events: 0, risks: 0, golds: 0, chests: 0, ults: [], treasures: 0, coinPicks: 0, evoIds: [], missed: false },
+      died: false, lastHit: 0, noHit: 0, risk: freshRisk(), ev: { t: nextEventIn(), id: '', left: 0, tick: 0, last: '' },
       rerolls: rank('reroll'), revives: rank('revive'), magT: AUTOMAG_EVERY[rank('automag') - 1] || 0, guard: rank('guardian'), panic: rank('panic'),
     });
     run.ship = saved.ships.includes(saved.ship) ? saved.ship : 'star';
@@ -8503,7 +8552,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       saved.cleared[stageIndex] = true;
       saved.unlocked = Math.max(saved.unlocked, Math.min(STAGES.length, stageIndex + 2));
     }
-    const fresh = recordLife(cleared, earned);
+    const fresh = recordLife(cleared, earned, score);
     const stored = save();
     lastRecordId = record.id;
     clearField();
@@ -8696,51 +8745,155 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const d = daily();
     if (d.bonus || !d.got.every(Boolean)) return;
     d.bonus = true;
+    saved.life.dailyAll += 1;
     saved.coins += MISSION_BONUS;
     saved.earned += MISSION_BONUS;
     sfx.play('evolve');
     toast(`오늘의 미션 모두 완료! +${fmt(MISSION_BONUS)} 코인`);
+    checkAchv();
     save();
     renderGoals();
   }
 
   // Achievements: each one is also a title to wear next to the name in rankings and rooms.
+  // Achievements in four tiers. Counters show how far along they are; hidden ones stay a secret until earned.
+  const TIERS = ['쉬움', '보통', '어려움', '전설'];
+  const TIER_PAY = [150, 400, 1000, 3000];
+  const lifeOf = (k) => (L) => L[k] || 0;
+  const inSet = (k, v) => (L) => (L[k].includes(v) ? 1 : 0);
+  const flagOf = (f) => (L) => (L.flags.includes(f) ? 1 : 0);
+  const treeSum = () => Object.values(saved.tree).reduce((a, b) => a + b, 0);
+  const TREE_ALL = [...NODES.values()].reduce((a, n) => a + n.max, 0);
+  const A = (id, tier, name, desc, get, goal, extra = {}) => ({
+    id, tier, name, desc, get, goal, coins: extra.coins || TIER_PAY[tier], hidden: !!extra.hidden, test: (L) => get(L) >= goal,
+  });
   const ACHV = [
-    { id: 'first', name: '신입 조종사', desc: '첫 판 끝내기', coins: 100, test: (L) => L.runs >= 1 },
-    { id: 'clear1', name: '달의 수호자', desc: '1지역 클리어', coins: 200, test: () => saved.cleared[0] },
-    { id: 'clear3', name: '성운 돌파자', desc: '3지역 클리어', coins: 500, test: () => saved.cleared[2] },
-    { id: 'clearAll', name: '은하의 영웅', desc: '다섯 지역 모두 클리어', coins: 1500, test: () => saved.cleared.every(Boolean) },
-    { id: 'kills1', name: '사냥꾼', desc: '누적 격추 1,000대', coins: 200, test: (L) => L.kills >= 1000 },
-    { id: 'kills2', name: '격추왕', desc: '누적 격추 10,000대', coins: 800, test: (L) => L.kills >= 10000 },
-    { id: 'kills3', name: '전설의 에이스', desc: '누적 격추 50,000대', coins: 2500, test: (L) => L.kills >= 50000 },
-    { id: 'boss1', name: '거함 사냥꾼', desc: '보스 10마리 격추', coins: 400, test: (L) => L.bosses >= 10 },
-    { id: 'boss2', name: '모선 파괴자', desc: '보스 50마리 격추', coins: 1500, test: (L) => L.bosses >= 50 },
-    { id: 'evo', name: '합체 입문', desc: '합체 스킬 처음 만들기', coins: 150, test: (L) => L.evolves >= 1 },
-    { id: 'evo50', name: '합체의 달인', desc: '합체 스킬 50번 만들기', coins: 1000, test: (L) => L.evolves >= 50 },
-    { id: 'ult', name: '궁극의 힘', desc: '궁극 합체 처음 하기', coins: 300, test: (L) => L.ults.length >= 1 },
-    { id: 'ultAll', name: '궁극 수집가', desc: '궁극기 6종 모두 만들어 보기', coins: 2000, test: (L) => L.ults.length >= Object.keys(ULTS).length },
-    { id: 'lv50', name: '숙련 조종사', desc: '한 판에 Lv 50 달성', coins: 500, test: (L) => L.maxLevel >= 50 },
-    { id: 'lv100', name: '전설의 조종사', desc: '한 판에 Lv 100 달성', coins: 1500, test: (L) => L.maxLevel >= 100 },
-    { id: 'end5', name: '끝없는 도전자', desc: '무한 모드 구역 5 도달', coins: 600, test: (L) => L.maxSector >= 5 },
-    { id: 'end10', name: '무한의 지배자', desc: '무한 모드 구역 10 도달', coins: 2000, test: (L) => L.maxSector >= 10 },
-    { id: 'combo', name: '콤보 마스터', desc: '무한 모드에서 콤보 300', coins: 800, test: (L) => L.bestCombo >= 300 },
-    { id: 'ships', name: '격납고 주인', desc: '전투기 6종 모두 모으기', coins: 3000, test: () => saved.ships.length >= SHIPS.length },
-    { id: 'tree', name: '연구광', desc: '스킬 트리 강화 합계 Lv 100', coins: 1000, test: () => Object.values(saved.tree).reduce((a, b) => a + b, 0) >= 100 },
-    { id: 'vs1', name: '승부사', desc: '대결에서 처음 1등', coins: 300, test: (L) => L.vsWins >= 1 },
-    { id: 'vs10', name: '대결의 왕', desc: '대결에서 1등 10번', coins: 1500, test: (L) => L.vsWins >= 10 },
-    { id: 'coop1', name: '든든한 동료', desc: '협동 첫 판', coins: 200, test: (L) => L.coopRuns >= 1 },
-    { id: 'coopClear', name: '최강 콤비', desc: '협동으로 지역 클리어', coins: 1000, test: (L) => L.coopClears >= 1 },
-    { id: 'missions', name: '성실한 조종사', desc: '일일 미션 21개 완료', coins: 1000, test: (L) => L.missions >= 21 },
-    { id: 'events', name: '행운아', desc: '랜덤 이벤트 20번 만나기', coins: 600, test: (L) => L.events >= 20 },
-    { id: 'gold', name: '황금 사냥꾼', desc: '황금 함대 100대 잡기', coins: 800, test: (L) => L.golds >= 100 },
-    { id: 'risk', name: '도박사', desc: '위험 카드 10장 고르기', coins: 500, test: (L) => L.risks >= 10 },
-    { id: 'rich', name: '부자', desc: '코인 누적 100,000개 벌기', coins: 3000, test: () => saved.earned >= 100000 },
+    // first steps
+    A('first', 0, '신입 조종사', '첫 판 끝내기', lifeOf('runs'), 1, { coins: 100 }),
+    A('runs10', 0, '단골 조종사', '10판 하기', lifeOf('runs'), 10),
+    A('runs50', 1, '베테랑', '50판 하기', lifeOf('runs'), 50),
+    A('runs100', 2, '백전노장', '100판 하기', lifeOf('runs'), 100),
+    A('time1h', 0, '한 시간의 비행', '모두 합쳐 1시간 비행 (분)', (L) => Math.floor(L.playTime / 60), 60),
+    A('time5h', 1, '하늘이 우리 집', '모두 합쳐 5시간 비행 (분)', (L) => Math.floor(L.playTime / 60), 300),
+    // regions
+    A('clear1', 0, '달의 수호자', '1지역 클리어', () => Number(saved.cleared[0]), 1, { coins: 200 }),
+    A('clear2', 0, '소행성 사냥꾼', '2지역 클리어', () => Number(saved.cleared[1]), 1),
+    A('clear3', 1, '성운 돌파자', '3지역 클리어', () => Number(saved.cleared[2]), 1, { coins: 500 }),
+    A('clear4', 1, '지평선 너머', '4지역 클리어', () => Number(saved.cleared[3]), 1),
+    A('clear5', 2, '은하 중심 정복', '5지역 클리어', () => Number(saved.cleared[4]), 1),
+    A('clearAll', 2, '은하의 영웅', '다섯 지역 모두 클리어', () => saved.cleared.filter(Boolean).length, STAGES.length, { coins: 1500 }),
+    A('clears5', 1, '승리의 맛', '지역 클리어 5번', lifeOf('clears'), 5),
+    A('clears20', 2, '승리의 아이콘', '지역 클리어 20번', lifeOf('clears'), 20),
+    // kills and bosses
+    A('kills100', 0, '첫 사냥', '누적 격추 100대', lifeOf('kills'), 100),
+    A('kills1', 0, '사냥꾼', '누적 격추 1,000대', lifeOf('kills'), 1000, { coins: 200 }),
+    A('kills5k', 1, '명사수', '누적 격추 5,000대', lifeOf('kills'), 5000),
+    A('kills2', 1, '격추왕', '누적 격추 10,000대', lifeOf('kills'), 10000, { coins: 800 }),
+    A('kills25k', 2, '하늘의 포식자', '누적 격추 25,000대', lifeOf('kills'), 25000),
+    A('kills3', 2, '전설의 에이스', '누적 격추 50,000대', lifeOf('kills'), 50000, { coins: 2500 }),
+    A('kills100k', 3, '은하 최강', '누적 격추 100,000대', lifeOf('kills'), 100000),
+    A('bossFirst', 0, '첫 보스', '보스 처음 격추', lifeOf('bosses'), 1),
+    A('boss1', 1, '거함 사냥꾼', '보스 10마리 격추', lifeOf('bosses'), 10, { coins: 400 }),
+    A('boss25', 1, '보스 전문가', '보스 25마리 격추', lifeOf('bosses'), 25),
+    A('boss2', 2, '모선 파괴자', '보스 50마리 격추', lifeOf('bosses'), 50, { coins: 1500 }),
+    A('boss100', 3, '보스 학살자', '보스 100마리 격추', lifeOf('bosses'), 100),
+    // levels and score
+    A('lv10', 0, '성장 시작', '한 판에 Lv 10', lifeOf('maxLevel'), 10),
+    A('lv25', 0, '쑥쑥 성장', '한 판에 Lv 25', lifeOf('maxLevel'), 25),
+    A('lv50', 1, '숙련 조종사', '한 판에 Lv 50', lifeOf('maxLevel'), 50, { coins: 500 }),
+    A('lv75', 2, '고수 조종사', '한 판에 Lv 75', lifeOf('maxLevel'), 75),
+    A('lv100', 2, '전설의 조종사', '한 판에 Lv 100', lifeOf('maxLevel'), 100, { coins: 1500 }),
+    A('score100k', 1, '10만 점 돌파', '한 판에 100,000점', lifeOf('bestScore'), 100000),
+    A('score500k', 2, '50만 점 돌파', '한 판에 500,000점', lifeOf('bestScore'), 500000),
+    A('score1m', 3, '백만 점의 조종사', '한 판에 1,000,000점', lifeOf('bestScore'), 1000000),
+    // skills
+    A('evo', 0, '합체 입문', '합체 스킬 처음 만들기', lifeOf('evolves'), 1, { coins: 150 }),
+    A('evo10', 1, '합체 연구원', '합체 스킬 10번 만들기', lifeOf('evolves'), 10),
+    A('evo50', 2, '합체의 달인', '합체 스킬 50번 만들기', lifeOf('evolves'), 50, { coins: 1000 }),
+    ...Object.keys(WEAPONS).map((w) => A(`evo_${w}`, 1, `${WEAPONS[w].evo.name} 장인`, `${WEAPONS[w].evo.name} 만들어 보기`, inSet('evos', w), 1)),
+    A('evoAll', 2, '합체 도감 완성', '합체 스킬 9종 모두 만들어 보기', (L) => L.evos.length, Object.keys(WEAPONS).length),
+    A('ult', 1, '궁극의 힘', '궁극 합체 처음 하기', (L) => L.ults.length, 1, { coins: 300 }),
+    A('ultAll', 2, '궁극 수집가', '궁극기 6종 모두 만들어 보기', (L) => L.ults.length, Object.keys(ULTS).length, { coins: 2000 }),
+    // endless and skill
+    A('end2', 0, '무한의 문턱', '무한 모드 구역 2 도달', lifeOf('maxSector'), 2),
+    A('end5', 1, '끝없는 도전자', '무한 모드 구역 5 도달', lifeOf('maxSector'), 5, { coins: 600 }),
+    A('end10', 2, '무한의 지배자', '무한 모드 구역 10 도달', lifeOf('maxSector'), 10, { coins: 2000 }),
+    A('end15', 3, '시간을 잊은 자', '무한 모드 구역 15 도달', lifeOf('maxSector'), 15),
+    A('endless30m', 2, '30분의 버팀', '무한 모드에서 30분 버티기 (분)', (L) => Math.floor(L.endlessTime / 60), 30),
+    A('combo100', 0, '콤보 입문', '무한 모드 콤보 100', lifeOf('bestCombo'), 100),
+    A('combo', 1, '콤보 마스터', '무한 모드 콤보 300', lifeOf('bestCombo'), 300, { coins: 800 }),
+    A('combo600', 2, '콤보의 신', '무한 모드 콤보 600', lifeOf('bestCombo'), 600),
+    A('nohit60', 1, '스치지도 않았다', '한 판에서 1분 동안 안 맞기 (초)', lifeOf('noHit'), 60),
+    A('nohit180', 2, '무적의 비행', '한 판에서 3분 동안 안 맞기 (초)', lifeOf('noHit'), 180),
+    // fighters
+    A('ship2', 0, '두 번째 날개', '전투기 처음 사기', () => saved.ships.length - 1, 1),
+    A('ship4', 1, '전투기 수집가', '전투기 4종 모으기', () => saved.ships.length, 4),
+    A('ships', 2, '격납고 주인', '전투기 6종 모두 모으기', () => saved.ships.length, SHIPS.length, { coins: 3000 }),
+    ...SHIPS.map((sd) => A(`fly_${sd.id}`, sd.id === 'dragon' ? 2 : 1, `${sd.name} 에이스`, `${sd.name}로 지역 클리어`, inSet('shipClears', sd.id), 1)),
+    // growth
+    A('tree50', 1, '연구원', '스킬 트리 강화 합계 Lv 50', treeSum, 50),
+    A('tree', 1, '연구광', '스킬 트리 강화 합계 Lv 100', treeSum, 100, { coins: 1000 }),
+    A('tree200', 2, '박사님', '스킬 트리 강화 합계 Lv 200', treeSum, 200),
+    A('treeMax', 3, '모든 것을 배운 자', '스킬 트리 전부 최대로', treeSum, TREE_ALL),
+    A('earned1k', 0, '첫 저금', '코인 누적 1,000개 벌기', () => saved.earned, 1000),
+    A('earned10k', 1, '알뜰 조종사', '코인 누적 10,000개 벌기', () => saved.earned, 10000),
+    A('rich', 2, '부자', '코인 누적 100,000개 벌기', () => saved.earned, 100000, { coins: 3000 }),
+    A('earned500k', 3, '은하 재벌', '코인 누적 500,000개 벌기', () => saved.earned, 500000),
+    // daily goals
+    A('mission10', 0, '미션 수행자', '일일 미션 10개 완료', lifeOf('missions'), 10),
+    A('missions', 1, '성실한 조종사', '일일 미션 21개 완료', lifeOf('missions'), 21, { coins: 1000 }),
+    A('mission50', 2, '미션 전문가', '일일 미션 50개 완료', lifeOf('missions'), 50),
+    A('mission100', 3, '미션의 전설', '일일 미션 100개 완료', lifeOf('missions'), 100),
+    A('dailyAll1', 0, '오늘의 완벽', '하루 미션 3개 모두 완료', lifeOf('dailyAll'), 1),
+    A('streak7', 1, '일주일 개근', '7일 연속 플레이', lifeOf('bestStreak'), 7),
+    A('streak30', 3, '한 달 개근', '30일 연속 플레이', lifeOf('bestStreak'), 30),
+    // friends
+    A('vsPlay1', 0, '첫 대결', '대결 한 판 하기', lifeOf('vsPlays'), 1),
+    A('vs1', 0, '승부사', '대결에서 처음 1등', lifeOf('vsWins'), 1, { coins: 300 }),
+    A('vs10', 1, '대결의 왕', '대결에서 1등 10번', lifeOf('vsWins'), 10, { coins: 1500 }),
+    A('vs50', 3, '무패의 전설', '대결에서 1등 50번', lifeOf('vsWins'), 50),
+    A('coop1', 0, '든든한 동료', '협동 첫 판', lifeOf('coopRuns'), 1, { coins: 200 }),
+    A('coop10', 1, '환상의 짝꿍', '협동 10판', lifeOf('coopRuns'), 10),
+    A('coopClear', 1, '최강 콤비', '협동으로 지역 클리어', lifeOf('coopClears'), 1, { coins: 1000 }),
+    A('coopClear5', 2, '전설의 콤비', '협동으로 지역 클리어 5번', lifeOf('coopClears'), 5),
+    A('chat1', 0, '첫인사', '빠른 채팅 보내기', lifeOf('chats'), 1),
+    A('chat100', 1, '수다쟁이', '빠른 채팅 100번 보내기', lifeOf('chats'), 100),
+    // events and risks
+    A('events', 1, '행운아', '랜덤 이벤트 20번 만나기', lifeOf('events'), 20, { coins: 600 }),
+    A('event100', 2, '이벤트 수집가', '랜덤 이벤트 100번 만나기', lifeOf('events'), 100),
+    A('gold', 1, '황금 사냥꾼', '황금 함대 100대 잡기', lifeOf('golds'), 100, { coins: 800 }),
+    A('treasure1', 0, '보물 발견', '보물선 격추', lifeOf('treasures'), 1),
+    A('treasure10', 1, '보물 사냥꾼', '보물선 10척 격추', lifeOf('treasures'), 10),
+    A('risk1', 0, '첫 모험', '위험 카드 고르기', lifeOf('risks'), 1),
+    A('risk', 1, '도박사', '위험 카드 10장 고르기', lifeOf('risks'), 10, { coins: 500 }),
+    A('chest100', 1, '보급 전문가', '보급 상자 100개 열기', lifeOf('chests'), 100),
+    // hidden
+    A('quick', 0, '너무 빨랐어…', '30초 안에 격추당하기', flagOf('quick'), 1, { hidden: true }),
+    A('nocoin', 1, '무소유', '2분 넘게 버티면서 코인을 하나도 줍지 않기', flagOf('nocoin'), 1, { hidden: true }),
+    A('duds', 1, '꽝의 달인', '수수께끼 캡슐에서 꽝 10번', lifeOf('duds'), 10, { hidden: true }),
+    A('owl', 0, '올빼미 조종사', '새벽 2시~5시에 한 판', flagOf('owl'), 1, { hidden: true }),
+    A('early', 0, '아침형 조종사', '아침 5시~8시에 한 판', flagOf('early'), 1, { hidden: true }),
+    A('clutch', 2, '기적의 생환', '체력 10% 이하로 지역 클리어', flagOf('clutch'), 1, { hidden: true }),
+    A('missed', 0, '놓친 보물', '보물선을 놓치기', flagOf('missed'), 1, { hidden: true }),
+    A('magnets', 1, '자석 수집가', '자석 50개 줍기', lifeOf('magnets'), 50, { hidden: true }),
+    A('allin', 2, '올인', '한 판에 위험 카드 5장', flagOf('allin'), 1, { hidden: true }),
   ];
   const achvOf = (id) => ACHV.find((a) => a.id === id) || null;
   const titleOf = (id) => {
     const a = achvOf(id);
     return a ? a.name : '';
   };
+  const titleTier = (id) => {
+    const a = achvOf(id);
+    return a ? a.tier : 0;
+  };
+  // a title as a small coloured label (gold for hard ones, a moving rainbow for legends)
+  function titleSpan(id) {
+    const span = document.createElement('span');
+    span.className = `tt tt-${titleTier(id)}`;
+    span.textContent = titleOf(id);
+    return span;
+  }
   function checkAchv(quiet) {
     const fresh = [];
     for (const a of ACHV) {
@@ -8765,10 +8918,39 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     return fresh;
   }
   // the end of a run: everything it did goes into the lifetime numbers
-  function recordLife(cleared, earned) {
+  function recordLife(cleared, earned, score) {
     const L = saved.life;
     const st = run.stat;
     L.runs += 1;
+    L.playTime += Math.round(run.t);
+    if (cleared) {
+      L.clears += 1;
+      if (!L.shipClears.includes(run.ship)) L.shipClears.push(run.ship);
+    }
+    L.bestScore = Math.max(L.bestScore, Math.round(score || 0));
+    if (run.endless) L.endlessTime = Math.max(L.endlessTime, Math.round(run.t));
+    L.noHit = Math.max(L.noHit, Math.round(Math.max(run.noHit, run.t - run.lastHit)));
+    L.chests += st.chests;
+    L.treasures += st.treasures;
+    for (const w of st.evoIds) if (!L.evos.includes(w)) L.evos.push(w);
+    if (run.vs) L.vsPlays += 1;
+    const today = dayKey();
+    if (L.lastDay !== today) { // days in a row
+      L.streak = L.lastDay === dayKey(Date.now() - 86400e3) ? L.streak + 1 : 1;
+      L.lastDay = today;
+      L.bestStreak = Math.max(L.bestStreak, L.streak);
+    }
+    const flag = (f) => {
+      if (!L.flags.includes(f)) L.flags.push(f);
+    };
+    if (run.died && run.t < 30) flag('quick');
+    if (run.t >= 120 && st.coinPicks === 0) flag('nocoin');
+    const hour = new Date(Date.now() + KST).getUTCHours();
+    if (hour >= 2 && hour < 5) flag('owl');
+    if (hour >= 5 && hour < 8) flag('early');
+    if (cleared && stats && player.hp <= stats.maxHp * 0.1) flag('clutch');
+    if (st.missed) flag('missed');
+    if (run.risk.n >= 5) flag('allin');
     L.kills += run.kills;
     L.bosses += st.bosses;
     L.evolves += st.evolves;
@@ -8795,6 +8977,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 
   // --- the screen ---
   let goalsTab = 'daily';
+  let achvFilter = 'all';
   function showGoals() {
     state = 'goals';
     renderGoals();
@@ -8848,16 +9031,53 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     ui.missionReset.textContent = `새 미션까지 ${untilMidnight()} · 친구들도 오늘 같은 미션이에요`;
     const got = saved.achv.length;
-    ui.achvSum.textContent = `${got}/${ACHV.length}개 달성 · 지금 칭호: ${saved.title ? titleOf(saved.title) : '없음'}`;
-    const order = ACHV.slice().sort((a, b) => Number(saved.achv.includes(b.id)) - Number(saved.achv.includes(a.id)));
+    ui.achvSum.replaceChildren(`${got}/${ACHV.length}개 달성 · 지금 칭호: `, saved.title ? titleSpan(saved.title) : '없음');
+    // filter chips with how many of each are done
+    const groups = [['all', '전체', () => true], ...TIERS.map((t, i) => [String(i), t, (a) => a.tier === i && !a.hidden]), ['hidden', '숨겨진', (a) => a.hidden]];
+    ui.achvFilter.replaceChildren(...groups.map(([key, label, f]) => {
+      const list = ACHV.filter(f);
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = `period-btn${key !== 'all' && key !== 'hidden' ? ` tf-${key}` : ''}`;
+      b.dataset.achvFilter = key;
+      b.setAttribute('aria-pressed', String(achvFilter === key));
+      b.textContent = `${label} ${list.filter((a) => saved.achv.includes(a.id)).length}/${list.length}`;
+      return b;
+    }));
+    const shown = ACHV.filter(groups.find(([key]) => key === achvFilter)[2]);
+    const L = saved.life;
+    const ratio = (a) => {
+      try {
+        return Math.min(1, a.get(L) / a.goal);
+      } catch {
+        return 0;
+      }
+    };
+    // nearly done first, then the rest; earned ones at the end
+    const order = shown.slice().sort((a, b) => Number(saved.achv.includes(a.id)) - Number(saved.achv.includes(b.id)) || ratio(b) - ratio(a));
     ui.achvList.replaceChildren(...order.map((a) => {
       const li = document.createElement('li');
       const have = saved.achv.includes(a.id);
+      const secret = a.hidden && !have;
       li.className = `goal${have ? ' is-got' : ' is-locked'}`;
       li.innerHTML = '<span class="goal-tier"></span><span class="goal-body"><b></b><small></small></span><span class="goal-side"></span>';
-      li.querySelector('.goal-tier').textContent = have ? '달성' : '잠김';
-      li.querySelector('b').textContent = a.name;
-      li.querySelector('small').textContent = `${a.desc} · 보상 ${fmt(a.coins)} 코인`;
+      const tierEl = li.querySelector('.goal-tier');
+      tierEl.textContent = secret ? '???' : TIERS[a.tier];
+      tierEl.classList.add(`tf-${a.tier}`);
+      const nameEl = li.querySelector('b');
+      nameEl.textContent = secret ? '숨겨진 업적' : a.name;
+      if (!secret) nameEl.className = `tt tt-${a.tier}`;
+      li.querySelector('small').textContent = secret ? '무엇을 하면 열릴까요? 직접 찾아보세요.' : `${a.desc} · 보상 ${fmt(a.coins)} 코인`;
+      if (!have && !secret && a.goal > 1) { // how far along
+        const now = Math.min(a.goal, Math.floor(a.get(L) || 0));
+        const bar = document.createElement('span');
+        bar.className = 'goal-bar';
+        bar.innerHTML = '<i></i>';
+        bar.querySelector('i').style.width = `${(now / a.goal) * 100}%`;
+        const count = document.createElement('small');
+        count.textContent = `${fmt(now)} / ${fmt(a.goal)}`;
+        li.querySelector('.goal-body').append(bar, count);
+      }
       const side = li.querySelector('.goal-side');
       if (have) {
         const b = document.createElement('button');
@@ -8997,6 +9217,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
     }
     if (e.treasure) {
+      run.stat.treasures += 1;
       items.push({ kind: 'chest', x: e.x, y: e.y, t: 0 });
       addText(e.x, e.y - 24, '보물선 격추!', COLOR.amber, 1.8, 15);
     }
@@ -9093,6 +9314,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     showChat(saved.pid, '나', text, true);
     sfx.play('gem');
+    saved.life.chats += 1;
+    if (!checkAchv().length) save();
     ui.chatBar.hidden = true;
     ui.chatBtn.setAttribute('aria-expanded', 'false');
   }
@@ -9509,7 +9732,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     li.querySelector('.tg-rank').textContent = String(n);
     li.querySelector('b').textContent = r.me ? `${r.name} (나)` : r.name;
     const shipName = SHIPS.some((sd) => sd.id === r.ship) ? shipOf(r.ship).name : '';
-    li.querySelector('small').textContent = titleOf(r.tt) ? `${titleOf(r.tt)} · ${shipName}` : shipName;
+    const small = li.querySelector('small');
+    if (titleOf(r.tt)) small.replaceChildren(titleSpan(r.tt), ` · ${shipName}`);
+    else small.textContent = shipName;
     const side = li.querySelector('.tg-side');
     side.textContent = `${fmt(r.sc)}점`;
     const tag = document.createElement('span');
@@ -9547,7 +9772,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       li.style.setProperty('--tone', ship.tone);
       li.innerHTML = '<span class="tg-dot"></span><span class="tg-who"><b></b><small></small></span><span class="tg-side"></span>';
       li.querySelector('b').textContent = me ? `${cleanName(p.n) || saved.name} (나)` : cleanName(p.n) || '조종사';
-      li.querySelector('small').textContent = titleOf(p.tt) ? `${titleOf(p.tt)} · ${ship.name}` : ship.name;
+      const small = li.querySelector('small');
+      if (titleOf(p.tt)) small.replaceChildren(titleSpan(p.tt), ` · ${ship.name}`);
+      else small.textContent = ship.name;
       const side = li.querySelector('.tg-side');
       const tags = [];
       const said = vs.chatShow[id];
@@ -10072,6 +10299,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     sfx.play('bigBoom');
     const other = ctxNow ? coop.hostPlayer : coop.ally && coop.ally.player;
     if (!other || !other.alive) { // both down: the run is over
+      run.died = true;
       state = 'dying';
       endT = 1.8;
       music.stop();
@@ -11182,7 +11410,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     name.textContent = r.name;
     if (titleOf(r.tt)) {
       const tt = document.createElement('span');
-      tt.className = 'tag is-title';
+      tt.className = `tag is-title tt-${titleTier(r.tt)}`;
       tt.textContent = titleOf(r.tt);
       scoreEl.append(tt);
     }
@@ -11601,6 +11829,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   });
   ui.missionBonus.addEventListener('click', (e) => {
     if (e.target.closest('[data-bonus]')) claimBonus();
+  });
+  ui.achvFilter.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-achv-filter]');
+    if (!b) return;
+    achvFilter = b.dataset.achvFilter;
+    renderGoals();
   });
   ui.achvList.addEventListener('click', (e) => {
     const b = e.target.closest('[data-title]');
