@@ -726,6 +726,65 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .board .name-form { margin: 6px 0 10px; }
 .rank-name { margin-right: 8px; font-family: var(--font-ui); font-weight: 700; }
 
+/* ---------- quick chat, weekly boards, titles ---------- */
+.chat-bar {
+  position: absolute; z-index: 4; left: 50%; top: 64px; transform: translateX(-50%);
+  display: grid; grid-template-columns: repeat(3, auto); gap: 6px; padding: 8px; border: 1px solid var(--line); border-radius: 14px;
+  background: rgba(13, 18, 54, 0.92); box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7);
+}
+.chat-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.chat-chip { appearance: none; min-height: 40px; padding: 0 10px; border: 1px solid rgba(127, 231, 255, 0.4); border-radius: 999px; background: rgba(127, 231, 255, 0.08); color: var(--ink); font-weight: 700; font-size: 0.875rem; cursor: pointer; }
+.chat-chip:disabled { opacity: 0.5; }
+.tg-tag.is-chat { background: rgba(127, 231, 255, 0.18); color: var(--cyan); }
+.period { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+.period-btn { appearance: none; min-height: 36px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); font-weight: 700; cursor: pointer; }
+.period-btn[aria-pressed="true"] { border-color: var(--amber); color: var(--amber); background: rgba(255, 194, 75, 0.1); }
+.period-note { margin-left: auto; font-size: 0.75rem; color: var(--muted); }
+.tag.is-title { margin-right: 6px; background: rgba(168, 139, 255, 0.18); color: var(--violet); }
+
+/* ---------- missions and achievements ---------- */
+.row-goals { grid-template-columns: 1fr 1fr; }
+.row-goals:has(#open-together[hidden]) #open-goals { grid-column: 1 / -1; }
+.btn-goals { position: relative; display: flex; align-items: center; justify-content: center; gap: 7px; border-color: rgba(255, 194, 75, 0.5); color: var(--amber); }
+.btn-goals svg, .btn-friends svg { flex: none; width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.goal-label { display: grid; justify-items: center; line-height: 1.15; }
+.goal-pill { font-family: var(--font-data); font-size: 0.75rem; color: var(--muted); }
+.goal-badge {
+  position: absolute; top: -7px; right: -5px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px;
+  background: var(--danger); color: #fff; font-family: var(--font-data); font-size: 0.75rem; font-weight: 700; line-height: 22px; text-align: center;
+  box-shadow: 0 0 0 2px var(--void), 0 0 12px rgba(255, 90, 110, 0.7);
+}
+.btn-friends { white-space: normal; line-height: 1.2; }
+.goals-pane { display: grid; gap: 10px; }
+.goal-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.goal { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255, 255, 255, 0.04); }
+.goal.is-ready { border-color: rgba(255, 194, 75, 0.7); background: rgba(255, 194, 75, 0.08); box-shadow: 0 0 16px -6px rgba(255, 194, 75, 0.8); }
+.goal.is-got { opacity: 0.75; }
+.goal.is-locked { opacity: 0.55; }
+.goal-tier { font-size: 0.6875rem; font-weight: 700; text-align: center; color: var(--amber); }
+.goal.is-locked .goal-tier { color: var(--muted); }
+.goal-body { display: grid; gap: 4px; min-width: 0; }
+.goal-body b { font-weight: 700; }
+.goal-body small { font-size: 0.75rem; color: var(--muted); }
+.goal-bar { height: 6px; overflow: hidden; border-radius: 3px; background: rgba(255, 255, 255, 0.08); }
+.goal-bar i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--amber), #ffe08a); }
+.goal-side { font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
+.goal-btn { min-height: 38px; padding: 0 12px; font-size: 0.8125rem; }
+.goal-btn.is-on { border-color: var(--cyan); color: var(--cyan); }
+.goal-bonus { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px dashed rgba(255, 194, 75, 0.5); border-radius: 14px; font-size: 0.8125rem; color: var(--amber); }
+.achv-line { font-size: 0.875rem; font-weight: 700; color: var(--amber); }
+.toast {
+  position: absolute; z-index: 6; left: 50%; top: 64px; max-width: calc(100% - 32px); transform: translateX(-50%);
+  padding: 10px 16px; border: 1px solid rgba(255, 194, 75, 0.6); border-radius: 14px; background: rgba(13, 18, 54, 0.95);
+  color: var(--ink); font-size: 0.875rem; font-weight: 700; text-align: center; pointer-events: none;
+  box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.7), 0 0 18px -6px rgba(255, 194, 75, 0.7);
+}
+.toast.show { animation: toast-in 3.6s ease forwards; }
+@keyframes toast-in { 0% { opacity: 0; transform: translate(-50%, -10px); } 8% { opacity: 1; transform: translate(-50%, 0); } 85% { opacity: 1; } 100% { opacity: 0; } }
+.card.is-risk { border-color: rgba(255, 90, 110, 0.75); background: linear-gradient(135deg, rgba(255, 90, 110, 0.16), rgba(255, 169, 77, 0.08)); }
+.card.is-risk .card-tag { background: rgba(255, 90, 110, 0.2); color: var(--danger); }
+.card.is-risk .card-icon { color: var(--danger); }
+
 /* ---------- playing with friends ---------- */
 .btn-friends { display: flex; align-items: center; justify-content: center; gap: 8px; border-color: rgba(127, 231, 255, 0.5); color: var(--cyan); }
 .btn-friends svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -956,6 +1015,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
               <div class="kills"><b id="kills">0</b>격추</div>
               <div class="coins" aria-label="이번 판 코인"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5v9M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4" /></svg><span id="coins">0</span></div>
             </div>
+            <button type="button" class="icon-btn" id="chat-btn" aria-label="빠른 채팅" aria-expanded="false" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v10H10l-4 4v-4H5z" /><path d="M9 10h.01M12 10h.01M15 10h.01" /></svg>
+            </button>
             <button type="button" class="icon-btn" id="pause" aria-label="일시정지">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6v12M15 6v12" /></svg>
             </button>
@@ -968,6 +1030,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         </div>
       </div>
 
+      <div class="toast" id="toast" role="status" hidden></div>
+      <div class="chat-bar" id="chat-bar" hidden></div>
       <div class="banner" id="banner" aria-hidden="true">
         <div class="banner-title" id="banner-title"></div>
         <div class="banner-sub" id="banner-sub"></div>
@@ -1007,10 +1071,17 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           <button type="button" class="btn pilot-btn" id="pilot-edit">이름 정하기</button>
         </div>
         <button type="button" class="btn btn-primary btn-launch" id="start">출격</button>
-        <button type="button" class="btn btn-friends" id="open-together" hidden>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2" /><path d="M3.5 19a5.5 5.5 0 0 1 11 0" /><circle cx="17" cy="9" r="2.6" /><path d="M15.5 14.2A4.6 4.6 0 0 1 21 18.6" /></svg>
-          친구와 같이 하기
-        </button>
+        <div class="row row-goals">
+          <button type="button" class="btn btn-goals" id="open-goals">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v4a5 5 0 0 1-10 0V4z" /><path d="M7 6H4.5v1a3 3 0 0 0 3 3M17 6h2.5v1a3 3 0 0 1-3 3M12 13v4M8.5 20h7" /></svg>
+            <span class="goal-label">미션·업적 <span class="goal-pill" id="goals-pill">0/3</span></span>
+            <span class="goal-badge" id="goals-badge" hidden>0</span>
+          </button>
+          <button type="button" class="btn btn-friends" id="open-together" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2" /><path d="M3.5 19a5.5 5.5 0 0 1 11 0" /><circle cx="17" cy="9" r="2.6" /><path d="M15.5 14.2A4.6 4.6 0 0 1 21 18.6" /></svg>
+            친구와 같이 하기
+          </button>
+        </div>
         <div class="row row-3">
           <button type="button" class="btn btn-tree" id="open-hangar">격납고<span class="ship-pill" id="title-ship">스타라이트</span></button>
           <button type="button" class="btn btn-tree" id="open-tree-1">스킬 트리<span class="coin-pill"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5v9M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4" /></svg><span id="title-coins">0</span></span></button>
@@ -1028,6 +1099,25 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         <h2 class="panel-title" id="stages-title">어디로 출격할까요?</h2>
         <div class="stage-list" id="stage-list"></div>
         <button type="button" class="btn btn-quiet" id="stages-back">처음 화면</button>
+      </section>
+
+      <section class="overlay" id="screen-goals" aria-labelledby="goals-title" hidden>
+        <p class="eyebrow">오늘의 목표</p>
+        <h2 class="panel-title" id="goals-title">미션과 업적</h2>
+        <div class="tabs" role="tablist" aria-label="미션과 업적">
+          <button type="button" class="tab" role="tab" aria-selected="true" data-goals="daily">일일 미션</button>
+          <button type="button" class="tab" role="tab" aria-selected="false" data-goals="achv">업적 · 칭호</button>
+        </div>
+        <div class="goals-pane" id="goals-daily">
+          <ol class="goal-list" id="mission-list"></ol>
+          <div class="goal-bonus" id="mission-bonus"></div>
+          <p class="note" id="mission-reset"></p>
+        </div>
+        <div class="goals-pane" id="goals-achv" hidden>
+          <p class="note" id="achv-sum"></p>
+          <ol class="goal-list" id="achv-list"></ol>
+        </div>
+        <button type="button" class="btn" id="goals-back">돌아가기</button>
       </section>
 
       <section class="overlay" id="screen-together" aria-labelledby="together-title" hidden>
@@ -1056,6 +1146,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
             <p class="tg-label" id="tg-stage-label">지역</p>
             <div class="stage-chips" id="tg-stages"></div>
           </div>
+          <div class="chat-row" id="tg-chat" aria-label="빠른 채팅"></div>
           <button type="button" class="btn btn-primary" id="tg-go">출발</button>
           <div class="row">
             <button type="button" class="btn" id="tg-hangar">전투기 바꾸기</button>
@@ -1169,6 +1260,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           <div><dt>지역</dt><dd id="st-stage"></dd></div>
         </dl>
         <p class="coin-line" id="coin-line"></p>
+        <p class="achv-line" id="achv-line" hidden></p>
         <div class="board-box" id="board-box">
           <p class="board-status" id="board-status" hidden></p>
           <form class="name-form" id="result-name-form" hidden>
@@ -1246,6 +1338,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       <button type="button" class="tab" role="tab" id="tab-mine" data-view="mine" aria-controls="mine-panel" aria-selected="false">내 기록</button>
     </div>
     <div class="board" id="board-panel" role="tabpanel" aria-labelledby="tab-board" hidden>
+      <div class="period" id="board-period" role="group" aria-label="순위 기간">
+        <button type="button" class="period-btn" data-period="week" aria-pressed="true">이번 주</button>
+        <button type="button" class="period-btn" data-period="all" aria-pressed="false">역대</button>
+        <span class="period-note" id="period-note"></span>
+      </div>
       <div class="stage-chips" id="board-stages"></div>
       <p class="board-me" id="board-me"></p>
       <form class="name-form" id="name-form" hidden>
@@ -1301,14 +1398,18 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     banner: $('banner'), bannerTitle: $('banner-title'), bannerSub: $('banner-sub'),
     screens: {
       title: $('screen-title'), stages: $('screen-stages'), choice: $('screen-choice'), pause: $('screen-pause'), result: $('screen-result'),
-      tree: $('screen-tree'), hangar: $('screen-hangar'), together: $('screen-together'),
+      tree: $('screen-tree'), hangar: $('screen-hangar'), together: $('screen-together'), goals: $('screen-goals'),
     },
     openHangar: $('open-hangar'), titleShip: $('title-ship'), hangarCoins: $('hangar-coins'), shipGrid: $('ship-grid'),
     shipDetail: $('ship-detail'), hangarBack: $('hangar-back'),
-    quitNote: $('quit-note'), ultNote: $('ult-note'),
+    quitNote: $('quit-note'), ultNote: $('ult-note'), toast: $('toast'), achvLine: $('achv-line'),
+    openGoals: $('open-goals'), goalsBadge: $('goals-badge'), goalsPill: $('goals-pill'), goalsTabs: document.querySelectorAll('[data-goals]'),
+    goalsDaily: $('goals-daily'), goalsAchv: $('goals-achv'), missionList: $('mission-list'), missionBonus: $('mission-bonus'),
+    missionReset: $('mission-reset'), achvSum: $('achv-sum'), achvList: $('achv-list'), goalsBack: $('goals-back'),
     openTogether: $('open-together'), tgLede: $('tg-lede'), tgTitle: $('together-title'), tgTabs: document.querySelectorAll('[data-tg-mode]'), tgEntry: $('tg-entry'), tgCreate: $('tg-create'), tgJoin: $('tg-join'), tgCode: $('tg-code'),
     tgLobby: $('tg-lobby'), tgRoomCode: $('tg-room-code'), tgInvite: $('tg-invite'), tgPlayers: $('tg-players'), tgStageLabel: $('tg-stage-label'),
     tgStages: $('tg-stages'), tgGo: $('tg-go'), tgLeave: $('tg-leave'), tgNote: $('tg-note'), tgBack: $('tg-back'), tgHangar: $('tg-hangar'),
+    chatBtn: $('chat-btn'), chatBar: $('chat-bar'), tgChat: $('tg-chat'),
     vsPanel: $('vs-panel'), vsResult: $('vs-result'), vsResultTitle: $('vs-result-title'), vsResultList: $('vs-result-list'),
     vsLobby: $('vs-lobby'), vsLeave: $('vs-leave'), resultRow: $('result-row'),
     coins: $('coins'), titleCoins: $('title-coins'), coinLine: $('coin-line'), reroll: $('reroll'),
@@ -1333,6 +1434,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     records: $('dlg-records'), recordsClose: $('records-close'), sumPlays: $('sum-plays'), sumBest: $('sum-best'),
     sumClear: $('sum-clear'), recordsList: $('records-list'), recordsEmpty: $('records-empty'), oldNote: $('old-note'),
     recordsClear: $('records-clear'), clearConfirm: $('clear-confirm'), clearCancel: $('clear-cancel'), clearOk: $('clear-ok'),
+    boardPeriod: $('board-period'), periodNote: $('period-note'),
     recordsTabs: $('records-tabs'), boardPanel: $('board-panel'), minePanel: $('mine-panel'), boardStages: $('board-stages'),
     boardMe: $('board-me'), nameForm: $('name-form'), nameInput: $('name-input'), boardList: $('board-list'), boardEmpty: $('board-empty'),
     boardRefresh: $('board-refresh'), boardBox: $('board-box'), boardStatus: $('board-status'), resultNameForm: $('result-name-form'),
@@ -1885,6 +1987,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       return null;
     }
   }
+  const LIFE_KEYS = ['runs', 'kills', 'bosses', 'evolves', 'maxLevel', 'maxSector', 'bestCombo', 'vsWins', 'coopRuns', 'coopClears', 'events', 'risks', 'missions', 'golds'];
   const saved = (() => {
     const raw = readJson(STORE_KEY) || {};
     const old = readJson(OLD_KEY) || {};
@@ -1905,10 +2008,28 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       boardHost: typeof raw.boardHost === 'string' ? raw.boardHost : '',
       ships: cleanShips(raw.ships),
       ship: typeof raw.ship === 'string' ? raw.ship : 'star',
+      life: cleanLife(raw.life),
+      daily: cleanDaily(raw.daily),
+      achv: cleanAchv(raw.achv),
+      title: typeof raw.title === 'string' ? raw.title.slice(0, 16) : '',
       rev: Math.max(0, Math.floor(Number(raw.rev) || 0)),
       account: cleanAccount(raw.account),
     };
   })();
+  function cleanLife(raw) {
+    const L = {};
+    for (const k of LIFE_KEYS) L[k] = Math.max(0, Math.floor(Number(raw && raw[k]) || 0));
+    L.ults = raw && Array.isArray(raw.ults) ? raw.ults.filter((u) => typeof u === 'string' && u.length < 16).slice(0, 12) : [];
+    return L;
+  }
+  function cleanDaily(raw) {
+    if (!raw || typeof raw.day !== 'string' || !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(raw.day)) return null;
+    const num3 = (a) => [0, 1, 2].map((i) => Math.max(0, Math.floor(Number(Array.isArray(a) ? a[i] : 0) || 0)));
+    return { day: raw.day, prog: num3(raw.prog), got: [0, 1, 2].map((i) => Array.isArray(raw.got) && raw.got[i] === true), bonus: raw.bonus === true };
+  }
+  function cleanAchv(list) {
+    return Array.isArray(list) ? [...new Set(list.filter((id) => typeof id === 'string' && id.length < 16))] : [];
+  }
   function cleanShips(list) {
     const out = ['star'];
     if (Array.isArray(list)) for (const id of list) if (SHIPS.some((sd) => sd.id === id) && !out.includes(id)) out.push(id);
@@ -2042,38 +2163,54 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     return {
       on: hosts.length > 0,
       // the top runs of a region, highest first
-      async top(stage, fresh) {
-        const hit = cache.get(stage);
+      async top(stage, fresh, week) {
+        const ck = `${week || 'all'}:${stage}`;
+        const hit = cache.get(ck);
         if (hit && !fresh && Date.now() - hit.at < 20000) return hit.list;
-        const data = await call(`v1/scores/s${stage}.json?orderBy=%22score%22&limitToLast=200`);
+        const base = week ? `v1/weekly/${week}/s${stage}` : `v1/scores/s${stage}`;
+        const data = await call(`${base}.json?orderBy=%22score%22&limitToLast=200`);
         const list = [];
         for (const [key, r] of Object.entries(data && typeof data === 'object' ? data : {})) {
           if (!r || typeof r !== 'object' || !Number.isFinite(r.score)) continue;
           list.push({
             key, name: cleanName(r.name) || '이름 없음', score: r.score, time: Number(r.time) || 0, level: Number(r.level) || 0,
             kills: Number(r.kills) || 0, clear: r.clear === true, pid: typeof r.pid === 'string' ? r.pid : key, at: Number(r.at) || 0,
-            ship: typeof r.ship === 'string' ? r.ship : '',
+            ship: typeof r.ship === 'string' ? r.ship : '', tt: typeof r.tt === 'string' ? r.tt : '',
           });
         }
         list.sort((a, b) => b.score - a.score || a.at - b.at);
-        cache.set(stage, { at: Date.now(), list });
+        cache.set(ck, { at: Date.now(), list });
         return list;
       },
       async submit(stage, entry) {
         // sent as plain text so the browser skips the extra CORS check; the database reads the body as JSON anyway
-        const send = (body) => call(`v1/scores/s${stage}.json`, {
+        const send = (path, body) => call(path, {
           method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify({ ...body, at: { '.sv': 'timestamp' } }),
         });
-        let res;
-        try {
-          res = await send(entry);
-        } catch (err) {
-          if (!entry.ship || !/HTTP 40[13]/.test(String(err && err.message))) throw err;
-          const { ship, ...rest } = entry; // rules from before fighters existed
-          res = await send(rest);
+        // older database rules know fewer fields: drop the newest ones until the entry is accepted
+        const tries = [entry];
+        if (entry.tt) tries.push((({ tt, ...rest }) => rest)(entry));
+        if (entry.ship) tries.push((({ tt, ship, ...rest }) => rest)(entry));
+        let res = null;
+        let body = entry;
+        for (let k = 0; k < tries.length; k++) {
+          try {
+            body = tries[k];
+            res = await send(`v1/scores/s${stage}.json`, body);
+            break;
+          } catch (err) {
+            if (k === tries.length - 1 || !/HTTP 40[13]/.test(String(err && err.message))) throw err;
+          }
         }
-        cache.delete(stage);
-        return res && typeof res.name === 'string' ? res.name : null;
+        let weekly = null;
+        try { // the weekly board; rules without it simply refuse, and the run still counts on the all-time board
+          const w = await send(`v1/weekly/${weekKey()}/s${stage}.json`, body);
+          weekly = w && typeof w.name === 'string' ? w.name : null;
+        } catch {
+          weekly = null;
+        }
+        for (const k of [...cache.keys()]) if (k.endsWith(`:${stage}`)) cache.delete(k);
+        return { key: res && typeof res.name === 'string' ? res.name : null, weekly };
       },
       get: (path, token) => call(`${path}.json${token ? `?auth=${encodeURIComponent(token)}` : ''}`),
       put: (path, value, token) => call(`${path}.json${token ? `?auth=${encodeURIComponent(token)}` : ''}`, {
@@ -2111,7 +2248,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   function packProgress() {
     return JSON.stringify({
       unlocked: saved.unlocked, cleared: saved.cleared, coins: saved.coins, earned: saved.earned, tree: saved.tree, spent: saved.spent,
-      ships: saved.ships, ship: saved.ship,
+      ships: saved.ships, ship: saved.ship, life: saved.life, daily: saved.daily, achv: saved.achv, title: saved.title,
       name: saved.name, pid: saved.pid, records: saved.records.slice(-120),
     });
   }
@@ -2132,6 +2269,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       spent: Math.max(0, Math.floor(Number(raw.spent) || 0)),
       ships: cleanShips(raw.ships),
       ship: typeof raw.ship === 'string' ? raw.ship : 'star',
+      life: cleanLife(raw.life),
+      daily: cleanDaily(raw.daily),
+      achv: cleanAchv(raw.achv),
+      title: typeof raw.title === 'string' ? raw.title.slice(0, 16) : '',
       name: cleanName(raw.name),
       pid: typeof raw.pid === 'string' && /^[a-z0-9]{8,24}$/.test(raw.pid) ? raw.pid : '',
       records: Array.isArray(raw.records) ? raw.records.filter(isRecord) : [],
@@ -2143,6 +2284,20 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     saved.records.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
     if (saved.records.length > MAX_RECORDS) saved.records.splice(0, saved.records.length - MAX_RECORDS);
   }
+  // Goals from two places: the larger lifetime numbers, every achievement, and today's missions at their best.
+  function mergeGoals(p) {
+    for (const k of LIFE_KEYS) saved.life[k] = Math.max(saved.life[k], p.life[k]);
+    for (const u of p.life.ults) if (!saved.life.ults.includes(u)) saved.life.ults.push(u);
+    for (const id of p.achv) if (!saved.achv.includes(id)) saved.achv.push(id);
+    const a = saved.daily;
+    const b = p.daily;
+    if (b && (!a || b.day > a.day)) saved.daily = b;
+    else if (a && b && a.day === b.day) {
+      a.prog = a.prog.map((v, i) => Math.max(v, b.prog[i]));
+      a.got = a.got.map((v, i) => v || b.got[i]);
+      a.bonus = a.bonus || b.bonus;
+    }
+  }
   // First link on a device: keep the best of what this device and the account each have.
   function mergeProgress(p) {
     saved.unlocked = Math.max(saved.unlocked, p.unlocked);
@@ -2153,6 +2308,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     saved.spent = Math.max(saved.spent, p.spent);
     for (const id of p.ships) if (!saved.ships.includes(id)) saved.ships.push(id);
     if (saved.ship === 'star' && p.ships.includes(p.ship)) saved.ship = p.ship; // keep flying what the account flies
+    mergeGoals(p);
+    if (!saved.title) saved.title = p.title;
     mergeRecords(p.records);
     if (p.pid) saved.pid = p.pid;
   }
@@ -2166,6 +2323,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     saved.spent = p.spent;
     saved.ships = p.ships;
     if (p.ships.includes(p.ship)) saved.ship = p.ship;
+    mergeGoals(p);
+    if (p.title) saved.title = p.title;
     if (p.name) saved.name = p.name;
     if (p.pid) saved.pid = p.pid;
     mergeRecords(p.records);
@@ -3739,7 +3898,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   let scale = 1;
   let dpr = 1;
   let bgGrad = null;
-  let state = 'title'; // title | stages | tree | hangar | together | playing | choice | paused | dying | clearing | result
+  let state = 'title'; // title | stages | tree | hangar | together | goals | playing | choice | paused | dying | clearing | result
   let stageIndex = 0;
   let stage = STAGES[0];
   let skyIdx = 0; // which region's sky is painted (endless mode cycles through them)
@@ -3748,6 +3907,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   const run = {
     t: 0, score: 0, kills: 0, level: 1, xp: 0, need: 9, coins: 0, rerolls: 0, revives: 0, magT: 0, ults: 0, fused: [], ship: 'star',
     endless: false, sector: 0, combo: 0, comboT: 0, bestCombo: 0,
+    stat: { bosses: 0, evolves: 0, events: 0, risks: 0, golds: 0, chests: 0, ults: [] },
+    risk: { enemyHp: 1, bullet: 1, taken: 1, dmg: 1, spawn: 1, xp: 1, coin: 1, score: 1, maxHp: 1, n: 0 },
+    ev: { t: 99, id: '', left: 0, tick: 0, last: '' },
   };
   // endless mode has room for one more weapon and one more piece of gear
   const weaponSlots = () => WEAPON_SLOTS + (run.endless ? 1 : 0);
@@ -3952,6 +4114,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       execute: 0.03 * rank('execute'),
       bossHaste: 1 - 0.06 * rank('overclock'),
     };
+    const rk = run.risk; // risk cards taken this run
+    stats.maxHp = Math.round(stats.maxHp * rk.maxHp);
+    stats.dmgMul *= rk.dmg;
+    stats.taken *= rk.taken;
+    stats.xpMul *= rk.xp;
+    stats.coinMul *= rk.coin;
     if (stats.maxHp > prevMax) player.hp += stats.maxHp - prevMax;
     player.hp = Math.min(player.hp, stats.maxHp);
   }
@@ -4016,6 +4184,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       w.cd = 0;
       sfx.play('evolve');
       vsSend(1);
+      if (!ctxNow) {
+        run.stat.evolves += 1;
+        mission('evolve');
+      }
       const tone = toneOf(o.id, true);
       for (let k = 0; k < 3; k++) rings.push({ x: player.x, y: player.y, r: 6 + k * 8, max: 110 + k * 40, life: 0.7 + k * 0.1, full: 0.7 + k * 0.1, color: k === 1 ? '#ffffff' : tone, wide: true });
       blooms.push({ x: player.x, y: player.y, size: 180, life: 0.5, full: 0.5, color: tone });
@@ -4033,6 +4205,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       recompute();
     } else if (o.kind === 'heal') {
       heal(40 * stats.healMul);
+    } else if (o.kind === 'risk') {
+      takeRisk(o);
     } else {
       run.score += 1000;
     }
@@ -4045,6 +4219,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     hudDirty = true;
   }
   function optionView(o) {
+    if (o.kind === 'risk') {
+      const r = RISKS.find((x) => x.id === o.id) || RISKS[0];
+      return { icon: r.icon, name: r.name, tag: '위험 카드', desc: `${r.desc}. 이번 판 끝까지 계속돼요.`, cls: 'is-risk' };
+    }
     if (o.kind === 'ult') {
       const u = ULTS[o.ult];
       return { icon: u.icon, name: u.name, tag: '궁극 합체!', desc: `${WEAPONS[o.a].evo.name} + ${WEAPONS[o.b].evo.name}: ${u.about}. 한 판에 한 번만 할 수 있어요.`, cls: 'is-ult' };
@@ -4103,8 +4281,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   const stageRamp = () => (run.endless ? 1 : Math.min(1, 0.25 + run.t / 400));
   // Past six minutes, endless ships also toughen by about a quarter every three minutes, so even a maxed ship meets its end.
   const endlessHp = () => (run.endless ? 1.28 ** Math.max(0, (run.t - 360) / SECTOR_TIME) : 1);
-  const hpScale = () => (1 + dT() / 200 + (dT() / 190) ** 2) * (1 + (stage.mul - 1) * stageRamp()) * endlessHp() * (coop.ally ? 1.5 : 1);
-  const bulletSpeed = () => Math.min(270, 125 + dT() * 0.14) * (1 + 0.05 * stageIndex * stageRamp());
+  const hpScale = () => (1 + dT() / 200 + (dT() / 190) ** 2) * (1 + (stage.mul - 1) * stageRamp()) * endlessHp() * (coop.ally ? 1.5 : 1) * run.risk.enemyHp;
+  const bulletSpeed = () => Math.min(270, 125 + dT() * 0.14) * (1 + 0.05 * stageIndex * stageRamp()) * run.risk.bullet;
   const hitScale = () => (1 + 0.15 * stageIndex * stageRamp()) * (1 + dT() / 600);
   const fireChance = () => (dT() < 30 ? 0 : Math.min(0.9, 0.1 + dT() / 650) + 0.05 * stageIndex * stageRamp());
   function addEnemy(kind, props) {
@@ -4376,12 +4554,13 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
 
   // Ships arrive faster the longer you last; every region adds pressure on top.
-  const spawnRate = () => (1 + dT() / 70 + (dT() / 300) ** 2) * (1 + 0.15 * stageIndex * stageRamp()) * (coop.ally ? 1.3 : 1);
+  const spawnRate = () => (1 + dT() / 70 + (dT() / 300) ** 2) * (1 + 0.15 * stageIndex * stageRamp()) * (coop.ally ? 1.3 : 1) * run.risk.spawn;
   function updateDirector(dt) {
     if (run.comboT > 0) {
       run.comboT -= dt;
       if (run.comboT <= 0) run.combo = 0;
     }
+    updateEvents(dt);
     if (director.final) return;
     if (run.endless) {
       const sector = Math.floor(run.t / SECTOR_TIME);
@@ -4413,6 +4592,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   // Endless mode: a new sector every three minutes, with another region's sky and squads and a higher score rate.
   function enterSector(n) {
     run.sector = n;
+    mission('endless', n + 1);
     stageIndex = Math.min(6, 1 + n);
     stage = endlessStage(n);
     skyIdx = n % STAGES.length;
@@ -4427,8 +4607,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   const fmtMul = (v) => (Math.round(v * 100) / 100).toString();
   function spawnCruiser(tier) {
     const hp = ENEMY.cruiser.hp * hpScale() * (0.7 + tier * 0.25);
-    boss = addEnemy('cruiser', { move: 'cruiser', step: 'enter', tier, x: W / 2, y: -70, hp, maxHp: hp, xp: 90 + tier * 40 });
-    showBanner('중간 보스', '순양함 접근', true);
+    const variant = clamp(run.endless ? skyIdx : stageIndex, 0, CRUISER_NAMES.length - 1);
+    boss = addEnemy('cruiser', { move: 'cruiser', step: 'enter', tier, variant, x: W / 2, y: -70, hp, maxHp: hp, xp: 90 + tier * 40 });
+    showBanner('중간 보스', `${CRUISER_NAMES[variant]} 접근`, true);
     sfx.play('alarm');
     music.play('boss');
     announce('중간 보스 순양함이 나타났어요.');
@@ -5005,6 +5186,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     b.st += dt;
     b.x = W / 2 + (W / 2 - 62) * Math.sin(b.st * 0.5);
     b.y = top + Math.sin(b.st * 1.1) * 8;
+    if (b.variant) { // the region's own trick
+      b.spT = (b.spT === undefined ? 2.5 : b.spT) - dt;
+      if (b.spT <= 0) cruiserSpecial(b, speed);
+    }
     b.cool -= dt;
     if (b.cool > 0) return;
     const v = speed * 0.95;
@@ -5105,7 +5290,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     explode(b.x, b.y, COLOR.violet, 'big');
     explode(b.x, b.y, COLOR.amber, 'big');
     sfx.play('bigBoom');
-    const pts = Math.round(b.pts * (stageIndex + 1) * scoreMul());
+    const pts = Math.round(b.pts * (stageIndex + 1) * scoreMul() * run.risk.score);
+    run.stat.bosses += 1;
+    mission('boss');
     run.score += pts;
     run.kills += 1;
     addText(b.x, b.y, `+${num(pts)}`, COLOR.amber, 1.6, 20);
@@ -5578,6 +5765,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     sfx.play('bigBoom');
     showBanner(u.name, '궁극 합체!', 'ult');
     vsSend(2);
+    if (!ctxNow) {
+      run.stat.ults.push(o.ult);
+      mission('ult');
+    }
     announce(`궁극 합체! ${u.name}. ${u.about}.`);
   }
   function updateUlt(w, dt, cdMul0) {
@@ -6369,8 +6560,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       run.comboT = COMBO_TIME;
       if (run.combo > run.bestCombo) run.bestCombo = run.combo;
     }
-    const pts = Math.round(e.pts * scoreMul());
+    const pts = Math.round(e.pts * scoreMul() * run.risk.score);
     run.score += pts;
+    if (e.gold || e.elite) eventLoot(e);
     if (stats.leech) heal(stats.leech, true);
     if (!e.boss && stats.chain && Math.random() < stats.chain) blasts.push({ x: e.x, y: e.y });
     hudDirty = true;
@@ -6393,6 +6585,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       music.play('calm');
       announce('순양함을 격추했어요. 보급 상자를 챙기세요.');
       vsSend(2);
+      run.stat.bosses += 1;
+      mission('boss');
       return;
     }
     dropGem(e.x, e.y, e.xp);
@@ -6446,7 +6640,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         g.x += (dx / d) * g.sp * dt;
         g.y += (dy / d) * g.sp * dt;
         if (d < 14) {
-          gainXp(g.v * stats.xpMul);
+          gainXp(g.v * stats.xpMul * (run.ev.id === 'xp' && run.ev.left > 0 ? 2 : 1));
           removeAt(gems, i);
           sfx.play('gem');
         }
@@ -6531,7 +6725,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       bomb();
     } else if (kind === 'chest') {
       if (ctxNow) ctxNow.chests += 1; // the friend's crate: the friend chooses
-      else pendingChests += 1;
+      else {
+        pendingChests += 1;
+        run.stat.chests += 1;
+        mission('chest');
+      }
       const bonus = 5 * rank('crate');
       if (bonus) run.coins += bonus * stats.coinMul;
       at(bonus ? `보급 상자! 코인 +${num(bonus * stats.coinMul)}` : '보급 상자!', COLOR.amber);
@@ -6786,6 +6984,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       drawPlayer();
       drawShipTag(coop.other.name);
     });
+    if (bubbles.length) drawBubbles(1 / 60);
     drawFx();
     drawHazards(); // enemy beams and warnings stay readable over our effects
     drawTexts();
@@ -6811,6 +7010,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       ctx.globalAlpha = 1;
     }
     if (run.endless && run.combo >= 5 && (state === 'playing' || state === 'dying')) drawCombo();
+    if (state === 'playing' || state === 'choice') drawEventTag();
   }
   // The combo counter under the instruments: it grows, warms up in colour and drains as the timer runs out.
   const COMBO_TONES = ['#7fe7ff', '#b8f36b', '#ffc24b', '#ff8a3d', '#ff4fd8'];
@@ -6942,6 +7142,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       if (!spr) continue;
       const img = spr.img;
       const size = e.kind === 'rock' ? spr.size * e.size : spr.size;
+      if (e.gold) glow(ORB.amber, e.x, e.y, e.treasure ? 120 : 52, 0.55 + 0.3 * Math.sin(clock * 8 + e.x));
+      else if (e.elite) glow(ORB.violet, e.x, e.y, 80, 0.5 + 0.25 * Math.sin(clock * 6));
       if (e.kind === 'diver' && e.step === 'hover') { // charging glow warns that a dash is coming
         const k = Math.min(1, e.st / e.hover);
         glow(ORB.amber, e.x, e.y, 44, 0.2 + 0.55 * k * (0.5 + 0.5 * Math.sin(e.st * 30)));
@@ -7118,7 +7320,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
   }
   function drawCruiser(e) {
-    glow(ORB.amber, e.x, e.y, 150, 0.18);
+    glow(CRUISER_GLOW()[e.variant || 0] || ORB.amber, e.x, e.y, 170, 0.26);
     if (SPR.cruiser) drawBossSprite(e, SPR.cruiser);
     for (const x of [-30, -12, 12, 30]) glow(ORB.amber, e.x + x, e.y - 27, 14 + Math.random() * 6, 0.75);
     glow(ORB.amber, e.x, e.y + 8, 30, 0.6 + 0.4 * Math.sin(clock * 6));
@@ -7774,6 +7976,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   // ---------- instruments ----------
   function renderClock() {
     shownSec = Math.floor(run.t);
+    if (state === 'playing') {
+      mission('survive', Math.floor(run.t / 60));
+      mission('level', run.level);
+    }
     const final = director.final;
     ui.clock.textContent = clockText(run.endless ? run.t : Math.min(run.t, STAGE_TIME));
     ui.clock.classList.toggle('is-final', final);
@@ -7797,7 +8003,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const b = boss && !boss.dead ? boss : null;
     ui.bossbar.hidden = !b;
     if (b) {
-      ui.bossName.textContent = b.kind === 'mother' ? '모선' : '순양함';
+      ui.bossName.textContent = b.kind === 'mother' ? '모선' : CRUISER_NAMES[b.variant || 0] || '순양함';
       ui.bossfill.style.transform = `scaleX(${clamp(b.hp / b.maxHp, 0, 1).toFixed(3)})`;
     }
     renderClock();
@@ -7909,8 +8115,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   // ---------- screens ----------
   function showScreen(name, focus = true) {
     for (const [key, el] of Object.entries(ui.screens)) el.hidden = key !== name;
-    ui.hud.hidden = ['title', 'stages', 'result', 'pause', 'tree', 'hangar', 'together'].includes(name);
+    ui.hud.hidden = ['title', 'stages', 'result', 'pause', 'tree', 'hangar', 'together', 'goals'].includes(name);
     ui.pause.hidden = name !== null;
+    chatBtnSync(name);
     if (name !== null && name !== 'choice') ui.banner.classList.remove('show');
     const target = { title: ui.start, pause: ui.resume, result: ui.again, stages: ui.stageList.querySelector('button:not(:disabled)'), tree: ui.treeTabs.querySelector('[aria-pressed="true"]') }[name];
     const moveFocus = focus && !touchInput();
@@ -7954,12 +8161,13 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ui.titleCoins.textContent = fmt(saved.coins);
     ui.titleShip.textContent = shipOf(saved.ship).name;
     ui.openTogether.hidden = !board.on;
+    renderGoalsBadge();
     renderPilot();
     showScreen('title', focus);
   }
   function renderPilot() {
     ui.pilot.hidden = !board.on;
-    ui.pilotName.textContent = saved.name || '순위표에 쓸 이름을 정해 주세요';
+    ui.pilotName.textContent = saved.name ? (saved.title ? `${saved.name} · ${titleOf(saved.title)}` : saved.name) : '순위표에 쓸 이름을 정해 주세요';
     ui.pilotName.classList.toggle('is-empty', !saved.name);
     ui.pilotState.textContent = saved.account ? (saved.account.google ? '· 구글 계정' : '· 계정 연결됨') : saved.name ? '· 이 기기에만 저장' : '';
     ui.pilotState.className = saved.account ? 'is-linked' : '';
@@ -8093,6 +8301,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const head = rank('headstart') + (run.endless ? 2 * rank('endstart') : 0);
     Object.assign(run, {
       t: 0, score: 0, kills: 0, level: 1 + head, xp: 0, need: xpNeed(1 + head), coins: 0, ults: 0, fused: [], sector: 0, combo: 0, comboT: 0, bestCombo: 0,
+      stat: { bosses: 0, evolves: 0, events: 0, risks: 0, golds: 0, chests: 0, ults: [] }, risk: freshRisk(), ev: { t: nextEventIn(), id: '', left: 0, tick: 0, last: '' },
       rerolls: rank('reroll'), revives: rank('revive'), magT: AUTOMAG_EVERY[rank('automag') - 1] || 0, guard: rank('guardian'), panic: rank('panic'),
     });
     run.ship = saved.ships.includes(saved.ship) ? saved.ship : 'star';
@@ -8222,7 +8431,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       } else openChoice('chest', '보급 상자', '하나를 고르세요', rollOptions(choiceCount()));
       sfx.play('item');
     } else if (pendingLevels > 0) {
-      openChoice('level', `레벨 업 · Lv ${run.level - pendingLevels + 1}`, '스킬을 하나 고르세요', rollOptions(choiceCount()));
+      openChoice('level', `레벨 업 · Lv ${run.level - pendingLevels + 1}`, '스킬을 하나 고르세요', levelOptions());
       sfx.play('levelup');
       announce('레벨 업! 스킬을 하나 고르세요.');
     } else if (coopWaiting()) {
@@ -8294,6 +8503,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       saved.cleared[stageIndex] = true;
       saved.unlocked = Math.max(saved.unlocked, Math.min(STAGES.length, stageIndex + 2));
     }
+    const fresh = recordLife(cleared, earned);
     const stored = save();
     lastRecordId = record.id;
     clearField();
@@ -8331,6 +8541,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const coinHave = document.createElement('span');
     coinHave.textContent = `보유 ${fmt(saved.coins)} · 스킬 트리에서 써요`;
     ui.coinLine.append(coinText, coinHave);
+    ui.achvLine.hidden = !fresh.length;
+    if (fresh.length) {
+      ui.achvLine.textContent = `업적 달성! ${fresh.map((a) => `'${a.name}'`).join(', ')} 칭호를 받았어요 (+${fmt(fresh.reduce((n, a) => n + a.coins, 0))} 코인)`;
+      sfx.play('evolve');
+    }
     ui.resultWarn.hidden = stored;
     const hasNext = cleared && stageIndex < STAGES.length - 1;
     ui.again.textContent = hasNext ? '다음 지역 출격' : '다시 출격';
@@ -8382,6 +8597,553 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     window.setTimeout(() => sfx.play('stamp'), delay + 200);
   }
 
+  // ---------- goals: daily missions, achievements and titles ----------
+  // Missions are the same for everyone on a given day (Korean time), so friends can compare notes.
+  const KST = 9 * 3600e3;
+  const dayKey = (t = Date.now()) => new Date(t + KST).toISOString().slice(0, 10);
+  const weekKey = (t = Date.now()) => { // the Monday that starts this week
+    const d = new Date(t + KST);
+    const back = (d.getUTCDay() + 6) % 7;
+    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - back)).toISOString().slice(0, 10);
+  };
+  function weekLeft() {
+    const d = new Date(Date.now() + KST);
+    const days = 7 - ((d.getUTCDay() + 6) % 7);
+    return days <= 1 ? '오늘 밤 12시' : `${days}일 뒤`;
+  }
+  const MISSIONS = [
+    { id: 'kills', text: (n) => `적 ${fmt(n)}대 격추하기`, n: [400, 900, 1800] },
+    { id: 'boss', text: (n) => `보스 ${n}마리 격추하기`, n: [1, 2, 4] },
+    { id: 'evolve', text: (n) => `합체 스킬 ${n}번 만들기`, n: [1, 2, 4] },
+    { id: 'level', text: (n) => `한 판에 Lv ${n} 달성하기`, n: [15, 30, 50], max: true },
+    { id: 'survive', text: (n) => `한 판에 ${n}분 버티기`, n: [5, 9, 13], max: true },
+    { id: 'coins', text: (n) => `코인 ${fmt(n)}개 벌기`, n: [200, 500, 1200] },
+    { id: 'chest', text: (n) => `보급 상자 ${n}개 열기`, n: [2, 4, 7] },
+    { id: 'event', text: (n) => `랜덤 이벤트 ${n}번 만나기`, n: [1, 3, 5] },
+    { id: 'gold', text: (n) => `황금 함대 ${n}대 잡기`, n: [3, 8, 15] },
+    { id: 'endless', text: (n) => `무한 모드 구역 ${n} 도달하기`, n: [2, 4, 6], max: true },
+    { id: 'friend', text: (n) => (n > 1 ? `친구와 대결이나 협동 ${n}판 하기` : '친구와 대결이나 협동 한 판 하기'), n: [1, 1, 2] },
+    { id: 'risk', text: (n) => `위험 카드 ${n}장 고르기`, n: [1, 2, 4] },
+    { id: 'ult', text: () => '궁극 합체 하기', n: [1, 1, 1] },
+  ];
+  const MISSION_PAY = [150, 300, 500];
+  const MISSION_BONUS = 300;
+  let missionCache = { day: '', list: [] };
+  function todayMissions() {
+    const day = dayKey();
+    if (missionCache.day === day) return missionCache.list;
+    const rnd = seeded([...day].reduce((a, c) => (Math.imul(a, 31) + c.charCodeAt(0)) >>> 0, 7));
+    const pool = MISSIONS.slice();
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(rnd() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    const list = [];
+    for (const m of pool) {
+      const tier = list.length;
+      if (tier >= 3) break;
+      if (m.id === 'ult' && tier < 2) continue; // the hardest slot only
+      list.push({ ...m, tier, goal: m.n[tier], pay: MISSION_PAY[tier] });
+    }
+    missionCache = { day, list };
+    return list;
+  }
+  function daily() {
+    const day = dayKey();
+    if (!saved.daily || saved.daily.day !== day) saved.daily = { day, prog: [0, 0, 0], got: [false, false, false], bonus: false };
+    return saved.daily;
+  }
+  // progress: counters add up over the day; "in one run" goals keep the best
+  function mission(id, v = 1) {
+    if (ctxNow) return; // the friend's own deeds count on the friend's phone
+    const list = todayMissions();
+    const d = daily();
+    list.forEach((m, i) => {
+      if (m.id !== id) return;
+      const before = d.prog[i];
+      d.prog[i] = m.max ? Math.max(before, v) : before + v;
+      if (before < m.goal && d.prog[i] >= m.goal) {
+        if (inPlay()) addText(W / 2, hudBottom + 92, `미션 완료! ${m.text(m.goal)}`, COLOR.amber, 2.6, 14);
+        sfx.play('item');
+        announce(`미션 완료: ${m.text(m.goal)}`);
+        save();
+        renderGoalsBadge();
+      }
+    });
+  }
+  const claimable = () => {
+    const d = daily();
+    const list = todayMissions();
+    let n = list.filter((m, i) => d.prog[i] >= m.goal && !d.got[i]).length;
+    if (d.got.every(Boolean) && !d.bonus) n += 1;
+    return n;
+  };
+  function claimMission(i) {
+    const d = daily();
+    const m = todayMissions()[i];
+    if (!m || d.got[i] || d.prog[i] < m.goal) return;
+    d.got[i] = true;
+    saved.coins += m.pay;
+    saved.earned += m.pay;
+    saved.life.missions += 1;
+    sfx.play('coin');
+    toast(`미션 보상 +${fmt(m.pay)} 코인`);
+    checkAchv();
+    save();
+    renderGoals();
+  }
+  function claimBonus() {
+    const d = daily();
+    if (d.bonus || !d.got.every(Boolean)) return;
+    d.bonus = true;
+    saved.coins += MISSION_BONUS;
+    saved.earned += MISSION_BONUS;
+    sfx.play('evolve');
+    toast(`오늘의 미션 모두 완료! +${fmt(MISSION_BONUS)} 코인`);
+    save();
+    renderGoals();
+  }
+
+  // Achievements: each one is also a title to wear next to the name in rankings and rooms.
+  const ACHV = [
+    { id: 'first', name: '신입 조종사', desc: '첫 판 끝내기', coins: 100, test: (L) => L.runs >= 1 },
+    { id: 'clear1', name: '달의 수호자', desc: '1지역 클리어', coins: 200, test: () => saved.cleared[0] },
+    { id: 'clear3', name: '성운 돌파자', desc: '3지역 클리어', coins: 500, test: () => saved.cleared[2] },
+    { id: 'clearAll', name: '은하의 영웅', desc: '다섯 지역 모두 클리어', coins: 1500, test: () => saved.cleared.every(Boolean) },
+    { id: 'kills1', name: '사냥꾼', desc: '누적 격추 1,000대', coins: 200, test: (L) => L.kills >= 1000 },
+    { id: 'kills2', name: '격추왕', desc: '누적 격추 10,000대', coins: 800, test: (L) => L.kills >= 10000 },
+    { id: 'kills3', name: '전설의 에이스', desc: '누적 격추 50,000대', coins: 2500, test: (L) => L.kills >= 50000 },
+    { id: 'boss1', name: '거함 사냥꾼', desc: '보스 10마리 격추', coins: 400, test: (L) => L.bosses >= 10 },
+    { id: 'boss2', name: '모선 파괴자', desc: '보스 50마리 격추', coins: 1500, test: (L) => L.bosses >= 50 },
+    { id: 'evo', name: '합체 입문', desc: '합체 스킬 처음 만들기', coins: 150, test: (L) => L.evolves >= 1 },
+    { id: 'evo50', name: '합체의 달인', desc: '합체 스킬 50번 만들기', coins: 1000, test: (L) => L.evolves >= 50 },
+    { id: 'ult', name: '궁극의 힘', desc: '궁극 합체 처음 하기', coins: 300, test: (L) => L.ults.length >= 1 },
+    { id: 'ultAll', name: '궁극 수집가', desc: '궁극기 6종 모두 만들어 보기', coins: 2000, test: (L) => L.ults.length >= Object.keys(ULTS).length },
+    { id: 'lv50', name: '숙련 조종사', desc: '한 판에 Lv 50 달성', coins: 500, test: (L) => L.maxLevel >= 50 },
+    { id: 'lv100', name: '전설의 조종사', desc: '한 판에 Lv 100 달성', coins: 1500, test: (L) => L.maxLevel >= 100 },
+    { id: 'end5', name: '끝없는 도전자', desc: '무한 모드 구역 5 도달', coins: 600, test: (L) => L.maxSector >= 5 },
+    { id: 'end10', name: '무한의 지배자', desc: '무한 모드 구역 10 도달', coins: 2000, test: (L) => L.maxSector >= 10 },
+    { id: 'combo', name: '콤보 마스터', desc: '무한 모드에서 콤보 300', coins: 800, test: (L) => L.bestCombo >= 300 },
+    { id: 'ships', name: '격납고 주인', desc: '전투기 6종 모두 모으기', coins: 3000, test: () => saved.ships.length >= SHIPS.length },
+    { id: 'tree', name: '연구광', desc: '스킬 트리 강화 합계 Lv 100', coins: 1000, test: () => Object.values(saved.tree).reduce((a, b) => a + b, 0) >= 100 },
+    { id: 'vs1', name: '승부사', desc: '대결에서 처음 1등', coins: 300, test: (L) => L.vsWins >= 1 },
+    { id: 'vs10', name: '대결의 왕', desc: '대결에서 1등 10번', coins: 1500, test: (L) => L.vsWins >= 10 },
+    { id: 'coop1', name: '든든한 동료', desc: '협동 첫 판', coins: 200, test: (L) => L.coopRuns >= 1 },
+    { id: 'coopClear', name: '최강 콤비', desc: '협동으로 지역 클리어', coins: 1000, test: (L) => L.coopClears >= 1 },
+    { id: 'missions', name: '성실한 조종사', desc: '일일 미션 21개 완료', coins: 1000, test: (L) => L.missions >= 21 },
+    { id: 'events', name: '행운아', desc: '랜덤 이벤트 20번 만나기', coins: 600, test: (L) => L.events >= 20 },
+    { id: 'gold', name: '황금 사냥꾼', desc: '황금 함대 100대 잡기', coins: 800, test: (L) => L.golds >= 100 },
+    { id: 'risk', name: '도박사', desc: '위험 카드 10장 고르기', coins: 500, test: (L) => L.risks >= 10 },
+    { id: 'rich', name: '부자', desc: '코인 누적 100,000개 벌기', coins: 3000, test: () => saved.earned >= 100000 },
+  ];
+  const achvOf = (id) => ACHV.find((a) => a.id === id) || null;
+  const titleOf = (id) => {
+    const a = achvOf(id);
+    return a ? a.name : '';
+  };
+  function checkAchv(quiet) {
+    const fresh = [];
+    for (const a of ACHV) {
+      if (saved.achv.includes(a.id)) continue;
+      let ok = false;
+      try {
+        ok = !!a.test(saved.life);
+      } catch {
+        ok = false;
+      }
+      if (!ok) continue;
+      saved.achv.push(a.id);
+      saved.coins += a.coins;
+      saved.earned += a.coins;
+      fresh.push(a);
+    }
+    if (fresh.length) {
+      save();
+      renderGoalsBadge();
+      if (!quiet) toast(fresh.length === 1 ? `업적 달성! '${fresh[0].name}' 칭호를 받았어요 (+${fmt(fresh[0].coins)} 코인)` : `업적 ${fresh.length}개 달성! 칭호를 받았어요`);
+    }
+    return fresh;
+  }
+  // the end of a run: everything it did goes into the lifetime numbers
+  function recordLife(cleared, earned) {
+    const L = saved.life;
+    const st = run.stat;
+    L.runs += 1;
+    L.kills += run.kills;
+    L.bosses += st.bosses;
+    L.evolves += st.evolves;
+    L.events += st.events;
+    L.risks += st.risks;
+    L.golds += st.golds;
+    L.maxLevel = Math.max(L.maxLevel, run.level);
+    if (run.endless) L.maxSector = Math.max(L.maxSector, run.sector + 1);
+    L.bestCombo = Math.max(L.bestCombo, run.bestCombo || 0);
+    for (const u of st.ults) if (!L.ults.includes(u)) L.ults.push(u);
+    if (run.coop) {
+      L.coopRuns += 1;
+      if (cleared) L.coopClears += 1;
+    }
+    mission('coins', earned);
+    if (run.vs || run.coop) mission('friend');
+    if (run.coop && coop.role === 'guest') { // the friend's phone only learns the totals
+      mission('kills', run.kills);
+      mission('level', run.level);
+    }
+    mission('survive', Math.floor(run.t / 60));
+    return checkAchv(true);
+  }
+
+  // --- the screen ---
+  let goalsTab = 'daily';
+  function showGoals() {
+    state = 'goals';
+    renderGoals();
+    showScreen('goals');
+  }
+  function untilMidnight() {
+    const now = Date.now() + KST;
+    const left = 86400e3 - (now % 86400e3);
+    const h = Math.floor(left / 3600e3);
+    const m = Math.floor((left % 3600e3) / 60e3);
+    return h ? `${h}시간 ${m}분` : `${m}분`;
+  }
+  function renderGoals() {
+    for (const t of ui.goalsTabs) t.setAttribute('aria-selected', String(t.dataset.goals === goalsTab));
+    ui.goalsDaily.hidden = goalsTab !== 'daily';
+    ui.goalsAchv.hidden = goalsTab !== 'achv';
+    const d = daily();
+    ui.missionList.replaceChildren(...todayMissions().map((m, i) => {
+      const li = document.createElement('li');
+      const done = d.prog[i] >= m.goal;
+      li.className = `goal${d.got[i] ? ' is-got' : done ? ' is-ready' : ''}`;
+      li.innerHTML = '<span class="goal-tier"></span><span class="goal-body"><b></b><span class="goal-bar"><i></i></span><small></small></span><span class="goal-side"></span>';
+      li.querySelector('.goal-tier').textContent = ['쉬움', '보통', '어려움'][m.tier];
+      li.querySelector('b').textContent = m.text(m.goal);
+      li.querySelector('.goal-bar i').style.width = `${Math.min(100, (d.prog[i] / m.goal) * 100)}%`;
+      li.querySelector('small').textContent = `${fmt(Math.min(d.prog[i], m.goal))} / ${fmt(m.goal)} · 보상 ${fmt(m.pay)} 코인`;
+      const side = li.querySelector('.goal-side');
+      if (d.got[i]) side.textContent = '받음';
+      else if (done) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'btn btn-primary goal-btn';
+        b.dataset.claim = String(i);
+        b.textContent = '받기';
+        side.append(b);
+      } else side.textContent = '진행 중';
+      return li;
+    }));
+    const all = d.got.every(Boolean);
+    ui.missionBonus.replaceChildren();
+    const bonusText = document.createElement('span');
+    bonusText.textContent = d.bonus ? `오늘 보너스를 받았어요 (+${fmt(MISSION_BONUS)})` : `3개 모두 받으면 보너스 ${fmt(MISSION_BONUS)} 코인`;
+    ui.missionBonus.append(bonusText);
+    if (all && !d.bonus) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'btn btn-primary goal-btn';
+      b.dataset.bonus = '1';
+      b.textContent = '보너스 받기';
+      ui.missionBonus.append(b);
+    }
+    ui.missionReset.textContent = `새 미션까지 ${untilMidnight()} · 친구들도 오늘 같은 미션이에요`;
+    const got = saved.achv.length;
+    ui.achvSum.textContent = `${got}/${ACHV.length}개 달성 · 지금 칭호: ${saved.title ? titleOf(saved.title) : '없음'}`;
+    const order = ACHV.slice().sort((a, b) => Number(saved.achv.includes(b.id)) - Number(saved.achv.includes(a.id)));
+    ui.achvList.replaceChildren(...order.map((a) => {
+      const li = document.createElement('li');
+      const have = saved.achv.includes(a.id);
+      li.className = `goal${have ? ' is-got' : ' is-locked'}`;
+      li.innerHTML = '<span class="goal-tier"></span><span class="goal-body"><b></b><small></small></span><span class="goal-side"></span>';
+      li.querySelector('.goal-tier').textContent = have ? '달성' : '잠김';
+      li.querySelector('b').textContent = a.name;
+      li.querySelector('small').textContent = `${a.desc} · 보상 ${fmt(a.coins)} 코인`;
+      const side = li.querySelector('.goal-side');
+      if (have) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = `btn goal-btn${saved.title === a.id ? ' is-on' : ''}`;
+        b.dataset.title = a.id;
+        b.textContent = saved.title === a.id ? '쓰는 중' : '칭호로 쓰기';
+        side.append(b);
+      }
+      return li;
+    }));
+  }
+  function renderGoalsBadge() {
+    const n = claimable();
+    ui.goalsBadge.hidden = n === 0;
+    ui.goalsBadge.textContent = String(n);
+    const d = daily();
+    ui.goalsPill.textContent = `${d.got.filter(Boolean).length}/3`;
+  }
+  let toastTimer = 0;
+  function toast(text) {
+    ui.toast.textContent = text;
+    ui.toast.hidden = false;
+    ui.toast.classList.remove('show');
+    void ui.toast.offsetWidth;
+    ui.toast.classList.add('show');
+    announce(text);
+    window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(() => { ui.toast.hidden = true; }, 3600);
+  }
+
+  // ---------- every run a little different: risk cards, random events, region bosses ----------
+  // Risk cards: a harder fight for a better reward. They stack, for the rest of the run, for both ships in co-op.
+  const RISKS = [
+    { id: 'tough', name: '단단한 적', desc: '적 체력 +20%, 대신 코인 +40%', icon: 'plating', fx: { enemyHp: 1.2, coin: 1.4 } },
+    { id: 'swift', name: '빠른 총알', desc: '적 총알이 15% 빨라져요, 대신 점수 +30%', icon: 'burst', fx: { bullet: 1.15, score: 1.3 } },
+    { id: 'glass', name: '유리 대포', desc: '받는 피해 +25%, 대신 모든 피해 +20%', icon: 'crit', fx: { taken: 1.25, dmg: 1.2 } },
+    { id: 'horde', name: '대군', desc: '적이 20% 더 많이 나와요, 대신 경험치 +30%', icon: 'target', fx: { spawn: 1.2, xp: 1.3 } },
+    { id: 'greed', name: '탐욕의 대가', desc: '최대 체력 −15%, 대신 코인 +60%', icon: 'coin', fx: { maxHp: 0.85, coin: 1.6 } },
+  ];
+  const freshRisk = () => ({ enemyHp: 1, bullet: 1, taken: 1, dmg: 1, spawn: 1, xp: 1, coin: 1, score: 1, maxHp: 1, n: 0 });
+  // level-up cards, with now and then a risk card on top
+  function levelOptions() {
+    const options = rollOptions(choiceCount());
+    if (run.level >= 6 && run.risk.n < 6 && Math.random() < 0.22) {
+      const r = pick(RISKS);
+      options.push({ kind: 'risk', id: r.id });
+    }
+    return options;
+  }
+  function takeRisk(o) {
+    const r = RISKS.find((x) => x.id === o.id);
+    if (!r) return;
+    for (const [k, v] of Object.entries(r.fx)) run.risk[k] *= v;
+    run.risk.n += 1;
+    recompute();
+    if (coop.ally) coop.recalc = true; // the other ship's numbers change too
+    if (!ctxNow) {
+      run.stat.risks += 1;
+      mission('risk');
+    }
+    addText(player.x, player.y - 40, `위험 감수! ${r.name}`, COLOR.danger, 1.8, 14);
+    sfx.play('alarm');
+  }
+
+  // Random events every minute and a half or so, never during a boss.
+  const EVENTS = [
+    { id: 'gold', name: '황금 함대', sub: '잡으면 코인이 쏟아져요' },
+    { id: 'xp', name: '경험치 폭주', sub: '20초 동안 경험치 2배', dur: 20 },
+    { id: 'meteor', name: '유성우', sub: '15초 동안 운석이 쏟아져요', dur: 15 },
+    { id: 'treasure', name: '보물선 등장', sub: '도망가기 전에 잡으세요' },
+    { id: 'elite', name: '정예 습격', sub: '강한 적이 큰 보상을 줘요' },
+    { id: 'supply', name: '보급 투하', sub: '회복, 자석, 보급 상자가 떨어져요' },
+  ];
+  const nextEventIn = () => (run.endless ? rand(55, 85) : rand(75, 110));
+  function updateEvents(dt) {
+    const ev = run.ev;
+    if (ev.left > 0) {
+      ev.left -= dt;
+      if (ev.id === 'meteor') {
+        ev.tick -= dt;
+        if (ev.tick <= 0) {
+          ev.tick = 1.5;
+          spawnPattern(Math.random() < 0.55 ? 'comets' : 'rocks');
+        }
+      }
+      if (ev.left <= 0) ev.id = '';
+    }
+    ev.t -= dt;
+    if (ev.t > 0 || boss || director.final || run.t < 40) return;
+    ev.t = nextEventIn();
+    const choices = EVENTS.filter((e) => e.id !== ev.last);
+    startEvent(pick(choices));
+  }
+  function startEvent(e) {
+    const ev = run.ev;
+    ev.last = e.id;
+    run.stat.events += 1;
+    mission('event');
+    showBanner(e.name, e.sub, false);
+    sfx.play('levelup');
+    if (e.dur) {
+      ev.id = e.id;
+      ev.left = e.dur;
+      ev.tick = 0;
+    }
+    if (e.id === 'gold') {
+      const hp = ENEMY.scout.hp * hpScale() * 2.5;
+      for (let i = 0; i < 8; i++) {
+        const fromLeft = i % 2 === 0;
+        const y0 = rand(H * 0.12, H * 0.38);
+        addEnemy('scout', {
+          move: 'curve', t: -i * 0.35, dur: 6.5, gold: true, hp, maxHp: hp, pts: 150, xp: Math.max(4, Math.round(run.t / 60)),
+          p0: { x: fromLeft ? -20 : W + 20, y: y0 }, p1: { x: W / 2, y: y0 + rand(80, 150) }, p2: { x: fromLeft ? W + 30 : -30, y: y0 - 40 },
+        });
+      }
+    } else if (e.id === 'treasure') {
+      const fromLeft = Math.random() < 0.5;
+      const hp = ENEMY.carrier.hp * hpScale() * 1.6;
+      addEnemy('carrier', { move: 'drift', x: fromLeft ? -40 : W + 40, y: H * 0.22, vx: fromLeft ? 36 : -36, vy: 0, angle: 0, treasure: true, gold: true, hp, maxHp: hp, pts: 1500 });
+    } else if (e.id === 'elite') {
+      for (let i = 0; i < 3; i++) {
+        const hp = ENEMY.tank.hp * hpScale() * 3;
+        addEnemy('tank', { move: 'tank', t: -i * 0.8, x: W * (0.25 + 0.25 * i), y: -30, vy: 26, fireT: 1.5, volleyN: 0, elite: true, hp, maxHp: hp, xp: ENEMY.tank.xp * 4, pts: 600 });
+      }
+    } else if (e.id === 'supply') {
+      items.push({ kind: 'heal', x: W * 0.28, y: -12, t: 0 }, { kind: 'magnet', x: W * 0.5, y: -36, t: 0 }, { kind: 'chest', x: W * 0.72, y: -12, t: 0 });
+    }
+  }
+  // rewards for the special ships of an event
+  function eventLoot(e) {
+    if (e.gold) {
+      for (let k = 0; k < (e.treasure ? 10 : 3); k++) items.push({ kind: 'coin', v: e.treasure ? 4 : 2, x: e.x + rand(-14, 14), y: e.y + rand(-6, 6), t: rand(0, 3) });
+      if (!e.treasure) {
+        run.stat.golds += 1;
+        mission('gold');
+      }
+    }
+    if (e.treasure) {
+      items.push({ kind: 'chest', x: e.x, y: e.y, t: 0 });
+      addText(e.x, e.y - 24, '보물선 격추!', COLOR.amber, 1.8, 15);
+    }
+    if (e.elite) items.push({ kind: 'heal', x: e.x, y: e.y, t: 0 });
+  }
+  // the timed event shows under the instruments
+  function drawEventTag() {
+    const ev = run.ev;
+    if (!ev || !(ev.left > 0) || !ev.id) return;
+    const e = EVENTS.find((x) => x.id === ev.id);
+    if (!e) return;
+    const text = `${e.id === 'xp' ? '경험치 2배' : e.name} · ${Math.ceil(ev.left)}초`;
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `700 13px ${FONT_DATA}`;
+    const y = hudBottom + 16;
+    const w = ctx.measureText(text).width + 22;
+    ctx.fillStyle = rgba(COLOR.void, 0.6);
+    ctx.fillRect(W / 2 - w / 2, y - 11, w, 22);
+    ctx.fillStyle = e.id === 'xp' ? COLOR.cyan : COLOR.amber;
+    ctx.fillText(text, W / 2, y + 1);
+    ctx.restore();
+  }
+
+  // Each region's mid-boss brings its own trick on top of the usual attacks.
+  const CRUISER_NAMES = ['순양함', '바위 순양함', '유령 순양함', '광선 순양함', '모함 순양함'];
+  const CRUISER_GLOW = () => [ORB.amber, ORB.coral, ORB.violet, ORB.red, ORB.teal];
+  function cruiserSpecial(b, speed) {
+    const v = b.variant;
+    if (v === 1) { // throws rocks at the nearest ship
+      for (let k = 0; k < 3; k++) {
+        const size = rand(0.8, 1.2);
+        const a = Math.atan2(player.y - b.y, player.x - b.x) + (k - 1) * 0.32;
+        const hp = ENEMY.rock.hp * size * hpScale() * 0.6;
+        addEnemy('rock', { move: 'drift', x: b.x + (k - 1) * 20, y: b.y + 24, vx: Math.cos(a) * 125, vy: Math.max(60, Math.sin(a) * 125), rot: rand(0, TAU), r: 16 * size, hp, maxHp: hp, size });
+      }
+      sfx.play('missile');
+      b.spT = 3.2;
+    } else if (v === 2) { // vanishes and comes back somewhere else along its path, with seekers
+      rings.push({ x: b.x, y: b.y, r: 10, max: 70, life: 0.4, full: 0.4, color: COLOR.violet, wide: true });
+      b.st += rand(1.6, 3.2);
+      b.x = W / 2 + (W / 2 - 62) * Math.sin(b.st * 0.5);
+      rings.push({ x: b.x, y: b.y, r: 70, max: 10, life: 0.4, full: 0.4, color: COLOR.violet, wide: true });
+      for (let k = 0; k < 3; k++) {
+        addEnemy('seeker', { move: 'seek', t: -k * 0.2, x: b.x + (k - 1) * 30, y: b.y + 20, vx: (k - 1) * 60, vy: 90, speed: 90 + Math.min(70, run.t / 8), angle: Math.PI / 2 });
+      }
+      sfx.play('dash');
+      b.spT = 4;
+    } else if (v === 3) { // snipes with fast shots, sometimes a laser gate
+      shootAt(b.x, b.y + 22, speed * 1.7, 3, 7, 'red', { r: 6 });
+      if (Math.random() < 0.35) laserGate(b, 1);
+      sfx.play('snipe');
+      b.spT = 2.6;
+    } else if (v === 4) { // launches fighters from both sides
+      for (const side of [-1, 1]) {
+        for (let k = 0; k < 2; k++) {
+          addEnemy('swarm', { move: 'seek', t: -k * 0.3, x: b.x + side * 42, y: b.y + 8, vx: side * 90, vy: 40, speed: 105 + Math.min(60, run.t / 10), angle: Math.PI / 2 });
+        }
+      }
+      sfx.play('missile');
+      b.spT = 3.6;
+    } else b.spT = 99;
+  }
+
+  // ---------- quick chat: six short messages for rooms, versus and co-op ----------
+  const CHATS = ['도와줘!', '고마워!', 'ㅋㅋㅋ', '잘한다!', '조심해!', '가자!'];
+  const bubbles = []; // co-op speech bubbles over the ships
+  function chatChips(el) {
+    el.replaceChildren(...CHATS.map((text, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chat-chip';
+      b.dataset.chat = String(i);
+      b.textContent = text;
+      return b;
+    }));
+  }
+  const canChat = () => !!vs.code || (coop.link && coop.link.open);
+  function chatBtnSync(screen = null) { // only in a match with friends
+    ui.chatBtn.hidden = screen !== null || !(run.vs || run.coop) || !canChat();
+    if (screen !== null) ui.chatBar.hidden = true;
+  }
+  function sendChat(i) {
+    const text = CHATS[i];
+    if (!text || !canChat() || Date.now() - vs.chatAt < 1200) return;
+    vs.chatAt = Date.now();
+    vs.chatI = i;
+    vs.chatN += 1;
+    if (coop.link) coopSend({ t: 'chat', i, n: vs.chatN }); // instant on the direct line
+    if (vs.code && !vs.lite) { // everyone in the room hears it with the next status
+      window.clearTimeout(vs.timer);
+      vsTick();
+    }
+    showChat(saved.pid, '나', text, true);
+    sfx.play('gem');
+    ui.chatBar.hidden = true;
+    ui.chatBtn.setAttribute('aria-expanded', 'false');
+  }
+  function chatIn(id, name, i) {
+    const text = CHATS[i];
+    if (!text) return;
+    showChat(id, name, text, false);
+    sfx.play('item');
+  }
+  function showChat(id, name, text, mine) {
+    vs.chatShow[id] = { text, until: Date.now() + 4000 };
+    if (state === 'together') renderTogether();
+    if (!inPlay()) return;
+    if (coop.on) bubbles.push({ mine, text, t: 2.6 });
+    else addText(W / 2, hudBottom + 44 + (mine ? 0 : 20), `${name}: ${text}`, mine ? COLOR.ink : COLOR.cyan, 2.4, 14);
+    announce(`${name}: ${text}`);
+  }
+  function drawBubbles(dt) {
+    for (let i = bubbles.length - 1; i >= 0; i--) {
+      const b = bubbles[i];
+      b.t -= dt;
+      if (b.t <= 0) {
+        removeAt(bubbles, i);
+        continue;
+      }
+      const p = b.mine ? player : coop.other && coop.other.player;
+      if (!p) continue;
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, b.t * 3);
+      ctx.font = `700 13px ${FONT_DATA}`;
+      const w = ctx.measureText(b.text).width + 18;
+      const x = clamp(p.x, w / 2 + 4, W - w / 2 - 4);
+      const y = p.y - 46;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(x - w / 2, y - 13, w, 24, 12);
+      else ctx.rect(x - w / 2, y - 13, w, 24); // older Safari
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(p.x - 5, y + 10);
+      ctx.lineTo(p.x + 5, y + 10);
+      ctx.lineTo(p.x, y + 17);
+      ctx.fill();
+      ctx.fillStyle = COLOR.void;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(b.text, x, y);
+      ctx.restore();
+    }
+  }
+
   // ---------- playing with friends: live versus rooms ----------
   // A room is a 4-digit code in the database. Everyone in it starts the same region at the same time on their own
   // phone; each phone posts its score and health about once a second and reads everyone else's.
@@ -8389,7 +9151,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   const VS_KILL_STEP = 100; // kills between attacks sent to the others
   const VS_SILENT = 15000; // a player we have not heard from this long has dropped out
   const vs = {
-    mode: 'vs', code: '', room: null, timer: 0, busy: false, fail: 0, joinedAt: 0, startedFor: 0, inMatch: false, match: 0, stage: 1,
+    mode: 'vs', code: '', room: null, timer: 0, busy: false, fail: 0, lite: false, chatI: 0, chatN: 0, chatAt: 0, heardChat: {}, chatShow: {}, joinedAt: 0, startedFor: 0, inMatch: false, match: 0, stage: 1,
     sent: 0, kind: 0, killMark: 0, seen: {}, heard: {}, queue: [], queueT: 0, final: null, note: '', noteErr: false, pending: null,
   };
   const ATTACKS = { 1: ['divers', 'seekers', 'snipers', 'phantoms', 'bombers'], 2: ['lancers', 'tank', 'spinner', 'carrier', 'shieldwall'] };
@@ -8424,6 +9186,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       hp: live ? clamp(Math.round((player.hp / stats.maxHp) * 100), 0, 100) : 0,
       lv: live || f ? run.level : 1, t: live || f ? Math.min(86400, Math.round(run.t)) : 0, k: live || f ? run.kills : 0,
       al: live && player.alive, cl: !!(f && f.cl), a: vs.sent, ak: vs.kind, up: { '.sv': 'timestamp' },
+      ...(vs.lite ? {} : { tt: saved.title || '', ch: vs.chatI, cn: vs.chatN }),
     };
   }
   function needName(action) {
@@ -8444,7 +9207,13 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         if (cur && Number(cur.at) > Date.now() - 6 * 3600e3) continue; // someone is using that number
         vs.joinedAt = Date.now();
         vs.stage = Math.min(saved.unlocked, STAGES.length);
-        await board.put(roomPath(code), { at: { '.sv': 'timestamp' }, host: saved.pid, st: 'lobby', mode: vs.mode, stage: vs.stage, go: 0, p: { [saved.pid]: vsStatus() } });
+        try {
+          await board.put(roomPath(code), { at: { '.sv': 'timestamp' }, host: saved.pid, st: 'lobby', mode: vs.mode, stage: vs.stage, go: 0, p: { [saved.pid]: vsStatus() } });
+        } catch (err) {
+          if (!refused(err)) throw err;
+          vs.lite = true;
+          await board.put(roomPath(code), { at: { '.sv': 'timestamp' }, host: saved.pid, st: 'lobby', mode: vs.mode, stage: vs.stage, go: 0, p: { [saved.pid]: vsStatus() } });
+        }
         vsEnter(code, 0, { at: Date.now(), host: saved.pid, st: 'lobby', mode: vs.mode, stage: vs.stage, go: 0, p: { [saved.pid]: vsStatus() } });
         tgNote('방을 만들었어요! 친구 초대하기를 눌러 방 번호를 보내 주세요.');
         return;
@@ -8478,7 +9247,13 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
       vs.mode = room.mode === 'coop' ? 'coop' : 'vs';
       vs.joinedAt = Date.now();
-      await board.put(`${roomPath(code)}/p/${saved.pid}`, vsStatus());
+      try {
+        await board.put(`${roomPath(code)}/p/${saved.pid}`, vsStatus());
+      } catch (err) {
+        if (!refused(err)) throw err;
+        vs.lite = true;
+        await board.put(`${roomPath(code)}/p/${saved.pid}`, vsStatus());
+      }
       vsEnter(code, Number(room.go) || 0, null);
       tgNote(vs.mode === 'coop' ? '방에 들어왔어요! 친구와 연결하는 중이에요.' : room.st === 'go' && ids.length ? '친구들이 대결 중이에요. 이번 판이 끝나면 같이 출발해요.' : '방에 들어왔어요! 방장이 출발을 누르면 시작해요.');
     } catch (err) {
@@ -8517,7 +9292,15 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       const room = await board.get(roomPath(code));
       if (vs.code !== code) return;
       vsRoom(room);
-      if (vs.code === code) await board.put(`${roomPath(code)}/p/${saved.pid}`, vsStatus());
+      if (vs.code === code) {
+        try {
+          await board.put(`${roomPath(code)}/p/${saved.pid}`, vsStatus());
+        } catch (err) {
+          if (vs.lite || !refused(err)) throw err;
+          vs.lite = true; // rules from before titles and chat: send the status without them
+          await board.put(`${roomPath(code)}/p/${saved.pid}`, vsStatus());
+        }
+      }
       vs.fail = 0;
     } catch (err) {
       vs.fail += 1;
@@ -8564,6 +9347,15 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       if (state === 'together' || state === 'hangar' || (state === 'result' && run.vs)) vsStart(room, go);
     }
     if (vs.inMatch) vsHear(room);
+    for (const [id, p] of Object.entries(room.p)) { // chat that came through the room
+      if (id === saved.pid || !p) continue;
+      const cn = Number(p.cn) || 0;
+      if (vs.heardChat[id] === undefined) vs.heardChat[id] = cn;
+      else if (cn > vs.heardChat[id]) {
+        vs.heardChat[id] = cn;
+        chatIn(id, cleanName(p.n) || '친구', Number(p.ch) || 0);
+      }
+    }
     if (state === 'together') renderTogether();
     if (state === 'result' && run.vs) renderVsResult();
     renderVsPanel();
@@ -8596,6 +9388,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     tgNote('');
     startStage(clamp((Number(room.stage) || 1) - 1, 0, ENDLESS));
     run.vs = true;
+    chatBtnSync();
     showBanner('대결 시작!', `${n}명이 같은 지역에서 출발해요`, false);
     announce(`대결 시작! ${n}명이 같은 지역에서 출발해요.`);
     renderVsPanel();
@@ -8648,7 +9441,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       const me = id === saved.pid;
       const live = me ? vsStatus() : p;
       rows.push({
-        id, me, name: cleanName(live.n) || '조종사', ship: live.s, sc: Number(live.sc) || 0, hp: Number(live.hp) || 0,
+        id, me, name: cleanName(live.n) || '조종사', ship: live.s, tt: live.tt || '', sc: Number(live.sc) || 0, hp: Number(live.hp) || 0,
         alive: me ? live.al : fighting(p, id), gone: !me && p.al === true && !fighting(p, id), cl: !!live.cl,
       });
     }
@@ -8699,6 +9492,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const rows = vsStandings();
     const still = rows.some((r) => r.alive && !r.me);
     const top = rows[0];
+    if (!still && top && top.me && rows.length > 1 && vs.wonFor !== vs.match) {
+      vs.wonFor = vs.match;
+      saved.life.vsWins += 1;
+      checkAchv();
+      save();
+    }
     ui.vsResultTitle.textContent = still ? '대결 순위 · 친구들이 아직 싸우는 중이에요'
       : top && top.me ? '대결 순위 · 내가 1등이에요!' : `대결 순위 · ${top ? top.name : ''} 우승!`;
     ui.vsResultList.replaceChildren(...rows.map((r, i) => vsRow(r, i + 1)));
@@ -8709,7 +9508,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     li.innerHTML = '<span class="tg-rank"></span><span class="tg-who"><b></b><small></small></span><span class="tg-side"></span>';
     li.querySelector('.tg-rank').textContent = String(n);
     li.querySelector('b').textContent = r.me ? `${r.name} (나)` : r.name;
-    li.querySelector('small').textContent = SHIPS.some((sd) => sd.id === r.ship) ? shipOf(r.ship).name : '';
+    const shipName = SHIPS.some((sd) => sd.id === r.ship) ? shipOf(r.ship).name : '';
+    li.querySelector('small').textContent = titleOf(r.tt) ? `${titleOf(r.tt)} · ${shipName}` : shipName;
     const side = li.querySelector('.tg-side');
     side.textContent = `${fmt(r.sc)}점`;
     const tag = document.createElement('span');
@@ -8747,9 +9547,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       li.style.setProperty('--tone', ship.tone);
       li.innerHTML = '<span class="tg-dot"></span><span class="tg-who"><b></b><small></small></span><span class="tg-side"></span>';
       li.querySelector('b').textContent = me ? `${cleanName(p.n) || saved.name} (나)` : cleanName(p.n) || '조종사';
-      li.querySelector('small').textContent = ship.name;
+      li.querySelector('small').textContent = titleOf(p.tt) ? `${titleOf(p.tt)} · ${ship.name}` : ship.name;
       const side = li.querySelector('.tg-side');
       const tags = [];
+      const said = vs.chatShow[id];
+      if (said && Date.now() < said.until) tags.push([said.text, ' is-chat']);
       if (room && room.host === id) tags.push(['방장', '']);
       if (room && p.m === room.go && room.go > 0 && fighting(p, id)) tags.push(['대결 중', ' is-live']);
       else if (!me && Date.now() - ((vs.heard[id] && vs.heard[id].at) || Date.now()) > VS_SILENT) tags.push(['연결 끊김', ' is-out']);
@@ -9038,7 +9840,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   // both ways open: introduce ourselves (name, fighter, skill tree)
   function coopLinked() {
-    coopSend({ t: 'hello', name: saved.name || '조종사', ship: saved.ship, tree: saved.tree });
+    coopSend({ t: 'hello', name: saved.name || '조종사', ship: saved.ship, tree: saved.tree, tt: saved.title || '' });
     if (state === 'together') renderTogether();
   }
   // the database route: each phone keeps one record with its recent messages and, for the host, the latest snapshot
@@ -9119,6 +9921,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
     } else if (m.t === 'end' && coopGuest()) {
       coopGuestEnd(m);
+    } else if (m.t === 'chat') {
+      const id = coop.link ? coop.link.peerId : '';
+      if (id && Number(m.n) > (vs.heardChat[id] || 0)) {
+        vs.heardChat[id] = Number(m.n);
+        chatIn(id, coop.partner || '친구', Number(m.i) || 0);
+      }
     } else if (m.t === 'bye' && coopHost()) {
       coopLost('친구가 협동에서 나갔어요.');
     }
@@ -9198,6 +10006,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     startStage(clamp(stageNo - 1, 0, ENDLESS));
     Object.assign(coop, { on: true, role: 'host', lost: false, ended: false, seq: 0, snapT: 0, ev: [], askId: 0, hostPlayer: player, pauseRemote: false });
     run.coop = true;
+    chatBtnSync();
     const a = shipCtx(coop.info);
     coop.ally = a;
     coop.other = a;
@@ -9217,6 +10026,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   function coopHostStep(dt) {
     const a = coop.ally;
     if (!a) return;
+    if (coop.recalc) { // a risk card changed both ships' numbers
+      coop.recalc = false;
+      recompute();
+      withCtx(a, recompute);
+    }
     const p = a.player;
     if (a.input && p.alive) {
       const k = Math.min(1, dt * 18);
@@ -9306,7 +10120,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       a.start = false;
       req = { source: 'start', eyebrow: '출격 준비', title: '시작 무기를 고르세요', options: Object.keys(WEAPONS).map((id) => ({ kind: 'weapon', id, lv: 1 })) };
     } else if (a.chests > 0) req = withCtx(a, () => chestRequest(a));
-    else if (a.levels > 0) req = withCtx(a, () => ({ source: 'level', eyebrow: `레벨 업 · Lv ${run.level}`, title: '스킬을 하나 고르세요', options: rollOptions(choiceCount()) }));
+    else if (a.levels > 0) req = withCtx(a, () => ({ source: 'level', eyebrow: `레벨 업 · Lv ${run.level}`, title: '스킬을 하나 고르세요', options: levelOptions() }));
     if (!req) return;
     a.asking = { ...req, id: ++coop.askId };
     coopSend({ t: 'choose', ...a.asking, build: buildView(a), rerolls: a.run.rerolls });
@@ -9416,7 +10230,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       else if (e.kind === 'rock') ang = e.rot || 0;
       else if (e.kind === 'spinner') ang = e.spin || 0;
       const step = STEPS.indexOf(e.step);
-      const flags = (e.flash > 0 ? 1 : 0) | (e.armed ? 2 : 0) | (e.vx > 0 ? 4 : 0) | (e.boss ? 8 : 0) | (e.linkT > 0 ? 16 : 0) | (e.ghost ? 32 : 0);
+      const flags = (e.flash > 0 ? 1 : 0) | (e.armed ? 2 : 0) | (e.vx > 0 ? 4 : 0) | (e.boss ? 8 : 0) | (e.linkT > 0 ? 16 : 0) | (e.ghost ? 32 : 0)
+        | (e.gold ? 64 : 0) | (e.elite ? 128 : 0) | (e.treasure ? 256 : 0);
       body.push(e.id, ENEMY_KINDS.indexOf(e.kind), I16(e.x * 4), I16(e.y * 4), angle16(ang), angle16(e.aim || 0), Math.max(0, step),
         I16((e.st || 0) * 100), I16((e.kind === 'phantom' ? e.alpha : 1) * 1000), flags, I16((e.hp / e.maxHp) * 1000), I16((e.size || 1) * 100), I16(e.r * 10));
     }
@@ -9447,7 +10262,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       sc: run.score, k: run.kills, lv: run.level, xp: Math.round((run.xp / run.need) * 1000) / 1000, co: Math.floor(run.coins),
       si: stageIndex, sk: skyIdx, sec: run.sector, en: run.endless ? 1 : 0, fin: director.final ? 1 : 0, cb: run.combo || 0, ct: Math.round((run.comboT || 0) * 100) / 100,
       fl: Math.round(flash * 100) / 100, shk: Math.round(shake * 10) / 10, cine: Math.round(Math.max(0, cine) * 100) / 100,
-      boss: b ? [b.id || (b.id = nextId()), Math.round((b.hp / b.maxHp) * 1000) / 1000, b.kind] : 0,
+      boss: b ? [b.id || (b.id = nextId()), Math.round((b.hp / b.maxHp) * 1000) / 1000, b.kind, b.variant || 0] : 0,
+      evn: run.ev.id && run.ev.left > 0 ? [run.ev.id, Math.round(run.ev.left * 10) / 10] : 0,
       s: [shipState(null), coop.ally ? shipState(coop.ally) : null],
       it: items.slice(0, 60).map((it) => [ITEM_KINDS.indexOf(it.kind), Math.round(it.x), Math.round(it.y), Math.round(it.t * 10) / 10]),
       bm: beams.map((m) => [Math.round(m.x), Math.round(m.y), Math.round(m.width), Math.round(m.warn * 100) / 100, Math.round(m.active * 100) / 100, Math.round(m.full * 100) / 100]),
@@ -9475,6 +10291,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     startStage(clamp((Number(m.stage) || 1) - 1, 0, ENDLESS));
     Object.assign(coop, { on: true, role: 'guest', lost: false, ended: false, snapAt: 0, gap: COOP_SNAP, hostSt: 'p', asked: null, pauseRemote: false, lastQ: 0 });
     run.coop = true;
+    chatBtnSync();
     coop.map.clear();
     coop.shots.clear();
     coop.mine.clear();
@@ -9539,7 +10356,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       e.nx = x;
       e.ny = y;
       Object.assign(e, { angle: ang, rot: ang, spin: ang, aim, step, st, hover: 1, alpha, flash: flags & 1 ? 0.05 : 0, armed: !!(flags & 2), vx: flags & 4 ? 1 : -1,
-        boss: !!(flags & 8), linkT: 0, ghost: !!(flags & 32), hp, size, r });
+        boss: !!(flags & 8), linkT: 0, ghost: !!(flags & 32), gold: !!(flags & 64), elite: !!(flags & 128), treasure: !!(flags & 256), hp, size, r });
     }
     for (const id of coop.map.keys()) if (!seen.has(id)) coop.map.delete(id);
     enemies.length = 0;
@@ -9624,6 +10441,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     run.comboT = h.ct;
     run.sector = h.sec;
     director.final = !!h.fin;
+    run.ev.id = h.evn ? h.evn[0] : '';
+    run.ev.left = h.evn ? h.evn[1] : 0;
     if (h.si !== stageIndex || h.sk !== skyIdx) { // the endless mode moved on to a new sector
       stageIndex = h.si;
       skyIdx = h.sk;
@@ -9641,6 +10460,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         e.hp = h.boss[1];
         e.maxHp = 1;
         e.kind = h.boss[2];
+        e.variant = h.boss[3] || 0;
         e.step = 'fight';
       }
     }
@@ -10228,12 +11048,13 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     else if (r.status === 'done') {
       ui.boardStatus.textContent = '';
       const lead = document.createElement('span');
-      lead.textContent = `${saved.name} · ${r.stage === ENDLESS + 1 ? '무한 모드' : `${r.stage}지역`} 전체`;
+      const where = r.stage === ENDLESS + 1 ? '무한 모드' : `${r.stage}지역`;
+      lead.textContent = `${saved.name} · ${where} ${r.wrank ? '이번 주' : '전체'}`;
       const rankEl = document.createElement('b');
-      rankEl.textContent = r.rank ? `${r.rank}위` : '200위 밖';
+      rankEl.textContent = r.wrank ? `${r.wrank}위` : r.rank ? `${r.rank}위` : '200위 밖';
       const tail = document.createElement('span');
       tail.className = 'board-sub';
-      tail.textContent = r.rank ? `${r.total}명 중 · ${r.best ? '이번 판이 내 최고 기록' : '내 최고 기록 기준'}` : '';
+      tail.textContent = r.wrank ? `${r.wtotal}명 중 · 역대 ${r.rank ? `${r.rank}위` : '200위 밖'}` : r.rank ? `${r.total}명 중 · ${r.best ? '이번 판이 내 최고 기록' : '내 최고 기록 기준'}` : '';
       ui.boardStatus.append(lead, rankEl, tail);
     }
   }
@@ -10243,20 +11064,36 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     r.status = 'sending';
     renderBoardResult();
     try {
-      r.key = await board.submit(r.stage, { name: saved.name, score: r.score, time: r.time, level: r.level, kills: r.kills, clear: r.clear, pid: saved.pid, ship: r.ship });
+      const entry = { name: saved.name, score: r.score, time: r.time, level: r.level, kills: r.kills, clear: r.clear, pid: saved.pid, ship: r.ship };
+      if (saved.title) entry.tt = saved.title;
+      const keys = await board.submit(r.stage, entry);
+      r.key = keys.key;
       const list = bestPerPlayer(await board.top(r.stage, true));
       const i = list.findIndex((x) => x.pid === saved.pid);
       r.rank = i >= 0 ? i + 1 : 0;
       r.total = list.length;
       r.best = i >= 0 && list[i].key === r.key;
+      r.wrank = 0;
+      if (keys.weekly) {
+        try {
+          const wl = bestPerPlayer(await board.top(r.stage, true, weekKey()));
+          const j = wl.findIndex((x) => x.pid === saved.pid);
+          r.wrank = j >= 0 ? j + 1 : 0;
+          r.wtotal = wl.length;
+        } catch {
+          r.wrank = 0;
+        }
+      }
       r.status = 'done';
-      if (r.rank) announce(`전체 순위 ${r.rank}위예요.`);
+      if (r.wrank) announce(`이번 주 ${r.wrank}위, 역대 ${r.rank}위예요.`);
+      else if (r.rank) announce(`전체 순위 ${r.rank}위예요.`);
     } catch (err) {
       r.status = refused(err) && r.stage === ENDLESS + 1 ? 'closed' : 'error';
     }
     if (lastRun === r) renderBoardResult();
   }
   let boardStage = 1;
+  let boardWeek = true; // this week's board first: everyone starts fresh on Monday
   let recordsView = 'board';
   function setRecordsView(view) {
     recordsView = board.on ? view : 'mine';
@@ -10286,6 +11123,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   async function renderBoard(fresh) {
     const stage = boardStage;
+    const week = boardWeek ? weekKey() : '';
+    for (const b of ui.boardPeriod.querySelectorAll('[data-period]')) b.setAttribute('aria-pressed', String((b.dataset.period === 'week') === boardWeek));
+    ui.periodNote.textContent = boardWeek ? `${weekLeft()} 새로 시작해요` : '처음부터 지금까지';
     const chips = STAGES.map((st, i) => ({ no: i + 1, color: st.color, label: String(i + 1), name: `${i + 1}. ${st.name}` }));
     chips.push({ no: ENDLESS + 1, color: '#ff4fd8', label: '∞ 무한', name: '무한 모드' });
     ui.boardStages.replaceChildren(...chips.map((c) => {
@@ -10302,11 +11142,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     renderBoardMe();
     ui.boardList.replaceChildren();
     ui.boardEmpty.hidden = false;
-    const title = stage === ENDLESS + 1 ? '무한 모드' : `${stage}. ${stageName(stage)}`;
+    const title = `${stage === ENDLESS + 1 ? '무한 모드' : `${stage}. ${stageName(stage)}`}${boardWeek ? ' 이번 주' : ''}`;
     ui.boardEmpty.textContent = `${title} 순위를 불러오는 중…`;
     try {
-      const list = bestPerPlayer(await board.top(stage, fresh));
-      if (boardStage !== stage || recordsView !== 'board') return;
+      const list = bestPerPlayer(await board.top(stage, fresh, week));
+      if (boardStage !== stage || recordsView !== 'board' || boardWeek !== !!week) return;
       if (!list.length) {
         ui.boardEmpty.textContent = `${title}에는 아직 올라온 기록이 없어요. 첫 번째 주인공이 되어 보세요!`;
         return;
@@ -10318,9 +11158,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       ui.boardList.replaceChildren(...rows);
     } catch (err) {
       if (boardStage !== stage || recordsView !== 'board') return;
-      ui.boardEmpty.textContent = refused(err) && stage === ENDLESS + 1
-        ? '무한 모드 순위는 아직 준비 중이에요. 조금만 기다려 주세요!'
-        : '순위를 불러오지 못했어요. 인터넷 연결을 확인하고 새로 고침을 눌러 주세요.';
+      if (refused(err) && week) { // the database has no weekly boards yet: show the all-time one instead
+        boardWeek = false;
+        renderBoard(fresh);
+        return;
+      }
+      ui.boardEmpty.textContent = refused(err) && week ? '주간 순위는 아직 준비 중이에요. 역대 순위를 눌러 보세요!'
+        : refused(err) && stage === ENDLESS + 1 ? '무한 모드 순위는 아직 준비 중이에요. 조금만 기다려 주세요!'
+          : '순위를 불러오지 못했어요. 인터넷 연결을 확인하고 새로 고침을 눌러 주세요.';
     }
   }
   // the database said no (its rules are older than this part of the game), as opposed to a network problem
@@ -10335,6 +11180,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const name = document.createElement('b');
     name.className = 'rank-name';
     name.textContent = r.name;
+    if (titleOf(r.tt)) {
+      const tt = document.createElement('span');
+      tt.className = 'tag is-title';
+      tt.textContent = titleOf(r.tt);
+      scoreEl.append(tt);
+    }
     scoreEl.append(name, `${fmt(r.score)}점`);
     if (r.clear) {
       const tag = document.createElement('span');
@@ -10486,6 +11337,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (MOVE_KEYS.has(e.code)) {
       keys.add(e.code);
       if (state === 'playing') e.preventDefault();
+    }
+    if (state === 'goals' && e.code === 'Escape') {
+      showTitle();
+      e.preventDefault();
+      return;
     }
     if (state === 'together' && e.code === 'Escape' && !vs.code) {
       showTitle();
@@ -10728,11 +11584,51 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   ui.toStages.addEventListener('click', showStages);
   ui.openTree1.addEventListener('click', showTree);
   ui.openHangar.addEventListener('click', showHangar);
+  ui.openGoals.addEventListener('click', () => {
+    audio.unlock();
+    showGoals();
+  });
+  ui.goalsBack.addEventListener('click', () => showTitle());
+  for (const t of ui.goalsTabs) {
+    t.addEventListener('click', () => {
+      goalsTab = t.dataset.goals === 'achv' ? 'achv' : 'daily';
+      renderGoals();
+    });
+  }
+  ui.missionList.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-claim]');
+    if (b) claimMission(Number(b.dataset.claim));
+  });
+  ui.missionBonus.addEventListener('click', (e) => {
+    if (e.target.closest('[data-bonus]')) claimBonus();
+  });
+  ui.achvList.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-title]');
+    if (!b || !saved.achv.includes(b.dataset.title)) return;
+    saved.title = saved.title === b.dataset.title ? '' : b.dataset.title;
+    save();
+    sfx.play('item');
+    renderGoals();
+    renderPilot();
+  });
   ui.openTogether.addEventListener('click', () => {
     audio.unlock();
     showTogether();
   });
   ui.tgCreate.addEventListener('click', vsCreate);
+  chatChips(ui.chatBar);
+  chatChips(ui.tgChat);
+  for (const el of [ui.chatBar, ui.tgChat]) {
+    el.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-chat]');
+      if (b) sendChat(Number(b.dataset.chat));
+    });
+  }
+  ui.chatBtn.addEventListener('click', () => {
+    const open = ui.chatBar.hidden;
+    ui.chatBar.hidden = !open;
+    ui.chatBtn.setAttribute('aria-expanded', String(open));
+  });
   for (const t of ui.tgTabs) {
     t.addEventListener('click', () => {
       if (vs.code) return;
@@ -10792,6 +11688,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       audio.unlock();
       sfx.play('evolve');
       announce(`${sd.name}을 샀어요. 이 전투기로 출격해요.`);
+      checkAchv();
       renderHangar();
     } else if (pickShip) {
       saved.ship = pickShip.dataset.pickShip;
@@ -10843,6 +11740,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   ui.recordsTabs.addEventListener('click', (e) => {
     const t = e.target.closest('[data-view]');
     if (t) setRecordsView(t.dataset.view);
+  });
+  ui.boardPeriod.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-period]');
+    if (!b) return;
+    boardWeek = b.dataset.period === 'week';
+    renderBoard(false);
   });
   ui.boardStages.addEventListener('click', (e) => {
     const b = e.target.closest('[data-board-stage]');
@@ -11024,6 +11927,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   window.addEventListener('resize', resize);
   resize();
   showTitle(false);
+  checkAchv(); // players from before achievements get what they already earned
   cloud.pull(true).then((changed) => changed && refreshMenus());
   {
     const code = new URLSearchParams(location.search).get('room');
