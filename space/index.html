@@ -853,6 +853,22 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .online-row .when { font-family: var(--font-data); font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
 .online-row.is-on .when { color: #6ff0a8; font-weight: 700; }
 .online-row.is-off { opacity: 0.75; }
+.online-row.has-invite { grid-template-columns: 14px minmax(0, 1fr) auto auto; }
+.invite-btn {
+  min-height: 30px; padding: 0 12px; border: 1px solid rgba(63, 224, 138, 0.7); border-radius: 999px; background: rgba(63, 224, 138, 0.14);
+  color: #6ff0a8; font: inherit; font-size: 0.75rem; font-weight: 700; cursor: pointer;
+}
+.invite-btn:disabled { border-color: var(--line); background: transparent; color: var(--muted); cursor: default; }
+.invite {
+  position: absolute; z-index: 7; left: 50%; top: 64px; width: min(340px, calc(100% - 24px)); transform: translateX(-50%);
+  display: grid; gap: 10px; padding: 12px 14px; border: 1px solid rgba(63, 224, 138, 0.75); border-radius: 16px; background: rgba(13, 18, 54, 0.97);
+  box-shadow: 0 12px 34px -8px rgba(0, 0, 0, 0.75), 0 0 20px -6px rgba(63, 224, 138, 0.7); animation: invite-in 0.3s ease;
+}
+.invite[hidden] { display: none; }
+.invite p { margin: 0; font-size: 0.875rem; font-weight: 700; text-align: center; }
+.invite-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.invite-btns .btn { min-height: 40px; }
+@keyframes invite-in { from { opacity: 0; transform: translate(-50%, -10px); } to { opacity: 1; transform: translate(-50%, 0); } }
 .tg-entry, .tg-lobby { display: grid; gap: 10px; }
 #tg-code { font-family: var(--font-data); font-size: 1.25rem; letter-spacing: 0.35em; text-align: center; }
 #tg-code::placeholder { font-family: var(--font-ui); font-size: 0.9375rem; letter-spacing: 0; }
@@ -860,6 +876,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .tg-code-box span { font-size: 0.8125rem; color: var(--muted); }
 .tg-code-box b { font-family: var(--font-data); font-size: 2.75rem; font-weight: 700; letter-spacing: 0.18em; line-height: 1.05; color: var(--cyan); text-shadow: 0 0 18px rgba(127, 231, 255, 0.55); }
 .tg-code-box .btn { min-height: 40px; padding-inline: 16px; }
+.tg-invite-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.invite-jump { border-color: rgba(63, 224, 138, 0.7); color: #6ff0a8; }
+.invite-jump[hidden] { display: none; }
 .tg-players { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .tg-player { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255, 255, 255, 0.04); }
 .tg-player.is-me { border-color: rgba(127, 231, 255, 0.55); }
@@ -1096,6 +1115,13 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       </div>
 
       <div class="toast" id="toast" role="status" hidden></div>
+      <div class="invite" id="invite" role="alertdialog" aria-labelledby="invite-text" hidden>
+        <p id="invite-text"></p>
+        <div class="invite-btns">
+          <button type="button" class="btn btn-primary" id="invite-go">들어가기</button>
+          <button type="button" class="btn" id="invite-no">닫기</button>
+        </div>
+      </div>
       <div class="chat-bar" id="chat-bar" hidden></div>
       <div class="banner" id="banner" aria-hidden="true">
         <div class="banner-title" id="banner-title"></div>
@@ -1212,7 +1238,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           <div class="tg-code-box">
             <span>방 번호</span>
             <b id="tg-room-code">0000</b>
-            <button type="button" class="btn" id="tg-invite">친구 초대하기</button>
+            <div class="tg-invite-row">
+              <button type="button" class="btn" id="tg-invite">친구 초대하기</button>
+              <button type="button" class="btn invite-jump" id="tg-online-jump" hidden>접속 중인 조종사 초대</button>
+            </div>
           </div>
           <ol class="tg-players" id="tg-players"></ol>
           <div class="tg-stage">
@@ -1230,7 +1259,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         <div class="online" id="online-box" hidden>
           <p class="tg-label">조종사 접속 현황 <span class="online-count" id="online-count"></span></p>
           <ul class="online-list" id="online-list"></ul>
-          <p class="note">초록 점은 지금 게임을 켜 둔 조종사예요. 1분마다 새로 봐요.</p>
+          <p class="note" id="online-note">초록 점은 지금 게임을 켜 둔 조종사예요. 1분마다 새로 봐요.</p>
         </div>
         <button type="button" class="btn" id="tg-back">돌아가기</button>
       </section>
@@ -1528,7 +1557,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     boardRefresh: $('board-refresh'), boardBox: $('board-box'), boardStatus: $('board-status'), resultNameForm: $('result-name-form'),
     resultName: $('result-name'), resultNameNote: $('result-name-note'), share: $('share'), boardRetry: $('board-retry'),
     keptBox: $('kept-box'), keptInfo: $('kept-info'), keptGo: $('kept-go'), keptDrop: $('kept-drop'), boardModes: $('board-modes'), boardFoot: $('board-foot'),
-    onlineBox: $('online-box'), onlineCount: $('online-count'), onlineList: $('online-list'), friendsOn: $('friends-on'),
+    onlineBox: $('online-box'), onlineCount: $('online-count'), onlineList: $('online-list'), onlineNote: $('online-note'), friendsOn: $('friends-on'), tgOnlineJump: $('tg-online-jump'),
+    invite: $('invite'), inviteText: $('invite-text'), inviteGo: $('invite-go'), inviteNo: $('invite-no'),
   };
   const ctx = ui.canvas.getContext('2d');
 
@@ -11284,7 +11314,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const m = Math.max(0, Math.floor((Date.now() - at) / 60000));
     return m < 1 ? '방금' : m < 60 ? `${m}분 전` : m < 1440 ? `${Math.floor(m / 60)}시간 전` : `${Math.floor(m / 1440)}일 전`;
   }
-  // The together screen lists pilots, the ones on now first, then the rest by when they were last seen.
+  // The together screen lists pilots, the ones on now first, then the rest by when they were last seen. In a room,
+  // everyone on now who isn't in it gets a 초대 button.
+  let onlineProf = null;
+  let onlineSig = '';
   async function renderOnline(fresh) {
     let prof = null;
     if (board.on) {
@@ -11294,14 +11327,36 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         prof = null; // database rules without profiles: nothing to show
       }
     }
+    onlineProf = prof;
     renderFriendsOn(prof);
+    renderOnlineRows();
+  }
+  // who can be invited into this room right now (null outside a room)
+  function inviteRoom() {
+    if (!vs.code || !vs.room || !vs.room.p || !canAccount() || invite.off) return null;
+    const max = vs.room.mode === 'coop' ? 2 : ROOM_MAX;
+    return { full: Object.keys(vs.room.p).length >= max, has: (pid) => !!vs.room.p[pid] };
+  }
+  function renderOnlineRows() {
     if (state !== 'together') return;
+    const prof = onlineProf;
+    const room = inviteRoom();
+    onlineSig = room ? `${vs.code}:${Object.keys(vs.room.p).sort().join(',')}` : '';
     const list = prof ? [...prof.entries()].filter(([pid]) => pid !== saved.pid).map(([pid, p]) => ({ pid, ...p, on: isOnline(pid, prof) }))
       .sort((a, b) => Number(b.on) - Number(a.on) || b.at - a.at).slice(0, 15) : [];
     ui.onlineBox.hidden = !prof;
-    if (!prof) return;
+    if (!prof) {
+      ui.tgOnlineJump.hidden = true;
+      return;
+    }
     const n = list.filter((p) => p.on).length;
+    const callable = room && !room.full ? list.filter((p) => p.on && !room.has(p.pid)).length : 0;
+    ui.tgOnlineJump.hidden = !callable;
+    ui.tgOnlineJump.textContent = `접속 중 ${callable}명 초대`;
     ui.onlineCount.textContent = n ? `${n}명 접속 중` : '지금은 다른 조종사가 없어요';
+    ui.onlineNote.textContent = room
+      ? (room.full ? '방이 꽉 찼어요. 자리가 나면 다시 초대할 수 있어요.' : '초대를 누르면 그 조종사 화면에 이 방으로 들어오라는 알림이 떠요.')
+      : '초록 점은 지금 게임을 켜 둔 조종사예요. 방을 만들면 접속 중인 조종사를 초대할 수 있어요.';
     ui.onlineList.replaceChildren(...list.map((p) => {
       const li = document.createElement('li');
       li.className = `online-row ${p.on ? 'is-on' : 'is-off'}`;
@@ -11311,9 +11366,128 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       const who = li.querySelector('.who');
       if (titleOf(p.tt)) who.insertBefore(titleSpan(p.tt), li.querySelector('small'));
       li.querySelector('small').textContent = SHIPS.some((sd) => sd.id === p.s) ? shipOf(p.s).name : '';
-      li.querySelector('.when').textContent = p.on ? '접속 중' : agoText(p.at);
+      li.querySelector('.when').textContent = room && room.has(p.pid) ? '이 방에 있어요' : p.on ? '접속 중' : agoText(p.at);
+      if (room && p.on && !room.has(p.pid)) {
+        const sentAt = invite.sent.get(p.pid);
+        const recent = !!sentAt && Date.now() - sentAt < INVITE_AGAIN;
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'invite-btn';
+        b.dataset.invite = p.pid;
+        b.dataset.name = p.n;
+        b.disabled = recent || room.full;
+        b.textContent = recent ? '초대함' : '초대';
+        b.setAttribute('aria-label', recent ? `${p.n}님을 초대했어요` : `${p.n}님 초대하기`);
+        li.classList.add('has-invite');
+        li.append(b);
+      }
       return li;
     }));
+  }
+
+  // ---------- invitations ----------
+  // An invitation goes into the friend's own mailbox: a record kept with the account records, at an address worked
+  // out from the friend's player id (the database already lets anyone write a record there by its address, so no new
+  // database rules are needed). Their game looks there every few seconds and shows a card with 들어가기; a solo run in
+  // progress is kept for later, and during a match with friends the card waits until the match is over.
+  const INVITE_FOR = 180000; // an invitation counts for three minutes
+  const INVITE_AGAIN = 20000; // the same pilot can be invited again after this long
+  const INVITE_SEEN_KEY = 'galaxy-defense:invite-seen';
+  const invite = { sent: new Map(), pending: null, busy: false, off: false, seen: '' };
+  try {
+    invite.seen = window.localStorage.getItem(INVITE_SEEN_KEY) || '';
+  } catch {
+    invite.seen = '';
+  }
+  const inboxKeys = new Map();
+  function inboxKey(pid) {
+    if (!inboxKeys.has(pid)) inboxKeys.set(pid, sha256(`gd-inbox:${pid}`));
+    return inboxKeys.get(pid);
+  }
+  async function sendInvite(pid, name) {
+    const room = inviteRoom();
+    if (!room || room.full || room.has(pid)) return;
+    invite.sent.set(pid, Date.now());
+    renderOnlineRows();
+    window.setTimeout(renderOnlineRows, INVITE_AGAIN + 100);
+    const body = {
+      v: 1, id: Math.random().toString(36).slice(2, 10), from: saved.pid, n: saved.name || '조종사', tt: myTitle(), code: vs.code,
+      mode: vs.room.mode === 'coop' ? 'coop' : 'vs',
+    };
+    try {
+      await board.put(`v1/accounts/${await inboxKey(pid)}`, { rev: 0, data: JSON.stringify(body), at: { '.sv': 'timestamp' } });
+      tgNote(`${name}님에게 초대를 보냈어요. 들어오면 이 방에 나타나요.`);
+    } catch (err) {
+      invite.sent.delete(pid);
+      if (refused(err)) invite.off = true; // the database doesn't take it: no 초대 buttons
+      tgNote(refused(err) ? '이 데이터베이스에서는 초대를 보낼 수 없어요.' : '초대를 보내지 못했어요. 잠시 뒤 다시 눌러 주세요.', true);
+      renderOnlineRows();
+    }
+  }
+  function markInviteSeen(id) {
+    invite.seen = id;
+    try {
+      window.localStorage.setItem(INVITE_SEEN_KEY, id);
+    } catch {
+      /* it may show once more after a reload */
+    }
+  }
+  async function checkInbox() {
+    if (!board.on || !saved.name || !canAccount() || document.hidden || invite.busy || invite.off) return;
+    invite.busy = true;
+    try {
+      const doc = await board.get(`v1/accounts/${await inboxKey(saved.pid)}`);
+      if (!doc || typeof doc.data !== 'string') return;
+      let d = null;
+      try {
+        d = JSON.parse(doc.data);
+      } catch {
+        d = null;
+      }
+      if (!d || d.v !== 1 || typeof d.id !== 'string' || d.id === invite.seen || typeof d.code !== 'string' || !/^[0-9]{4}$/.test(d.code) || d.from === saved.pid) return;
+      const at = Number(doc.at) || 0;
+      if (Date.now() - at > INVITE_FOR) return;
+      markInviteSeen(d.id);
+      if (vs.code === d.code) return; // already in that room
+      invite.pending = { id: d.id, code: d.code, mode: d.mode === 'coop' ? 'coop' : 'vs', n: cleanName(d.n) || '친구', tt: typeof d.tt === 'string' ? d.tt : '', at };
+      showInvite(true);
+    } catch {
+      /* offline for a moment: the next look tries again */
+    } finally {
+      invite.busy = false;
+    }
+  }
+  // the card, unless a match with friends is on (then it waits until the match is over)
+  function showInvite(fresh) {
+    const p = invite.pending;
+    if (!p || Date.now() - p.at > INVITE_FOR) {
+      invite.pending = null;
+      ui.invite.hidden = true;
+      return;
+    }
+    if ((run.vs && vs.inMatch && state !== 'result') || coop.on) return;
+    ui.inviteText.textContent = `${p.n}님이 ${p.mode === 'coop' ? '협동' : '대결'} 방(${p.code})에 초대했어요!`;
+    if (ui.invite.hidden) {
+      ui.invite.hidden = false;
+      if (fresh || state !== 'playing') sfx.play('incoming');
+      announce(`${p.n}님이 ${p.mode === 'coop' ? '협동' : '대결'} 방에 초대했어요. 들어가려면 들어가기를 누르세요.`);
+    }
+  }
+  function acceptInvite() {
+    const p = invite.pending;
+    invite.pending = null;
+    ui.invite.hidden = true;
+    if (!p || Date.now() - p.at > INVITE_FOR) {
+      toast('초대 시간이 지났어요.');
+      return;
+    }
+    audio.unlock();
+    const kept = keepable();
+    if (kept) keepRun(); // the solo run waits on the title screen
+    if (vs.code && vs.code !== p.code) vsLeave();
+    showTogether();
+    vsJoin(p.code);
+    if (kept) toast('하던 판은 저장해 뒀어요. 처음 화면에서 이어할 수 있어요.');
   }
   // the friends button on the title screen says how many pilots are on
   function renderFriendsOn(prof) {
@@ -12364,6 +12538,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     return li;
   }
   function renderTogether() {
+    if (state === 'together' && onlineProf) {
+      const room = inviteRoom();
+      if ((room ? `${vs.code}:${Object.keys(vs.room.p).sort().join(',')}` : '') !== onlineSig) renderOnlineRows();
+    }
     const inRoom = !!vs.code;
     const mode = inRoom && vs.room && vs.room.mode === 'coop' ? 'coop' : inRoom && vs.room ? 'vs' : vs.mode;
     const coopRoomOn = mode === 'coop';
@@ -14196,7 +14374,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     drag.id = null;
   }
   ui.frame.addEventListener('pointerdown', (e) => {
-    if (state !== 'playing' || drag.id !== null || e.target.closest('button')) return;
+    if (state !== 'playing' || drag.id !== null || e.target.closest('button, .invite')) return;
     drag.id = e.pointerId;
     const p = toWorld(e);
     drag.x = p.x;
@@ -14293,6 +14471,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     else {
       coopBack();
       presenceBeat();
+      checkInbox();
       if (['title', 'stages', 'tree', 'result'].includes(state)) cloud.pull().then((changed) => changed && refreshMenus());
       if (state === 'together' || state === 'title') renderOnline(true);
     }
@@ -14302,6 +14481,21 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   window.setInterval(() => { // the pilots list and the count on the friends button stay fresh
     if (!document.hidden && (state === 'together' || state === 'title')) renderOnline(true);
   }, 60000);
+  window.setInterval(() => { // invitations: a held card comes back when the match ends; new ones are looked for
+    if (invite.pending && ui.invite.hidden) showInvite(false);
+    checkInbox();
+  }, 8000);
+  window.setTimeout(checkInbox, 2500);
+  ui.onlineList.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-invite]');
+    if (b && !b.disabled) sendInvite(b.dataset.invite, b.dataset.name || '친구');
+  });
+  ui.inviteGo.addEventListener('click', acceptInvite);
+  ui.tgOnlineJump.addEventListener('click', () => ui.onlineBox.scrollIntoView({ behavior: motionOK() ? 'smooth' : 'auto', block: 'start' }));
+  ui.inviteNo.addEventListener('click', () => {
+    invite.pending = null;
+    ui.invite.hidden = true;
+  });
   ui.keptGo.addEventListener('click', () => {
     audio.unlock();
     resumeKept();
