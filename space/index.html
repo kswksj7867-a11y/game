@@ -745,6 +745,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .mode-btn[aria-pressed="true"] { background: rgba(127, 231, 255, 0.14); color: var(--ink); box-shadow: inset 0 0 0 1px rgba(127, 231, 255, 0.5); }
 .kept { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 10px 10px 14px; border: 1px solid rgba(255, 194, 75, 0.6); border-radius: 16px; background: rgba(255, 194, 75, 0.1); }
 .kept[hidden] { display: none; }
+.pause-wait { display: grid; gap: 10px; padding: 10px 14px; border: 1px solid rgba(255, 194, 75, 0.6); border-radius: 16px; background: rgba(255, 194, 75, 0.1); font-size: 0.875rem; }
+.pause-wait p { margin: 0; }
+.pause-wait[hidden], .pause-wait .btn[hidden] { display: none; }
 .kept svg { flex: none; width: 24px; height: 24px; fill: none; stroke: var(--amber); stroke-width: 2; stroke-linejoin: round; }
 .kept-text { flex: 1 1 calc(100% - 40px); min-width: 0; display: grid; gap: 1px; }
 .kept-label { font-size: 0.75rem; color: var(--amber); }
@@ -1287,6 +1290,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       <section class="overlay" id="screen-pause" aria-labelledby="pause-title" hidden>
         <h2 class="panel-title" id="pause-title">일시정지</h2>
         <p class="lede" id="pause-info"></p>
+        <div class="pause-wait" id="pause-wait" role="status" hidden>
+          <p id="pause-wait-text"></p>
+          <button type="button" class="btn" id="pause-alone" hidden>친구 없이 혼자 계속하기</button>
+        </div>
         <div class="slots" id="pause-slots"></div>
         <details class="recipes-box" open>
           <summary>합체 레시피</summary>
@@ -1496,7 +1503,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     treeResetCancel: $('tree-reset-cancel'), treeResetOk: $('tree-reset-ok'),
     titleBest: $('title-best'), start: $('start'), stageList: $('stage-list'), stagesBack: $('stages-back'),
     choiceEyebrow: $('choice-eyebrow'), choiceTitle: $('choice-title'), cards: $('cards'), choiceSlots: $('choice-slots'), choiceRecipes: $('choice-recipes'), recipesMore: $('recipes-more'),
-    ultGuide: $('ult-guide'), pauseInfo: $('pause-info'), pauseSlots: $('pause-slots'), recipes: $('recipes'), resume: $('resume'), quit: $('quit'),
+    ultGuide: $('ult-guide'), pauseInfo: $('pause-info'), pauseWait: $('pause-wait'), pauseWaitText: $('pause-wait-text'), pauseAlone: $('pause-alone'), pauseSlots: $('pause-slots'), recipes: $('recipes'), resume: $('resume'), quit: $('quit'),
     resultEyebrow: $('result-eyebrow'), resultTitle: $('result-title'), finalScore: $('final-score'), finalSeal: $('final-seal'),
     finalNote: $('final-note'), stTime: $('st-time'), stLevel: $('st-level'), stKills: $('st-kills'), stStage: $('st-stage'),
     resultWarn: $('result-warn'), again: $('again'), toStages: $('to-stages'),
@@ -10050,6 +10057,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     renderSlots(ui.pauseSlots);
     renderRecipes(ui.recipes);
     renderUltGuide();
+    renderPauseWait();
     showScreen('pause');
     if (coop.on && !coop.pauseRemote) coopSend({ t: 'pause' });
     coop.pauseRemote = false;
@@ -10156,6 +10164,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   function resume() {
     if (state !== 'paused') return;
+    if (coop.on && !coop.lost && coop.waiting) { // the friend isn't back yet
+      if (!coop.alone) return;
+      coopLost('친구 없이 혼자 계속 싸워요.'); // the host chose not to wait any longer
+    }
     state = 'playing';
     showScreen(null);
     music.resume();
@@ -11527,10 +11539,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         board.patch(roomPath(), { host: saved.pid }).catch(() => {});
       }
     }
-    // between matches the host clears away phones that went quiet
-    if (room.host === saved.pid && !ids.some((id) => room.p[id].m === room.go && fighting(room.p[id], id))) {
+    // between matches the host clears away phones that stayed quiet for minutes (not during a co-op run: that waits)
+    if (room.host === saved.pid && !coop.on && !ids.some((id) => room.p[id].m === room.go && fighting(room.p[id], id))) {
       for (const id of ids) {
-        if (id !== saved.pid && now - vs.heard[id].at > 45000) board.del(`${roomPath()}/p/${id}`).catch(() => {});
+        if (id !== saved.pid && now - vs.heard[id].at > 180000) board.del(`${roomPath()}/p/${id}`).catch(() => {});
       }
     }
     if (room.host !== saved.pid && Number(room.stage) >= 1) vs.stage = Number(room.stage);
@@ -11639,6 +11651,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       rows.push({
         id, me, name: cleanName(live.n) || '조종사', ship: live.s, tt: live.tt || '', sc: Number(live.sc) || 0, hp: Number(live.hp) || 0,
         alive: me ? live.al : fighting(p, id), gone: !me && p.al === true && !fighting(p, id), cl: !!live.cl,
+        away: !me && Date.now() - ((vs.heard[id] && vs.heard[id].at) || 0) < 300000,
       });
     }
     if (!rows.some((r) => r.me)) {
@@ -11713,7 +11726,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     side.textContent = `${fmt(r.sc)}점`;
     const tag = document.createElement('span');
     tag.className = `tg-tag${r.alive ? ' is-live' : r.gone ? ' is-out' : r.cl ? '' : ' is-out'}`;
-    tag.textContent = r.alive ? '싸우는 중' : r.gone ? '연결 끊김' : r.cl ? '클리어' : '격추';
+    tag.textContent = r.alive ? '싸우는 중' : r.gone ? (r.away ? '자리 비움' : '연결 끊김') : r.cl ? '클리어' : '격추';
     side.prepend(tag);
     return li;
   }
@@ -11755,7 +11768,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       if (said && Date.now() < said.until) tags.push([said.text, ' is-chat']);
       if (room && room.host === id) tags.push(['방장', '']);
       if (room && p.m === room.go && room.go > 0 && fighting(p, id)) tags.push(['대결 중', ' is-live']);
-      else if (!me && Date.now() - ((vs.heard[id] && vs.heard[id].at) || Date.now()) > VS_SILENT) tags.push(['연결 끊김', ' is-out']);
+      else if (!me && Date.now() - ((vs.heard[id] && vs.heard[id].at) || Date.now()) > VS_SILENT) {
+        tags.push([Date.now() - vs.heard[id].at > 300000 ? '연결 끊김' : '자리 비움', ' is-out']);
+      }
       for (const [text, cls] of tags) {
         const t = document.createElement('span');
         t.className = `tg-tag${cls}`;
@@ -11851,6 +11866,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     '#b8f36b', '#ffa94d', '#ff7a3d', '#ff6f91', '#c9b6ff', '#ff5a3d', COLOR.orange, COLOR.cyan, COLOR.amber, COLOR.violet, COLOR.teal,
     COLOR.coral, COLOR.lime, COLOR.danger, COLOR.steel, COLOR.ink, '#ffffff', '#ffe08a', '#9ad8ff', '#bfefff', '#fff3b0', '#ffd27a', '#ffb3f0'])];
   const colorIdx = (c) => Math.max(0, PALETTE.indexOf(c));
+  const PAGE_ID = Math.random().toString(36).slice(2, 10); // this page load; a reload mid-run means a fresh start
   const coopHost = () => coop.on && coop.role === 'host';
   const coopGuest = () => coop.on && coop.role === 'guest';
   let entityId = 0;
@@ -11860,7 +11876,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   function coopSend(msg) {
     const L = coop.link;
     if (!L) return;
-    if (L.ctl && L.ctl.readyState === 'open') {
+    if (L.ctl && L.ctl.readyState === 'open' && !L.rtcDead) {
       try {
         L.ctl.send(JSON.stringify(msg));
         return;
@@ -11876,7 +11892,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   function coopSendSnap(buf) {
     const L = coop.link;
     if (!L) return;
-    if (L.snap && L.snap.readyState === 'open') {
+    if (L.snap && L.snap.readyState === 'open' && !L.rtcDead) {
       if (L.snap.bufferedAmount < 512 * 1024) {
         try {
           L.snap.send(buf);
@@ -11932,8 +11948,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     L.ctl = ch;
     ch.onopen = () => {
+      if (L.relay) L.relayGrace = Date.now() + 3000;
       L.open = true;
       L.relay = false;
+      L.relaySnap = null;
+      L.rtcDead = false;
+      L.relinkGap = 0;
       L.heard = Date.now();
       coopLinked();
     };
@@ -11946,11 +11966,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
     };
     ch.onclose = () => {
-      if (coop.link === L && !L.closed) {
+      if (coop.link === L && !L.closed && L.ctl === ch) { // an old line closing after a new one opened changes nothing
         L.open = false;
         L.relay = true; // keep going through the database
         L.made = Date.now();
-        coopLinked();
+        coopLinked(); // mid-run, coopWatch asks for a fresh direct line
       }
     };
     if (ch.readyState === 'open') ch.onopen();
@@ -11960,16 +11980,17 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (!canRtc()) return;
     linkClose({ pc: L.pc });
     const pc = new RTCPeerConnection({ iceServers: ICE });
+    const sid = Math.random().toString(36).slice(2, 10);
     L.pc = pc;
-    L.sid = Math.random().toString(36).slice(2, 10);
+    L.sid = sid;
     L.answered = false;
     L.made = Date.now();
     attachChannel(L, pc.createDataChannel('ctl', { ordered: true }));
     attachChannel(L, pc.createDataChannel('snap', { ordered: false, maxRetransmits: 0 }));
     await pc.setLocalDescription(await pc.createOffer());
     await waitIce(pc, 2500);
-    if (L.closed || coop.link !== L) return;
-    await board.put(`${roomPath()}/sig/${saved.pid}`, { to: L.peerId, d: JSON.stringify({ sid: L.sid, type: 'offer', sdp: pc.localDescription.sdp }) });
+    if (L.closed || coop.link !== L || L.pc !== pc) return; // a newer offer took over meanwhile
+    await board.put(`${roomPath()}/sig/${saved.pid}`, { to: L.peerId, d: JSON.stringify({ sid, type: 'offer', sdp: pc.localDescription.sdp }) });
   }
   async function coopAnswer(L, d) {
     L.sid = d.sid;
@@ -11982,7 +12003,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     await pc.setRemoteDescription({ type: 'offer', sdp: d.sdp });
     await pc.setLocalDescription(await pc.createAnswer());
     await waitIce(pc, 2500);
-    if (L.closed || coop.link !== L) return;
+    if (L.closed || coop.link !== L || L.pc !== pc) return; // a newer offer took over meanwhile
     await board.put(`${roomPath()}/sig/${saved.pid}`, { to: L.peerId, d: JSON.stringify({ sid: d.sid, type: 'answer', sdp: pc.localDescription.sdp }) });
   }
   const parseSig = (s) => {
@@ -12017,6 +12038,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       if (d && d.type === 'hello' && d.sid !== L.hello) { // the friend (re)arrived: offer a connection
         L.hello = d.sid;
         L.open = false;
+        if (coop.on) L.relay = true; // mid-run, the database carries the talk until the new line opens
         coopOffer(L).catch(() => {});
       } else if (d && d.type === 'answer' && d.sid === L.sid && !L.answered && L.pc) {
         L.answered = true;
@@ -12041,16 +12063,16 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   // both ways open: introduce ourselves (name, fighter, skill tree)
   function coopLinked() {
-    coopSend({ t: 'hello', name: saved.name || '조종사', ship: saved.ship, tree: saved.tree, tt: myTitle() });
+    coopSend({ t: 'hello', name: saved.name || '조종사', ship: saved.ship, tree: saved.tree, tt: myTitle(), pg: PAGE_ID });
     if (state === 'together') renderTogether();
   }
   // the database route: each phone keeps one record with its recent messages and, for the host, the latest snapshot
   async function coopRelay() {
     const L = coop.link;
-    if (!L || !L.relay || L.relayBusy || !vs.code) return;
+    if (!L || !(L.relay || Date.now() < (L.relayGrace || 0)) || L.relayBusy || !vs.code) return;
     L.relayBusy = true;
     try {
-      const mine = { n: L.nonce, o: L.out };
+      const mine = { n: L.nonce, o: L.out, t: Date.now() };
       if (L.relaySnap) mine.s = b64(L.relaySnap);
       if (coop.role === 'guest' && coop.lastInput) mine.i = coop.lastInput;
       await board.put(`${roomPath()}/rl/${saved.pid}`, JSON.stringify(mine)); // the latest snapshot stays until a newer one replaces it
@@ -12095,8 +12117,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   function coopCtl(m) {
     if (!m || typeof m !== 'object') return;
     if (m.t === 'hello') {
-      coop.info = { name: cleanName(m.name) || '친구', ship: SHIPS.some((sd) => sd.id === m.ship) ? m.ship : 'star', tree: cleanTree(m.tree) };
+      coop.info = { name: cleanName(m.name) || '친구', ship: SHIPS.some((sd) => sd.id === m.ship) ? m.ship : 'star', tree: cleanTree(m.tree), pg: typeof m.pg === 'string' ? m.pg : '' };
       coop.partner = coop.info.name;
+      if (coop.on && !coop.lost && coop.peerPg && coop.info.pg && coop.info.pg !== coop.peerPg) { // their page started over
+        coopLost(coop.role === 'host' ? '친구 화면이 처음부터 다시 열려서 혼자 계속 싸워요.' : '');
+      }
       if (state === 'together') renderTogether();
     } else if (m.t === 'start' && coop.link && coop.link.role === 'guest') {
       coopGuestStart(m);
@@ -12120,6 +12145,16 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         coop.pauseRemote = true;
         resume();
       }
+    } else if (m.t === 'away') { // the friend went to another app: hold the run for them
+      coop.away = true;
+      coop.awayAt = Date.now();
+      if (state === 'playing') {
+        coop.pauseRemote = true;
+        pause();
+      }
+      if (state === 'paused') renderPauseWait();
+    } else if (m.t === 'back') {
+      coop.away = false;
     } else if (m.t === 'end' && coopGuest()) {
       coopGuestEnd(m);
     } else if (m.t === 'team' && coop.link && coop.link.role === 'guest') { // arrives after the run, when co-op is already over
@@ -12202,12 +12237,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const go = (Number(room.go) || 0) + 1;
     board.patch(roomPath(), { go, st: 'go', stage: vs.stage }).catch(() => {});
     vs.startedFor = go;
-    coopSend({ t: 'start', stage: vs.stage, go, name: saved.name || '조종사', ship: saved.ship, tree: saved.tree });
+    coopSend({ t: 'start', stage: vs.stage, go, name: saved.name || '조종사', ship: saved.ship, tree: saved.tree, pg: PAGE_ID });
     coopHostStart(vs.stage);
   }
   function coopHostStart(stageNo) {
     startStage(stageIdxOf(stageNo));
-    Object.assign(coop, { on: true, role: 'host', lost: false, ended: false, seq: 0, snapT: 0, ev: [], askId: 0, hostPlayer: player, pauseRemote: false });
+    Object.assign(coop, { on: true, role: 'host', lost: false, ended: false, away: false, waiting: false, alone: false, peerPg: (coop.info && coop.info.pg) || '', seq: 0, snapT: 0, ev: [], askId: 0, hostPlayer: player, pauseRemote: false });
     run.coop = true;
     chatBtnSync();
     const a = shipCtx(coop.info);
@@ -12252,7 +12287,6 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       ship.downT -= dt;
       if (ship.downT <= 0) coopRevive(c);
     }
-    if (coop.link && Date.now() - coop.link.heard > 9000) coopLost('친구와 연결이 끊겼어요. 혼자 계속 싸워요.');
   }
   function coopRevive(c) {
     withCtx(c, () => {
@@ -12385,6 +12419,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         addText(W / 2, hudBottom + 60, note, COLOR.coral, 3, 14);
         announce(note);
       }
+      if (state === 'paused') renderPauseWait();
     } else if (!coop.ended) {
       coopGuestEnd({ lost: true });
     }
@@ -12493,7 +12528,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     vs.startedFor = Number(m.go) || vs.startedFor;
     coop.hostTree = cleanTree(m.tree);
     startStage(stageIdxOf(Number(m.stage) || 1));
-    Object.assign(coop, { on: true, role: 'guest', lost: false, ended: false, snapAt: 0, gap: COOP_SNAP, hostSt: 'p', asked: null, pauseRemote: false, lastQ: 0 });
+    Object.assign(coop, { on: true, role: 'guest', lost: false, ended: false, away: false, waiting: false, alone: false, peerPg: typeof m.pg === 'string' ? m.pg : '', snapAt: 0, gap: COOP_SNAP, hostSt: 'p', asked: null, pauseRemote: false, lastQ: 0 });
     run.coop = true;
     chatBtnSync();
     coop.map.clear();
@@ -12830,7 +12865,6 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     updateFx(dt);
     updateFlames(dt);
     updateRails(dt);
-    if (coop.link && Date.now() - coop.link.heard > 9000) coopLost();
   }
   function coopGuestHits() {
     if (player.invuln > 0) return;
@@ -13615,10 +13649,16 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
+      if (coop.on) {
+        coopSend({ t: 'away' });
+        coop.hiddenAt = Date.now();
+      }
       pause();
+      if (coop.on) coopRelay(); // on the database route, send it now: the page may be frozen before the next frame
       keepRun(); // also catches a level-up screen left open
     }
     else {
+      coopBack();
       presenceBeat();
       if (['title', 'stages', 'tree', 'result'].includes(state)) cloud.pull().then((changed) => changed && refreshMenus());
       if (state === 'together' || state === 'title') renderOnline(true);
@@ -13822,6 +13862,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   });
   ui.pause.addEventListener('click', pause);
   ui.resume.addEventListener('click', resume);
+  ui.pauseAlone.addEventListener('click', resume);
   ui.quit.addEventListener('click', () => {
     if (coopGuest()) { // leave the friend's fight with what was earned so far
       coopSend({ t: 'bye' });
@@ -13931,9 +13972,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (next.type === 'create') vsCreate();
     else vsJoin(next.code);
   });
-  window.addEventListener('pagehide', () => {
+  window.addEventListener('pagehide', (e) => {
     keepRun();
-    if (vs.code) board.drop(`${roomPath()}/p/${saved.pid}`);
+    if (vs.code && !e.persisted) board.drop(`${roomPath()}/p/${saved.pid}`); // a page kept for coming back keeps its seat
   });
   ui.hangarBack.addEventListener('click', () => (vs.code ? showTogether() : showTitle()));
   ui.shipGrid.addEventListener('click', (e) => {
@@ -14163,9 +14204,84 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     updateFx(dt);
   }
   // co-op housekeeping every frame: the database route, the friend's choices, snapshots out
-  function coopTick(dt) {
+  // A friend who steps away (another app, a message) pauses both phones, and the run waits up to five minutes for them;
+  // a friend who goes quiet in the middle of a fight pauses it too. The direct line often dies while a phone sleeps,
+  // so after a few quiet seconds both phones carry on through the database and the guest asks for a fresh line.
+  const COOP_WAIT = 300000;
+  const COOP_QUIET = 3500;
+  const COOP_ALONE = 30000;
+  function coopWatch() {
     const L = coop.link;
-    if (L && L.relay) {
+    if (!coop.on || coop.lost || !L) return;
+    const quiet = Date.now() - L.heard;
+    if (quiet > COOP_QUIET && !L.relay) {
+      L.relay = true;
+      L.rtcDead = true;
+      L.open = false;
+    }
+    // on the database route, the guest asks for a fresh direct line as soon as the friend can hear it, then less
+    // and less often while none opens (some networks never allow one)
+    if (L.role === 'guest' && L.relay && !L.open && quiet < COOP_QUIET && Date.now() - (L.relinkAt || 0) > (L.relinkGap || 0)) {
+      L.relinkGap = Math.min(120000, Math.max(15000, (L.relinkGap || 0) * 2));
+      coopRelink(L);
+    }
+    if (coop.away && quiet < 1000 && Date.now() - coop.awayAt > 2000) coop.away = false; // heard again: they are back
+    const waiting = coop.away || quiet > COOP_QUIET;
+    if (waiting && !coop.waiting) coop.waitAt = Date.now();
+    if (waiting && state === 'playing') pause();
+    const alone = waiting && coop.role === 'host' && Date.now() - coop.waitAt > COOP_ALONE; // the host may go on without them
+    if (waiting !== coop.waiting || alone !== coop.alone) {
+      coop.waiting = waiting;
+      coop.alone = alone;
+      if (state === 'paused') renderPauseWait();
+    }
+    if (quiet > (state === 'playing' || state === 'dying' ? 20000 : COOP_WAIT)) {
+      coopLost(coop.role === 'host' ? '친구가 오래 돌아오지 않아서 혼자 계속 싸워요.' : '');
+    }
+  }
+  // the guest asks the host for a fresh direct line
+  function coopRelink(L) {
+    L.relinkAt = Date.now();
+    if (L.role !== 'guest' || !vs.room || !canRtc()) return;
+    L.hello = Math.random().toString(36).slice(2, 10);
+    board.put(`${roomPath()}/sig/${saved.pid}`, { to: vs.room.host, d: JSON.stringify({ sid: L.hello, type: 'hello' }) }).catch(() => {});
+  }
+  // the pause screen says why the run can't go on yet
+  function renderPauseWait() {
+    const wait = coop.on && !coop.lost && coop.waiting;
+    const alone = wait && coop.alone;
+    const who = coop.partner || '친구';
+    ui.resume.disabled = wait && !alone;
+    ui.resume.textContent = !wait ? '계속하기' : alone ? '친구 없이 혼자 계속하기' : '친구를 기다리는 중…';
+    let text = '';
+    if (coopHost() && coop.lost) { // the friend has gone: from here it is a solo run
+      text = `${who}님과의 협동은 끝났어요. 계속하기를 누르면 혼자 싸워요.`;
+      ui.quit.textContent = '여기서 끝내기';
+      ui.quitNote.textContent = '끝내면 지금까지 점수와 코인을 받아요.';
+    } else if (wait) {
+      text = `${coop.away ? `${who}님이 잠깐 자리를 비웠어요. 돌아오면 같이 이어서 해요` : `${who}님과 연결이 잠깐 끊겼어요. 다시 이어지면 계속하기를 누를 수 있어요`}(5분까지 기다려요).${alone ? ' 기다리지 않고 혼자 계속할 수도 있어요.' : ''}`;
+    }
+    ui.pauseWaitText.textContent = text;
+    ui.pauseWait.hidden = !text;
+    ui.pauseAlone.hidden = !alone; // the same as the resume button further down, where it is easy to miss
+  }
+  // this phone is back from another app: give the line a fresh moment and say hello
+  function coopBack() {
+    const L = coop.link;
+    if (!coop.on || !L) return;
+    if (Date.now() - (coop.hiddenAt || Date.now()) > COOP_QUIET && !L.relay) { // the friend has left the direct line by now
+      L.relay = true;
+      L.rtcDead = true;
+      L.open = false;
+    }
+    coop.hiddenAt = 0;
+    L.heard = Date.now();
+    coopSend({ t: 'back' });
+  }
+  function coopTick(dt) {
+    coopWatch();
+    const L = coop.link;
+    if (L && (L.relay || Date.now() < (L.relayGrace || 0))) {
       coop.relayT = (coop.relayT || 0) - dt;
       if (coop.relayT <= 0) {
         coop.relayT = coop.on ? COOP_SLOW : 0.4;
