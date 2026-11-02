@@ -1339,7 +1339,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           <p class="recipes-sub">궁극 합체 · 합체 스킬 2개 + 보급 상자</p>
           <ul class="recipes" id="ult-guide"></ul>
           <p class="note" id="ult-family"></p>
-          <p class="note" id="ult-note">합체 스킬 2개를 가진 채 보급 상자를 열면 궁극기가 하나 더 생겨요. 두 합체 스킬도 그대로 계속 나가고, 궁극기에 쓴 스킬에는 ★ 표시가 붙어요. 한 판에 한 번이에요.</p>
+          <p class="note" id="ult-note">합체 스킬 2개를 가진 채 보급 상자를 열면 궁극기가 하나 더 생겨요. 두 합체 스킬도 그대로 계속 나가고, 궁극기에 쓴 스킬에는 ★ 표시가 붙어요. 한 판에 두 번까지 할 수 있어요.</p>
         </details>
         <div class="row row-3">
           <button type="button" class="btn" data-toggle="music" aria-pressed="true">음악</button>
@@ -1936,6 +1936,13 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         { id: 'endstart', name: '무한 출발', icon: 'missile', max: 5, cost: 300, row: 3, col: 0, req: ['ultready', 1], about: (r) => `무한 모드에서 레벨 업 ${r * 2}번을 하고 출발` },
         { id: 'endscore', name: '무한 점수', icon: 'crit', max: 10, cost: 200, row: 3, col: 1, req: ['ultshield', 1], about: (r) => `무한 모드 점수 +${5 * r}%` },
         { id: 'ultform', name: '무지개 궁극', icon: 'ult', max: 1, cost: 4000, row: 4, req: ['endstart', 2], about: () => '궁극기가 무지갯빛으로 바뀌고 피해 +15%' },
+        { id: 'ultcrit', name: '궁극 치명', icon: 'crit', max: 6, cost: 260, row: 5, col: 0, req: ['ultpow', 3], about: (r) => `궁극기 치명타 확률 +${5 * r}%` },
+        { id: 'ultleech', name: '궁극 흡수', icon: 'leech', max: 5, cost: 300, row: 5, col: 1, req: ['ultshield', 1], about: (r) => `궁극기로 적을 격추할 때마다 체력 +${(0.3 * r).toFixed(1)}` },
+        { id: 'ultchain', name: '궁극 연쇄', icon: 'burst', max: 5, cost: 320, row: 6, col: 0, req: ['ultcrit', 2], about: (r) => `궁극기에 맞은 적이 ${5 * r}% 확률로 터지며 주변에 피해` },
+        { id: 'ultloot', name: '궁극 수확', icon: 'book', max: 5, cost: 280, row: 6, col: 1, req: ['ultleech', 1], about: (r) => `궁극기로 격추한 적의 경험치 +${20 * r}%` },
+        { id: 'ultward', name: '궁극 결계', icon: 'armor', max: 5, cost: 350, row: 7, col: 0, req: ['ultchain', 1], about: (r) => `궁극기를 가진 동안 받는 피해 −${4 * r}%` },
+        { id: 'ultwake', name: '궁극 각성', icon: 'chest', max: 3, cost: 600, row: 7, col: 1, req: ['ultloot', 2], about: (r) => `궁극 합체할 때 스킬을 ${r}개 더 골라요` },
+        { id: 'ulttwin', name: '쌍둥이 궁극', icon: 'ult', max: 5, cost: 1500, row: 8, req: ['ultward', 2], about: (r) => `궁극기를 2개 이상 가지면 모든 궁극기 피해 +${8 * r}%` },
       ],
     },
   ];
@@ -2802,7 +2809,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     sfx: null,
     music: null,
     noise: null,
-    unlock() {
+    unlock(tap = true) {
       try {
         if (!this.ac) {
           const AC = window.AudioContext || window.webkitAudioContext;
@@ -2822,11 +2829,40 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
           this.ac = ac;
         }
-        if (this.ac.state === 'suspended') this.ac.resume().catch(() => {});
+        this.wake(tap);
       } catch {
         this.ac = null;
       }
       return this.ac;
+    },
+    // In the background iOS stops the sound ('interrupted' on Safari, 'suspended' elsewhere) and lets it start again
+    // only from a tap; every tap tries (tap = true). If a tap's try still leaves it silent, a fresh context replaces it
+    // (once per tap, so it can't loop); the next tap starts that one.
+    wake(tap) {
+      const ac = this.ac;
+      if (!ac || ac.state === 'running' || ac.state === 'closed') return;
+      let p = null;
+      try {
+        p = ac.resume();
+      } catch {
+        p = null;
+      }
+      if (!tap || !p || !p.then) return;
+      const check = () => window.setTimeout(() => {
+        if (this.ac === ac && ac.state !== 'running' && !document.hidden) this.renew();
+      }, 400);
+      p.then(check, check);
+    },
+    renew() {
+      const old = this.ac;
+      this.ac = null;
+      try {
+        if (old) old.close().catch(() => {});
+      } catch {
+        /* already gone */
+      }
+      this.unlock(false);
+      music.restart(); // the music's clock starts over with the new context
     },
   };
   function tone(bus, freq, at, dur, type, peak, glide, cutoff) {
@@ -2913,8 +2949,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       if (!ac || !saved.sfx) return;
       const gap = GAP[name];
       if (gap) {
-        if (ac.currentTime - (last[name] || -1) < gap) return;
-        last[name] = ac.currentTime;
+        const t = ac.currentTime;
+        const l = last[name];
+        if (l !== undefined && t >= l && t - l < gap) return; // (t < l: the sound started over with a new context)
+        last[name] = t;
       }
       try {
         sounds[name]();
@@ -3059,6 +3097,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       },
       pause: halt,
       resume: run,
+      restart() { // the same track again, timed by the (new) context's clock
+        if (!timer) return;
+        halt();
+        run();
+      },
     };
   })();
 
@@ -5648,7 +5691,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       leech: 0.08 * passiveLv('leech'),
       speedMul: (1 + 0.12 * passiveLv('gyro')) * (1 + 0.06 * rank('velocity')),
       reachMul: 1 + 0.1 * passiveLv('fuel'),
-      ultMul: (1 + 0.1 * rank('ultpow')) * (rank('ultform') ? 1.15 : 1),
+      ultMul: (1 + 0.1 * rank('ultpow')) * (rank('ultform') ? 1.15 : 1) * (ultCount() >= 2 ? 1 + 0.08 * rank('ulttwin') : 1),
+      ultCrit: 0.05 * rank('ultcrit'),
+      ultLeech: 0.3 * rank('ultleech'),
+      ultChain: 0.05 * rank('ultchain'),
+      ultLoot: 0.2 * rank('ultloot'),
       ultArea: 1 + 0.06 * rank('ultsize'),
       ultHaste: 1 - 0.05 * rank('ultcd'),
       focus: 0.1 * rank('focus'),
@@ -5673,6 +5720,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     };
     for (const [key, v] of Object.entries(sd.mul || {})) stats[key] *= v; // the fighter's own strengths
     for (const [key, v] of Object.entries(sd.add || {})) stats[key] += v;
+    if (ultCount() > 0) stats.taken *= 1 - 0.04 * rank('ultward'); // the ultimate's guard
     const rk = run.risk; // risk cards taken this run
     stats.maxHp = Math.round(stats.maxHp * rk.maxHp);
     stats.dmgMul *= rk.dmg;
@@ -5785,7 +5833,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     if (o.kind === 'ult') {
       const u = ULTS[o.ult];
-      return { icon: u.icon, name: u.name, tag: '궁극 합체!', desc: `${WEAPONS[o.a].evo.name} + ${WEAPONS[o.b].evo.name}: ${u.about}. 두 합체 스킬도 그대로 계속 나가요!${run.endless ? '' : ' 한 판에 한 번만 할 수 있어요.'}`, cls: 'is-ult' };
+      return { icon: u.icon, name: u.name, tag: '궁극 합체!', desc: `${WEAPONS[o.a].evo.name} + ${WEAPONS[o.b].evo.name}: ${u.about}. 두 합체 스킬도 그대로 계속 나가요!${run.endless ? '' : ` 한 판에 두 번까지 (${run.ults + 1}/${ULT_PER_RUN}번째).`}`, cls: 'is-ult' };
     }
     if (o.kind === 'skip') {
       return { icon: 'skip', name: '건너뛰기', tag: '', desc: '지금은 합체하지 않아요. 대신 이번 상자에서 스킬 하나를 골라요.', cls: 'is-skip' };
@@ -7103,7 +7151,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         }
         emitFlames(s, w.evolved, dt);
       } else if (w.id === 'ult') {
-        updateUlt(w, dt, cdMul);
+        ultNow = true;
+        try {
+          updateUlt(w, dt, cdMul);
+        } finally {
+          ultNow = false;
+        }
       }
     }
   }
@@ -7587,6 +7640,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     build.weapons.push({ id: 'ult', ult: o.ult, from: [o.a, o.b], lv: 1, evolved: true, cd: 0.6, cd2: 2, t: 0, charge: 0 });
     run.ults += 1;
     run.fused.push(o.a, o.b);
+    recompute(); // the guard and the twin bonus count from now
+    if (rank('ultwake')) { // extra skill picks for this ship
+      if (ctxNow) ctxNow.levels += rank('ultwake');
+      else pendingLevels += rank('ultwake');
+    }
     if (rank('ultshield')) {
       player.hp = stats.maxHp;
       player.invuln = Math.max(player.invuln, 5);
@@ -8466,10 +8524,18 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       return;
     }
   }
+  // While an ultimate's attack is worked out, ultNow is on: the ultimate upgrades count then.
+  let ultNow = false;
+  const ultCount = () => build.weapons.reduce((n, w) => n + (w.id === 'ult' ? 1 : 0), 0);
+  const ultBursts = [];
+  function flushUltBursts() { // the chain bursts an ultimate set off, outside the ultimate's own turn
+    for (const b of ultBursts.splice(0)) blastAt(b.x, b.y, 44 * stats.area, b.dmg, null, '#ffe08a');
+  }
   function damage(e, amount, x, y) {
     if (e.dead || e.t < 0 || e.ghost) return;
     if (e.boss && e.step !== 'fight') return;
-    const crit = stats.crit > 0 && Math.random() < stats.crit;
+    const critP = stats.crit + (ultNow ? stats.ultCrit : 0);
+    const crit = critP > 0 && Math.random() < critP;
     if (crit) amount *= stats.critMul;
     if (e.boss) amount *= stats.bossMul;
     else if (stats.elite && e.r >= 18) amount *= 1 + stats.elite;
@@ -8478,6 +8544,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     e.hp -= amount;
     e.flash = 0.06;
     if (e.boss) hudDirty = true;
+    if (ultNow && stats.ultChain && !e.boss && ultBursts.length < 24 && Math.random() < stats.ultChain) ultBursts.push({ x: e.x, y: e.y, dmg: amount * 0.5 });
     if (e.hp <= 0 || (!e.boss && e.hp < e.maxHp * stats.execute)) kill(e);
     else sfx.play('hit');
     if (crit) {
@@ -8510,6 +8577,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     run.score += pts;
     if (e.gold || e.elite) eventLoot(e);
     if (stats.leech) heal(stats.leech, true);
+    if (ultNow && stats.ultLeech) heal(stats.ultLeech, true);
     if (!e.boss && stats.chain && Math.random() < stats.chain) blasts.push({ x: e.x, y: e.y });
     hudDirty = true;
     if (e.kind === 'cruiser') {
@@ -8535,7 +8603,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       mission('boss');
       return;
     }
-    dropGem(e.x, e.y, e.xp);
+    dropGem(e.x, e.y, ultNow && stats.ultLoot ? Math.ceil(e.xp * (1 + stats.ultLoot)) : e.xp);
     rollItem(e);
     explode(e.x, e.y, kindColor(e.kind), e.r >= 18 ? 'mid' : 'small');
     if (e.kind === 'splitter') { // breaks into three fragments that come after the ship
@@ -9203,6 +9271,207 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ctx.restore();
   }
   const BAR_KINDS = new Set(['gunner', 'tank', 'carrier', 'shield', 'spinner', 'lancer', 'healer', 'bomber', 'splitter']);
+  // The treasure ship, painted once: a galleon seen from the side, bow to the right.
+  let TREASURE = null;
+  let TREASURE_FLASH = null;
+  function paintTreasure(g) {
+    const W2 = 50;
+    // rocket jets at the stern
+    for (const y of [4, 12]) {
+      const jet = g.createLinearGradient(-W2 - 18, 0, -W2 + 4, 0);
+      jet.addColorStop(0, 'rgba(255, 170, 60, 0)');
+      jet.addColorStop(1, 'rgba(255, 230, 150, 0.95)');
+      g.fillStyle = jet;
+      g.beginPath();
+      g.moveTo(-W2 + 4, y - 4);
+      g.lineTo(-W2 - 18, y);
+      g.lineTo(-W2 + 4, y + 4);
+      g.closePath();
+      g.fill();
+    }
+    // the sail on its mast, a gold coin painted on it
+    g.fillStyle = '#5a3a1c';
+    g.fillRect(-2, -40, 4, 40);
+    g.fillRect(-26, -30, 44, 3);
+    const sail = g.createLinearGradient(-24, -30, 18, -4);
+    sail.addColorStop(0, '#fff6dc');
+    sail.addColorStop(1, '#e8c98a');
+    g.fillStyle = sail;
+    g.strokeStyle = '#2a1a0c';
+    g.lineWidth = 2;
+    g.beginPath();
+    g.moveTo(-24, -27);
+    g.quadraticCurveTo(-4, -22, 16, -27);
+    g.lineTo(18, -2);
+    g.quadraticCurveTo(-4, 2, -22, -3);
+    g.closePath();
+    g.fill();
+    g.stroke();
+    const coin = g.createRadialGradient(-5, -17, 1, -3, -15, 8);
+    coin.addColorStop(0, '#fff3c4');
+    coin.addColorStop(0.55, '#ffc24b');
+    coin.addColorStop(1, '#b97a12');
+    g.fillStyle = coin;
+    g.beginPath();
+    g.arc(-3, -14, 7.5, 0, TAU);
+    g.fill();
+    g.strokeStyle = '#7a4a08';
+    g.lineWidth = 1.4;
+    g.stroke();
+    g.fillStyle = '#7a4a08';
+    g.font = 'bold 10px sans-serif';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillText('$', -3, -13.5);
+    // a pennant at the top
+    g.fillStyle = '#ff5a6e';
+    g.beginPath();
+    g.moveTo(2, -40);
+    g.lineTo(16, -37);
+    g.lineTo(2, -33);
+    g.closePath();
+    g.fill();
+    // treasure on deck: two chests and piles of coins with gems
+    const chest = (x, y, w, h) => {
+      g.fillStyle = '#6b3d16';
+      g.strokeStyle = '#2a1a0c';
+      g.lineWidth = 1.6;
+      g.beginPath();
+      g.rect(x, y, w, h);
+      g.fill();
+      g.stroke();
+      g.fillStyle = '#ffc24b';
+      g.fillRect(x, y + h * 0.35, w, 2);
+      g.fillRect(x + w / 2 - 2, y + h * 0.25, 4, 5);
+      // its lid open, gold spilling over
+      g.fillStyle = '#ffd86b';
+      g.beginPath();
+      g.ellipse(x + w / 2, y + 1, w / 2 + 1, 4, 0, Math.PI, 0);
+      g.fill();
+    };
+    chest(-30, -6, 14, 10);
+    chest(20, -6, 13, 9);
+    for (const [x, y, r] of [[-12, 0, 4], [-6, -2, 4], [0, 0, 4.5], [6, -2, 4], [12, 0, 4], [-3, -6, 3.5], [4, -6, 3.5]]) {
+      const c = g.createRadialGradient(x - 1, y - 1, 0.5, x, y, r);
+      c.addColorStop(0, '#fff3c4');
+      c.addColorStop(0.6, '#ffc24b');
+      c.addColorStop(1, '#a86a0c');
+      g.fillStyle = c;
+      g.beginPath();
+      g.arc(x, y, r, 0, TAU);
+      g.fill();
+    }
+    for (const [x, y, col] of [[-9, -5, '#3fe0b2'], [9, -6, '#ff4fd8'], [1, -9, '#7fe7ff']]) {
+      g.fillStyle = col;
+      g.beginPath();
+      g.moveTo(x, y - 3.5);
+      g.lineTo(x + 3, y);
+      g.lineTo(x, y + 3.5);
+      g.lineTo(x - 3, y);
+      g.closePath();
+      g.fill();
+      g.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      g.fillRect(x - 0.8, y - 2, 1.6, 1.6);
+    }
+    // the hull: dark wood, planks, a gold rail and gold trim, portholes
+    g.strokeStyle = '#2a1a0c';
+    g.lineWidth = 2.4;
+    const hullPath = () => {
+      g.beginPath();
+      g.moveTo(-W2, 2);
+      g.lineTo(W2 - 4, 2);
+      g.quadraticCurveTo(W2 + 6, 2, W2 + 10, -6); // the bow rises
+      g.quadraticCurveTo(W2 + 2, 22, W2 - 14, 24);
+      g.lineTo(-W2 + 10, 24);
+      g.quadraticCurveTo(-W2 - 2, 22, -W2, 2);
+      g.closePath();
+    };
+    const wood = g.createLinearGradient(0, 2, 0, 24);
+    wood.addColorStop(0, '#a8662b');
+    wood.addColorStop(1, '#5e3414');
+    g.fillStyle = wood;
+    hullPath();
+    g.fill();
+    g.save();
+    hullPath();
+    g.clip();
+    g.strokeStyle = 'rgba(40, 20, 6, 0.45)';
+    g.lineWidth = 1;
+    for (const y of [9, 15, 20]) {
+      g.beginPath();
+      g.moveTo(-W2, y);
+      g.lineTo(W2 + 10, y);
+      g.stroke();
+    }
+    g.restore();
+    hullPath();
+    g.strokeStyle = '#2a1a0c';
+    g.lineWidth = 2.4;
+    g.stroke();
+    g.fillStyle = '#ffc24b';
+    g.fillRect(-W2, 1, W2 * 2 - 4, 3); // the gold rail
+    g.fillRect(-W2 + 8, 21, W2 * 2 - 22, 2);
+    for (const x of [-30, -14, 2, 18]) {
+      g.fillStyle = '#ffc24b';
+      g.beginPath();
+      g.arc(x, 12, 3.6, 0, TAU);
+      g.fill();
+      g.fillStyle = '#1a0f05';
+      g.beginPath();
+      g.arc(x, 12, 2.2, 0, TAU);
+      g.fill();
+    }
+    // a lantern at the stern
+    lamp(g, -W2 + 2, -4, 9, '#ffd27a');
+    g.fillStyle = '#ffe9a8';
+    g.fillRect(-W2, -7, 4, 5);
+  }
+  function treasureSprites() {
+    if (!TREASURE) {
+      TREASURE = sprite(124, 2, paintTreasure);
+      TREASURE_FLASH = whiteOf(TREASURE);
+    }
+    return TREASURE;
+  }
+  // drawn where the carrier it replaces would be: bigger, rocking a little, facing where it sails, glittering
+  function drawTreasure(e) {
+    const img = treasureSprites();
+    const size = 124;
+    const face = (e.vx || 0) < 0 ? -1 : 1;
+    const rock = Math.sin(clock * 2.2 + e.x * 0.01) * 0.06;
+    glow(ORB.amber, e.x, e.y, 150, 0.45 + 0.25 * Math.sin(clock * 6 + e.x));
+    ctx.save();
+    ctx.translate(e.x, e.y + Math.sin(clock * 3) * 2);
+    ctx.rotate(rock);
+    ctx.scale(face, 1);
+    ctx.drawImage(img, -size / 2, -size / 2 - 6, size, size);
+    if (e.flash > 0) {
+      ctx.globalAlpha = 0.5;
+      ctx.drawImage(TREASURE_FLASH, -size / 2, -size / 2 - 6, size, size);
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+    // glints dancing over the gold
+    ctx.globalCompositeOperation = 'lighter';
+    for (let k = 0; k < 5; k++) {
+      const ph = clock * 1.7 + k * 1.3;
+      const a = 0.5 + 0.5 * Math.sin(ph * 3);
+      if (a < 0.15) continue;
+      const gx = e.x + face * (-26 + ((k * 23) % 56)) + Math.sin(ph) * 3;
+      const gy = e.y - 10 + ((k * 7) % 12) - 6;
+      ctx.globalAlpha = a;
+      ctx.drawImage(dot('#fff3b0'), gx - 5, gy - 5, 10, 10);
+    }
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+    if (e.hp < e.maxHp) { // how much is left before it breaks open
+      const top = e.y - 52;
+      ctx.fillStyle = rgba(COLOR.void, 0.7);
+      ctx.fillRect(e.x - 28, top, 56, 4);
+      ctx.fillStyle = COLOR.amber;
+      ctx.fillRect(e.x - 28, top, (56 * Math.max(0, e.hp)) / e.maxHp, 4);
+    }
+  }
   function drawEnemies() {
     turnBase();
     const art = artSprites(skyIdx);
@@ -9214,6 +9483,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
       if (e.kind === 'mother') {
         drawMother(e);
+        continue;
+      }
+      if (e.treasure) {
+        drawTreasure(e);
         continue;
       }
       const spr = art[e.kind];
@@ -10667,17 +10940,21 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     } else pendingStart = false;
     proceed();
   }
-  // Two combined skills that could fuse now (one ultimate per run; in endless mode every two combined
-  // skills not used yet make one more). Both keep working after the fusion.
+  // Two combined skills that could fuse now (two ultimates per run in a region; in endless mode every two combined
+  // skills not used yet make one more). Both keep working after the fusion. A pair that makes an ultimate this ship
+  // doesn't have yet comes first, so a second fusion brings something new where it can.
   function ultPair() {
     if (run.ults >= ultLimit()) return null;
     const ready = fusable();
     if (ready.length < 2) return null;
-    const a = pick(ready);
-    const b = pick(ready.filter((w) => w !== a));
-    return [a.id, b.id];
+    const have = new Set(build.weapons.filter((w) => w.id === 'ult').map((w) => w.ult));
+    const pairs = [];
+    for (let i = 0; i < ready.length; i++) for (let j = i + 1; j < ready.length; j++) pairs.push([ready[i].id, ready[j].id]);
+    const fresh = pairs.filter(([a, b]) => !have.has(ultFor(a, b)));
+    return pick(fresh.length ? fresh : pairs);
   }
-  const ultLimit = () => (run.endless ? Infinity : 1);
+  const ULT_PER_RUN = 2;
+  const ultLimit = () => (run.endless ? Infinity : ULT_PER_RUN);
   // Opens the next queued crate or level-up, or goes back to the fight.
   function proceed() {
     if (pendingStart) {
@@ -10718,7 +10995,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ui.quitNote.textContent = coop.on ? (coop.pauseRemote ? `${coop.partner || '친구'}님이 일시정지했어요. ` : '친구 화면도 같이 멈춰요. ') + (coopGuest() ? '나가면 지금까지 점수와 코인을 받아요.' : '끝내면 둘 다 지금 점수와 코인을 받아요.')
       : run.vs ? '대결은 계속돼요. 끝내면 지금 점수로 대결 순위에 남아요.'
       : run.endless ? '끝내면 지금까지 모은 점수와 코인을 받아요.' : '그만하면 이번 판의 기록과 코인은 남지 않아요.';
-    ui.ultNote.textContent = `합체 스킬 2개를 가진 채 보급 상자를 열면 궁극기가 하나 더 생겨요. 두 합체 스킬도 그대로 계속 나가고, 궁극기에 쓴 스킬에는 ★ 표시가 붙어요. ${run.endless ? '무한 모드에서는 아직 안 쓴 합체 스킬 2개마다 한 번씩 할 수 있어요.' : '한 판에 한 번이에요.'}`;
+    ui.ultNote.textContent = `합체 스킬 2개를 가진 채 보급 상자를 열면 궁극기가 하나 더 생겨요. 두 합체 스킬도 그대로 계속 나가고, 궁극기에 쓴 스킬에는 ★ 표시가 붙어요. ${run.endless ? '무한 모드에서는 아직 안 쓴 합체 스킬 2개마다 한 번씩 할 수 있어요.' : `한 판에 두 번까지 할 수 있어요(지금 ${run.ults}/${ULT_PER_RUN}). 두 번째는 아직 안 쓴 합체 스킬 2개가 더 있어야 해요.`}`;
     renderSlots(ui.pauseSlots);
     renderRecipes(ui.recipes);
     renderUltGuide();
@@ -11979,7 +12256,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     } else if (e.id === 'treasure') {
       const fromLeft = Math.random() < 0.5;
       const hp = ENEMY.carrier.hp * hpScale() * 1.6;
-      addEnemy('carrier', { move: 'drift', x: fromLeft ? -40 : W + 40, y: H * 0.22, vx: fromLeft ? 36 : -36, vy: 0, angle: 0, treasure: true, gold: true, hp, maxHp: hp, pts: 1500 });
+      addEnemy('carrier', { move: 'drift', x: fromLeft ? -60 : W + 60, y: H * 0.22, vx: fromLeft ? 36 : -36, vy: 0, angle: 0, treasure: true, gold: true, hp, maxHp: hp, pts: 1500, r: 40 }); // r: the galleon is long
     } else if (e.id === 'elite') {
       for (let i = 0; i < 3; i++) {
         const hp = ENEMY.tank.hp * hpScale() * 3;
@@ -14469,7 +14746,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   window.addEventListener('keyup', (e) => keys.delete(e.code));
   document.addEventListener('pointerdown', (e) => {
     lastInput = e.pointerType || 'mouse';
+    if (audio.ac) audio.wake(true);
   }, true);
+  for (const type of ['touchend', 'click', 'keydown']) document.addEventListener(type, () => { if (audio.ac) audio.wake(true); }, true);
   document.addEventListener('keydown', () => {
     lastInput = 'keyboard';
   }, true);
@@ -14490,6 +14769,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       keepRun(); // also catches a level-up screen left open
     }
     else {
+      if (audio.ac) audio.wake(false); // some browsers allow it without a tap
       coopBack();
       presenceBeat();
       checkInbox();
@@ -15023,7 +15303,13 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     updatePlayerShots(dt);
     updateEnemyShots(dt);
     updateHazards(dt);
-    updateUltFx(dt);
+    ultNow = true;
+    try {
+      updateUltFx(dt);
+    } finally {
+      ultNow = false;
+    }
+    if (ultBursts.length) flushUltBursts();
     updateFlames(dt);
     updateRails(dt);
     if (blasts.length) {
