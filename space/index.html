@@ -739,6 +739,17 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .chat-chip:disabled { opacity: 0.5; }
 .tg-tag.is-chat { background: rgba(127, 231, 255, 0.18); color: var(--cyan); }
 .period { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+.period[hidden], .stage-chips[hidden] { display: none; }
+.board-modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin-bottom: 10px; padding: 4px; border: 1px solid var(--line); border-radius: 14px; }
+.mode-btn { appearance: none; min-height: 36px; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font-weight: 700; cursor: pointer; }
+.mode-btn[aria-pressed="true"] { background: rgba(127, 231, 255, 0.14); color: var(--ink); box-shadow: inset 0 0 0 1px rgba(127, 231, 255, 0.5); }
+.kept { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 10px 10px 14px; border: 1px solid rgba(255, 194, 75, 0.6); border-radius: 16px; background: rgba(255, 194, 75, 0.1); }
+.kept[hidden] { display: none; }
+.kept svg { flex: none; width: 24px; height: 24px; fill: none; stroke: var(--amber); stroke-width: 2; stroke-linejoin: round; }
+.kept-text { flex: 1 1 calc(100% - 40px); min-width: 0; display: grid; gap: 1px; }
+.kept-label { font-size: 0.75rem; color: var(--amber); }
+.kept-text b { font-size: 0.9375rem; }
+.kept .btn { flex: 1 1 0; min-height: 42px; padding: 0 14px; }
 .period-btn { appearance: none; min-height: 36px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); font-weight: 700; cursor: pointer; }
 .period-btn[aria-pressed="true"] { border-color: var(--amber); color: var(--amber); background: rgba(255, 194, 75, 0.1); }
 .period-note { margin-left: auto; font-size: 0.75rem; color: var(--muted); }
@@ -1072,6 +1083,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         <p class="eyebrow">작전명</p>
         <h1 class="title" id="game-title">전투의 <span class="title-big">미</span></h1>
         <p class="lede">13분을 버티면 마지막에 모선이 나타나요. 모선을 격추하면 다음 지역이 열려요.</p>
+        <div class="kept" id="kept-box" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M10 8.5v7l5.5-3.5z" /></svg>
+          <span class="kept-text"><span class="kept-label">멈춘 판이 남아 있어요</span><b id="kept-info"></b></span>
+          <button type="button" class="btn btn-primary kept-go" id="kept-go">이어하기</button>
+          <button type="button" class="btn kept-drop" id="kept-drop">버리기</button>
+        </div>
         <ul class="howto">
           <li>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V10m0-1.5a1.5 1.5 0 0 1 3 0V11m0-1a1.5 1.5 0 0 1 3 0v4.5a6 6 0 0 1-6 6h-.6a6 6 0 0 1-4.6-2.2L4.5 15a1.5 1.5 0 0 1 2.3-1.9L9 15" /></svg>
@@ -1370,6 +1387,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       <button type="button" class="tab" role="tab" id="tab-mine" data-view="mine" aria-controls="mine-panel" aria-selected="false">내 기록</button>
     </div>
     <div class="board" id="board-panel" role="tabpanel" aria-labelledby="tab-board" hidden>
+      <div class="board-modes" id="board-modes" role="group" aria-label="순위 종류">
+        <button type="button" class="mode-btn" data-board-mode="solo" aria-pressed="true">혼자</button>
+        <button type="button" class="mode-btn" data-board-mode="coop" aria-pressed="false">협동</button>
+        <button type="button" class="mode-btn" data-board-mode="vs" aria-pressed="false">대결</button>
+      </div>
       <div class="period" id="board-period" role="group" aria-label="순위 기간">
         <button type="button" class="period-btn" data-period="week" aria-pressed="true">이번 주</button>
         <button type="button" class="period-btn" data-period="all" aria-pressed="false">역대</button>
@@ -1388,7 +1410,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       <ol class="ranks" id="board-list"></ol>
       <p class="empty" id="board-empty" hidden></p>
       <div class="records-foot">
-        <p class="note">지역마다 한 사람의 가장 좋은 기록만 보여요.</p>
+        <p class="note" id="board-foot">지역마다 한 사람의 가장 좋은 기록만 보여요.</p>
         <button type="button" class="btn btn-quiet" id="board-refresh">새로 고침</button>
       </div>
     </div>
@@ -1471,6 +1493,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     boardMe: $('board-me'), nameForm: $('name-form'), nameInput: $('name-input'), boardList: $('board-list'), boardEmpty: $('board-empty'),
     boardRefresh: $('board-refresh'), boardBox: $('board-box'), boardStatus: $('board-status'), resultNameForm: $('result-name-form'),
     resultName: $('result-name'), resultNameNote: $('result-name-note'), share: $('share'), boardRetry: $('board-retry'),
+    keptBox: $('kept-box'), keptInfo: $('kept-info'), keptGo: $('kept-go'), keptDrop: $('kept-drop'), boardModes: $('board-modes'), boardFoot: $('board-foot'),
   };
   const ctx = ui.canvas.getContext('2d');
 
@@ -2045,7 +2068,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
   }
   const LIFE_KEYS = ['runs', 'kills', 'bosses', 'evolves', 'maxLevel', 'maxSector', 'bestCombo', 'vsWins', 'coopRuns', 'coopClears', 'events', 'risks', 'missions', 'golds',
-    'playTime', 'clears', 'bestScore', 'endlessTime', 'noHit', 'chests', 'treasures', 'duds', 'magnets', 'chats', 'vsPlays', 'dailyAll', 'bestStreak', 'streak'];
+    'playTime', 'clears', 'bestScore', 'endlessTime', 'noHit', 'chests', 'treasures', 'duds', 'magnets', 'chats', 'vsPlays', 'dailyAll', 'bestStreak', 'streak', 'vsBest'];
   const LIFE_SETS = ['ults', 'evos', 'shipClears', 'flags'];
   const saved = (() => {
     const raw = readJson(STORE_KEY) || {};
@@ -2271,6 +2294,33 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         }
         for (const k of [...cache.keys()]) if (k.endsWith(`:${stage}`)) cache.delete(k);
         return { key: res && typeof res.name === 'string' ? res.name : null, weekly };
+      },
+      // the co-op board: the best runs of pairs, one list per region
+      async teamTop(stage, fresh) {
+        const ck = `team:${stage}`;
+        const hit = cache.get(ck);
+        if (hit && !fresh && Date.now() - hit.at < 20000) return hit.list;
+        const data = await call(`v1/coop/s${stage}.json?orderBy=%22score%22&limitToLast=200`);
+        const list = [];
+        for (const [key, r] of Object.entries(data && typeof data === 'object' ? data : {})) {
+          if (!r || typeof r !== 'object' || !Number.isFinite(r.score)) continue;
+          list.push({
+            key, name: cleanName(r.name) || '이름 없음', name2: cleanName(r.name2) || '이름 없음', score: r.score, time: Number(r.time) || 0,
+            level: Number(r.level) || 0, kills: Number(r.kills) || 0, clear: r.clear === true, at: Number(r.at) || 0,
+            pid: typeof r.pid === 'string' ? r.pid : key, pid2: typeof r.pid2 === 'string' ? r.pid2 : '',
+            ship: typeof r.ship === 'string' ? r.ship : '', ship2: typeof r.ship2 === 'string' ? r.ship2 : '',
+          });
+        }
+        list.sort((a, b) => b.score - a.score || a.at - b.at);
+        cache.set(ck, { at: Date.now(), list });
+        return list;
+      },
+      async teamSubmit(stage, entry) {
+        const res = await call(`v1/coop/s${stage}.json`, {
+          method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify({ ...entry, at: { '.sv': 'timestamp' } }),
+        });
+        cache.delete(`team:${stage}`);
+        return res && typeof res.name === 'string' ? res.name : null;
       },
       get: (path, token) => call(`${path}.json${token ? `?auth=${encodeURIComponent(token)}` : ''}`),
       put: (path, value, token) => call(`${path}.json${token ? `?auth=${encodeURIComponent(token)}` : ''}`, {
@@ -7593,6 +7643,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   function die() {
     run.died = true;
+    if (!run.vs && !run.coop) dropKept(); // a run that is lost can't come back by closing the page
     state = 'dying';
     endT = 1.8;
     player.alive = false;
@@ -9532,11 +9583,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ui.openTogether.hidden = !board.on;
     renderGoalsBadge();
     renderPilot();
+    renderKept();
+    sendProfile();
     showScreen('title', focus);
   }
   function renderPilot() {
     ui.pilot.hidden = !board.on;
-    if (saved.name && saved.title) ui.pilotName.replaceChildren(`${saved.name} `, titleSpan(saved.title));
+    const tt = myTitle();
+    if (saved.name && tt) ui.pilotName.replaceChildren(`${saved.name} `, titleSpan(tt));
     else ui.pilotName.textContent = saved.name || '순위표에 쓸 이름을 정해 주세요';
     ui.pilotName.classList.toggle('is-empty', !saved.name);
     ui.pilotState.textContent = saved.account ? (saved.account.google ? '· 구글 계정' : '· 계정 연결됨') : saved.name ? '· 이 기기에만 저장' : '';
@@ -9865,6 +9919,106 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     showScreen('pause');
     if (coop.on && !coop.pauseRemote) coopSend({ t: 'pause' });
     coop.pauseRemote = false;
+    keepRun();
+  }
+  // ---------- a run kept on the phone ----------
+  // iPhones close pages that sit in the background for a while, which used to throw away a paused run. A solo run
+  // is written down every few seconds, when it pauses and when the page is hidden; the title screen offers it back.
+  const KEEP_KEY = 'galaxy-defense:kept-run';
+  const KEEP_DAYS = 3;
+  const KEEP_RUN = ['t', 'score', 'kills', 'level', 'xp', 'need', 'coins', 'ults', 'sector', 'bestCombo', 'died', 'lastHit', 'noHit',
+    'rerolls', 'revives', 'magT', 'guard', 'panic'];
+  let keepT = 0;
+  const keepable = () => !run.vs && !run.coop && !coop.on && ['playing', 'paused', 'choice'].includes(state) && !!stats && player.alive;
+  function keepRun() {
+    if (!keepable()) return;
+    const b = boss && !boss.dead ? boss : null;
+    const r = {};
+    for (const k of KEEP_RUN) r[k] = run[k];
+    const snap = {
+      v: 1, at: Date.now(), stage: run.endless ? ENDLESS : stageIndex, ship: run.ship, run: r, fused: run.fused, stat: run.stat, risk: run.risk,
+      weapons: build.weapons.map((w) => (w.id === 'ult' ? { id: 'ult', ult: w.ult, from: w.from } : { id: w.id, lv: w.lv, evolved: !!w.evolved, used: !!w.used })),
+      passives: build.passives.map((p) => ({ id: p.id, lv: p.lv })),
+      hp: player.hp, shield: !!player.shield, shieldT: player.shieldT || 0,
+      mid: director.mid, bossAt: director.bossAt || 0, final: !!director.final,
+      boss: b ? { kind: b.kind, tier: b.tier || 0, frac: Math.max(0.05, b.hp / b.maxHp) } : null,
+      levels: pendingLevels, chests: pendingChests, start: pendingStart,
+    };
+    try {
+      window.localStorage.setItem(KEEP_KEY, JSON.stringify(snap));
+    } catch {
+      /* storage full or blocked: the run just isn't kept */
+    }
+  }
+  function dropKept() {
+    try {
+      window.localStorage.removeItem(KEEP_KEY);
+    } catch {
+      /* nothing was kept */
+    }
+  }
+  // The kept run, checked piece by piece: null if there is none, it is too old, or it doesn't fit this version.
+  function readKept() {
+    let s = null;
+    try {
+      s = JSON.parse(window.localStorage.getItem(KEEP_KEY) || 'null');
+    } catch {
+      return null;
+    }
+    if (!s || typeof s !== 'object' || s.v !== 1 || !(Date.now() - s.at < KEEP_DAYS * 86400e3)) return null;
+    if (!Number.isInteger(s.stage) || s.stage < 0 || s.stage > ENDLESS) return null;
+    if (!s.run || !KEEP_RUN.every((k) => (k === 'died' ? typeof s.run[k] === 'boolean' : Number.isFinite(s.run[k])))) return null;
+    const lvOk = (lv) => Number.isInteger(lv) && lv >= 1 && lv <= MAX_LEVEL;
+    if (!Array.isArray(s.weapons) || !s.weapons.every((w) => w && (w.id === 'ult' ? !!ULTS[w.ult] : !!WEAPONS[w.id] && lvOk(w.lv)))) return null;
+    if (!Array.isArray(s.passives) || !s.passives.every((p) => p && !!PASSIVES[p.id] && lvOk(p.lv))) return null;
+    if (!Number.isFinite(s.hp) || !s.risk || typeof s.risk !== 'object' || !s.stat || typeof s.stat !== 'object') return null;
+    return s;
+  }
+  const keptLabel = (s) => `${s.stage === ENDLESS ? `무한 모드 · 구역 ${s.run.sector + 1}` : `${s.stage + 1}. ${STAGES[s.stage].name}`} · ${clockText(s.run.t)} · Lv ${s.run.level}`;
+  function renderKept() {
+    const s = readKept();
+    ui.keptBox.hidden = !s;
+    if (s) ui.keptInfo.textContent = keptLabel(s);
+  }
+  // Puts a kept run back: the same fighter, build, numbers and clock, a boss back at the strength it had, the field
+  // clear of everything else. It starts paused so the player can get ready.
+  function resumeKept() {
+    const s = readKept();
+    if (!s) {
+      renderKept();
+      return;
+    }
+    startStage(s.stage);
+    for (const k of KEEP_RUN) run[k] = s.run[k];
+    Object.assign(run, {
+      fused: Array.isArray(s.fused) ? s.fused.filter((id) => WEAPONS[id]) : [], stat: { ...run.stat, ...s.stat }, risk: { ...freshRisk(), ...s.risk }, combo: 0, comboT: 0,
+    });
+    if (saved.ships.includes(s.ship)) run.ship = s.ship;
+    hitbox = shipOf(run.ship).hitbox;
+    if (run.endless) { // the sector it had reached, without the fanfare of entering it
+      stageIndex = Math.min(6, 1 + run.sector);
+      stage = endlessStage(run.sector);
+      skyIdx = run.sector % STAGES.length;
+      paintSky();
+    }
+    build.weapons = s.weapons.map((w) => (w.id === 'ult'
+      ? { id: 'ult', ult: w.ult, from: Array.isArray(w.from) ? w.from : [], lv: 1, evolved: true, cd: 0.6, cd2: 2, t: 0, charge: 0 }
+      : Object.assign(newWeapon(w.id), { lv: w.lv, evolved: !!w.evolved, used: !!w.used })));
+    build.passives = s.passives.map((p) => ({ id: p.id, lv: p.lv }));
+    recompute();
+    Object.assign(player, { hp: clamp(s.hp, 1, stats.maxHp), shield: !!s.shield, shieldT: Number(s.shieldT) || 0, invuln: 2 });
+    Object.assign(director, { mid: Math.max(0, Number(s.mid) || 0), bossAt: Number(s.bossAt) || run.t + 30, final: false });
+    pendingLevels = Math.max(0, Math.floor(Number(s.levels) || 0));
+    pendingChests = Math.max(0, Math.floor(Number(s.chests) || 0));
+    pendingStart = !!s.start;
+    if (s.boss && s.boss.kind === 'mother') startFinal();
+    else if (s.boss) spawnCruiser(clamp(Math.floor(Number(s.boss.tier) || 0), 0, 2));
+    else if (s.final && !run.endless) startFinal();
+    if (boss && s.boss) boss.hp = boss.maxHp * clamp(Number(s.boss.frac) || 1, 0.05, 1);
+    hudDirty = true;
+    announce('멈춘 판을 이어서 해요. 준비되면 계속하기를 누르세요.');
+    keepRun();
+    pause();
   }
   function resume() {
     if (state !== 'paused') return;
@@ -9883,6 +10037,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       : Math.round((run.score + secs * 5 + run.level * 100 + (cleared ? 20000 * (stageIndex + 1) : 0)) * (1 + 0.05 * rank('score')));
   }
   function endRun(cleared, given) {
+    dropKept();
     state = 'result';
     music.stop();
     releasePointer();
@@ -9964,8 +10119,15 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       stage: stageNo, score, time: Math.round(timeMs / 1000), level: run.level, kills: run.kills, clear: cleared, ship: run.ship,
       eligible: timeMs >= 15000 && !run.coop, status: 'idle', key: null, rank: 0, total: 0,
     };
+    if (run.coop && board.on && timeMs >= 15000) { // a run played together goes on the co-op board, from the host
+      lastRun.team = { status: coopHost() ? 'idle' : 'waiting', name2: partnerName(), pid2: (coop.link && coop.link.peerId) || '', ship2: (coop.info && coop.info.ship) || 'star', rank: 0, total: 0 };
+      if (coop.team && coopGuest()) Object.assign(lastRun.team, coop.team);
+      coop.team = null;
+    }
     if (board.on && lastRun.eligible && saved.name) submitRun();
     else renderBoardResult();
+    if (lastRun.team && coopHost()) submitTeam(lastRun);
+    if (run.vs) sendProfile();
     const together = run.vs || run.coop;
     ui.again.hidden = together;
     ui.resultRow.hidden = together;
@@ -10256,6 +10418,224 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     span.textContent = titleOf(id);
     return span;
   }
+  // ---------- titles and player profiles ----------
+  // Without a chosen title a player wears the title of their hardest achievement (the latest of equals).
+  function bestTitle() {
+    let best = '';
+    let tier = -1;
+    for (const id of saved.achv) {
+      const a = achvOf(id);
+      if (a && a.tier >= tier) {
+        tier = a.tier;
+        best = id;
+      }
+    }
+    return best;
+  }
+  const myTitle = () => (saved.title && saved.achv.includes(saved.title) ? saved.title : bestTitle());
+  // Each player's current name and title, and their versus record, in v1/players/<pid>: boards show the title a
+  // player wears now, not the one they had when a run went up.
+  let profSent = '';
+  let profOff = false;
+  async function sendProfile() {
+    if (!board.on || !saved.name || profOff) return;
+    const L = saved.life;
+    const body = { n: saved.name, tt: myTitle(), w: L.vsWins, p: L.vsPlays, b: L.vsBest, s: saved.ship };
+    const key = JSON.stringify(body);
+    if (key === profSent) return;
+    profSent = key;
+    try {
+      await board.put(`v1/players/${saved.pid}`, { ...body, at: { '.sv': 'timestamp' } });
+      profiles.at = 0;
+    } catch (err) {
+      profSent = '';
+      if (refused(err)) profOff = true; // older database rules: boards keep showing the titles runs carried
+    }
+  }
+  const profiles = { at: 0, map: null, busy: null };
+  function loadProfiles(fresh) {
+    if (profiles.map && !fresh && Date.now() - profiles.at < 60000) return Promise.resolve(profiles.map);
+    if (!profiles.busy) {
+      profiles.busy = board.get('v1/players').then((data) => {
+        const map = new Map();
+        const n = (v) => Math.max(0, Math.floor(Number(v) || 0));
+        for (const [pid, p] of Object.entries(data && typeof data === 'object' ? data : {})) {
+          if (!p || typeof p !== 'object') continue;
+          map.set(pid, { n: cleanName(p.n) || '조종사', tt: typeof p.tt === 'string' ? p.tt : '', w: n(p.w), p: n(p.p), b: n(p.b), s: typeof p.s === 'string' ? p.s : '', at: n(p.at) });
+        }
+        profiles.map = map;
+        profiles.at = Date.now();
+        return map;
+      }).finally(() => {
+        profiles.busy = null;
+      });
+    }
+    return profiles.busy;
+  }
+  const titleFor = (pid, carried, prof) => (pid === saved.pid ? myTitle() : (prof && prof.get(pid) && prof.get(pid).tt) || carried || '');
+  function titleTag(id) {
+    const tt = document.createElement('span');
+    tt.className = `tag is-title tt-${titleTier(id)}`;
+    tt.textContent = titleOf(id);
+    return tt;
+  }
+
+  // ---------- co-op and versus boards ----------
+  const teamKey = (a, b) => [a, b].sort().join('+');
+  function bestPerTeam(list) {
+    const seen = new Set();
+    return list.filter((r) => {
+      const k = teamKey(r.pid, r.pid2);
+      return seen.has(k) ? false : (seen.add(k), true);
+    });
+  }
+  const partnerName = () => (coop.info && coop.info.name) || coop.partner || '친구';
+  // The host puts a run played together on the co-op board and tells the friend where it landed.
+  async function submitTeam(r) {
+    const team = r && r.team;
+    if (!team || !coopHost() || !board.on || !saved.name || team.status === 'sending' || team.status === 'done') return;
+    team.status = 'sending';
+    renderBoardResult();
+    try {
+      const entry = { name: saved.name, name2: team.name2, score: r.score, time: r.time, level: r.level, kills: r.kills, clear: r.clear,
+        pid: saved.pid, pid2: team.pid2, ship: r.ship, ship2: team.ship2 };
+      const key = await board.teamSubmit(r.stage, entry);
+      const list = bestPerTeam(await board.teamTop(r.stage, true));
+      const i = list.findIndex((x) => teamKey(x.pid, x.pid2) === teamKey(saved.pid, team.pid2));
+      Object.assign(team, { status: 'done', rank: i >= 0 ? i + 1 : 0, total: list.length, best: i >= 0 && list[i].key === key });
+    } catch (err) {
+      team.status = refused(err) ? 'closed' : 'error';
+    }
+    coopSend({ t: 'team', status: team.status, rank: team.rank || 0, total: team.total || 0, best: !!team.best });
+    if (lastRun === r) renderBoardResult();
+  }
+  // the friend's phone hears how the run did on the co-op board
+  function teamHeard(m) {
+    const info = { status: ['done', 'closed', 'error'].includes(m.status) ? m.status : 'error', rank: Number(m.rank) || 0, total: Number(m.total) || 0, best: !!m.best };
+    if (lastRun && lastRun.team && state === 'result') {
+      Object.assign(lastRun.team, info);
+      renderBoardResult();
+    } else coop.team = info;
+  }
+  function renderTeamResult(r) {
+    const t = r.team;
+    ui.boardStatus.hidden = false;
+    ui.resultNameForm.hidden = true;
+    ui.boardRetry.hidden = !(t.status === 'error' && coopHost());
+    const where = r.stage === ENDLESS_NO ? '무한 모드' : `${shownNo(r.stage)}지역`;
+    if (t.status === 'done') {
+      ui.boardStatus.textContent = '';
+      const lead = document.createElement('span');
+      lead.textContent = `${saved.name} & ${t.name2} · ${where} 협동`;
+      const rankEl = document.createElement('b');
+      rankEl.textContent = t.rank ? `${t.rank}위` : '200위 밖';
+      const tail = document.createElement('span');
+      tail.className = 'board-sub';
+      tail.textContent = t.rank ? `${t.total}팀 중 · ${t.best ? '이번 판이 우리 최고 기록' : '우리 최고 기록 기준'}` : '';
+      ui.boardStatus.append(lead, rankEl, tail);
+    } else if (t.status === 'closed') ui.boardStatus.textContent = '협동 순위는 아직 준비 중이에요. 기록은 내 기록에 남았어요.';
+    else if (t.status === 'error') ui.boardStatus.textContent = coopHost() ? '협동 순위에 올리지 못했어요. 잠시 뒤 다시 올리기를 눌러 주세요.' : '협동 순위에 올리지 못했어요.';
+    else ui.boardStatus.textContent = '협동 순위에 올리는 중…';
+  }
+  function teamRow(r, n, prof) {
+    const li = document.createElement('li');
+    const me = r.pid === saved.pid || r.pid2 === saved.pid;
+    li.className = 'rank' + (n === 1 ? ' is-top' : '') + (me ? ' is-latest' : '');
+    li.innerHTML = '<span class="rank-no"></span><span class="rank-score"></span><span class="rank-date"></span><span class="rank-meta"></span>';
+    li.querySelector('.rank-no').textContent = String(n);
+    const scoreEl = li.querySelector('.rank-score');
+    [[r.pid, r.name], [r.pid2, r.name2]].forEach(([pid, name], k) => {
+      if (k) scoreEl.append(' & ');
+      const tt = titleFor(pid, '', prof);
+      if (titleOf(tt)) scoreEl.append(titleTag(tt));
+      const b = document.createElement('b');
+      b.className = 'rank-name';
+      b.textContent = name;
+      scoreEl.append(b);
+    });
+    scoreEl.append(`${fmt(r.score)}점`);
+    if (r.clear) {
+      const tag = document.createElement('span');
+      tag.className = 'tag is-clear';
+      tag.textContent = '클리어';
+      scoreEl.append(tag);
+    }
+    if (me) {
+      const tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.textContent = '나';
+      scoreEl.append(tag);
+    }
+    li.querySelector('.rank-date').textContent = r.at ? fmtDate(new Date(r.at).toISOString()) : '';
+    const ships = [r.ship, r.ship2].map((id) => (SHIPS.some((sd) => sd.id === id) ? shipOf(id).name : '')).filter(Boolean).join(' + ');
+    li.querySelector('.rank-meta').textContent = `${ships ? `${ships} · ` : ''}${clockText(r.time)} 버팀 · Lv ${r.level} · 격추 ${fmt(r.kills)}대`;
+    return li;
+  }
+  function vsBoardRow(p, n) {
+    const li = document.createElement('li');
+    const me = p.pid === saved.pid;
+    li.className = 'rank' + (n === 1 ? ' is-top' : '') + (me ? ' is-latest' : '');
+    li.innerHTML = '<span class="rank-no"></span><span class="rank-score"></span><span class="rank-date"></span><span class="rank-meta"></span>';
+    li.querySelector('.rank-no').textContent = String(n);
+    const scoreEl = li.querySelector('.rank-score');
+    const tt = me ? myTitle() : p.tt;
+    if (titleOf(tt)) scoreEl.append(titleTag(tt));
+    const name = document.createElement('b');
+    name.className = 'rank-name';
+    name.textContent = me ? saved.name || p.n : p.n;
+    scoreEl.append(name, `${fmt(p.w)}승`);
+    if (me) {
+      const tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.textContent = '나';
+      scoreEl.append(tag);
+    }
+    li.querySelector('.rank-date').textContent = p.at ? fmtDate(new Date(p.at).toISOString()) : '';
+    const ship = SHIPS.some((sd) => sd.id === p.s) ? `${shipOf(p.s).name} · ` : '';
+    li.querySelector('.rank-meta').textContent = `${ship}${fmt(p.p)}판 · 승률 ${Math.round((p.w / Math.max(1, p.p)) * 100)}% · 대결 최고 ${fmt(p.b)}점`;
+    return li;
+  }
+  async function renderTeamBoard(fresh) {
+    const stage = boardStage;
+    renderStageChips(stage);
+    const title = `협동 · ${stage === ENDLESS_NO ? '무한 모드' : `${shownNo(stage)}. ${stageName(stage)}`}`;
+    ui.boardEmpty.textContent = `${title} 순위를 불러오는 중…`;
+    try {
+      const [list, prof] = await Promise.all([board.teamTop(stage, fresh), loadProfiles(fresh).catch(() => null)]);
+      if (boardMode !== 'coop' || boardStage !== stage || recordsView !== 'board') return;
+      const teams = bestPerTeam(list);
+      if (!teams.length) {
+        ui.boardEmpty.textContent = `${title}에는 아직 협동 기록이 없어요. 친구와 함께 첫 기록을 남겨 보세요!`;
+        return;
+      }
+      ui.boardEmpty.hidden = true;
+      ui.boardList.replaceChildren(...teams.slice(0, 50).map((r, i) => teamRow(r, i + 1, prof)));
+    } catch (err) {
+      if (boardMode !== 'coop' || boardStage !== stage || recordsView !== 'board') return;
+      ui.boardEmpty.textContent = refused(err) ? '협동 순위는 아직 준비 중이에요. 조금만 기다려 주세요!' : '순위를 불러오지 못했어요. 인터넷 연결을 확인하고 새로 고침을 눌러 주세요.';
+    }
+  }
+  async function renderVsBoard(fresh) {
+    ui.boardEmpty.textContent = '대결 순위를 불러오는 중…';
+    try {
+      await sendProfile();
+      const prof = await loadProfiles(fresh);
+      if (boardMode !== 'vs' || recordsView !== 'board') return;
+      const list = [...prof.entries()].map(([pid, p]) => ({ pid, ...p })).filter((p) => p.p > 0).sort((a, b) => b.w - a.w || b.b - a.b || a.at - b.at);
+      if (!list.length) {
+        ui.boardEmpty.textContent = '아직 대결 기록이 없어요. 친구와 대결해서 첫 승리를 올려 보세요!';
+        return;
+      }
+      ui.boardEmpty.hidden = true;
+      const rows = list.slice(0, 50).map((p, i) => vsBoardRow(p, i + 1));
+      const mine = list.findIndex((p) => p.pid === saved.pid);
+      if (mine >= 50) rows.push(vsBoardRow(list[mine], mine + 1));
+      ui.boardList.replaceChildren(...rows);
+    } catch (err) {
+      if (boardMode !== 'vs' || recordsView !== 'board') return;
+      ui.boardEmpty.textContent = refused(err) ? '대결 순위는 아직 준비 중이에요. 조금만 기다려 주세요!' : '순위를 불러오지 못했어요. 인터넷 연결을 확인하고 새로 고침을 눌러 주세요.';
+    }
+  }
   function checkAchv(quiet) {
     const fresh = [];
     for (const a of ACHV) {
@@ -10295,7 +10675,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     L.chests += st.chests;
     L.treasures += st.treasures;
     for (const w of st.evoIds) if (!L.evos.includes(w)) L.evos.push(w);
-    if (run.vs) L.vsPlays += 1;
+    if (run.vs) {
+      L.vsPlays += 1;
+      L.vsBest = Math.max(L.vsBest, Math.round(score || 0));
+    }
     const today = dayKey();
     if (L.lastDay !== today) { // days in a row
       L.streak = L.lastDay === dayKey(Date.now() - 86400e3) ? L.streak + 1 : 1;
@@ -10393,7 +10776,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     ui.missionReset.textContent = `새 미션까지 ${untilMidnight()} · 친구들도 오늘 같은 미션이에요`;
     const got = saved.achv.length;
-    ui.achvSum.replaceChildren(`${got}/${ACHV.length}개 달성 · 지금 칭호: `, saved.title ? titleSpan(saved.title) : '없음');
+    ui.achvSum.replaceChildren(`${got}/${ACHV.length}개 달성 · 지금 칭호: `, myTitle() ? titleSpan(myTitle()) : '없음', saved.title || !myTitle() ? '' : ' (가장 어려운 업적 칭호가 저절로 붙어요)');
     // filter chips with how many of each are done
     const groups = [['all', '전체', () => true], ...TIERS.map((t, i) => [String(i), t, (a) => a.tier === i && !a.hidden]), ['hidden', '숨겨진', (a) => a.hidden]];
     ui.achvFilter.replaceChildren(...groups.map(([key, label, f]) => {
@@ -10444,9 +10827,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       if (have) {
         const b = document.createElement('button');
         b.type = 'button';
-        b.className = `btn goal-btn${saved.title === a.id ? ' is-on' : ''}`;
+        const wearing = myTitle() === a.id;
+        b.className = `btn goal-btn${wearing ? ' is-on' : ''}`;
         b.dataset.title = a.id;
-        b.textContent = saved.title === a.id ? '쓰는 중' : '칭호로 쓰기';
+        b.textContent = saved.title === a.id ? '쓰는 중' : wearing ? '저절로 쓰는 중' : '칭호로 쓰기';
         side.append(b);
       }
       return li;
@@ -10796,7 +11180,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       hp: live ? clamp(Math.round((player.hp / stats.maxHp) * 100), 0, 100) : 0,
       lv: live || f ? run.level : 1, t: live || f ? Math.min(86400, Math.round(run.t)) : 0, k: live || f ? run.kills : 0,
       al: live && player.alive, cl: !!(f && f.cl), a: vs.sent, ak: vs.kind, up: { '.sv': 'timestamp' },
-      ...(vs.lite ? {} : { tt: saved.title || '', ch: vs.chatI, cn: vs.chatN }),
+      ...(vs.lite ? {} : { tt: myTitle(), ch: vs.chatI, cn: vs.chatN }),
     };
   }
   function needName(action) {
@@ -11107,6 +11491,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       saved.life.vsWins += 1;
       checkAchv();
       save();
+      sendProfile();
     }
     ui.vsResultTitle.textContent = still ? '대결 순위 · 친구들이 아직 싸우는 중이에요'
       : top && top.me ? '대결 순위 · 내가 1등이에요!' : `대결 순위 · ${top ? top.name : ''} 우승!`;
@@ -11454,7 +11839,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   // both ways open: introduce ourselves (name, fighter, skill tree)
   function coopLinked() {
-    coopSend({ t: 'hello', name: saved.name || '조종사', ship: saved.ship, tree: saved.tree, tt: saved.title || '' });
+    coopSend({ t: 'hello', name: saved.name || '조종사', ship: saved.ship, tree: saved.tree, tt: myTitle() });
     if (state === 'together') renderTogether();
   }
   // the database route: each phone keeps one record with its recent messages and, for the host, the latest snapshot
@@ -11535,6 +11920,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
     } else if (m.t === 'end' && coopGuest()) {
       coopGuestEnd(m);
+    } else if (m.t === 'team' && coop.link && coop.link.role === 'guest') { // arrives after the run, when co-op is already over
+      teamHeard(m);
     } else if (m.t === 'chat') {
       const id = coop.link ? coop.link.peerId : '';
       if (id && Number(m.n) > (vs.heardChat[id] || 0)) {
@@ -12652,6 +13039,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   // ---------- shared board: result box, ranking tab, names, sharing ----------
   function renderBoardResult() {
     const r = lastRun;
+    if (r && r.team && board.on) {
+      renderTeamResult(r);
+      return;
+    }
     const show = board.on && r && r.eligible;
     ui.boardStatus.hidden = !show || (!saved.name && r.status === 'idle');
     ui.resultNameForm.hidden = !show || !!saved.name || r.status !== 'idle';
@@ -12681,7 +13072,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     renderBoardResult();
     try {
       const entry = { name: saved.name, score: r.score, time: r.time, level: r.level, kills: r.kills, clear: r.clear, pid: saved.pid, ship: r.ship };
-      if (saved.title) entry.tt = saved.title;
+      const tt = myTitle();
+      if (tt) entry.tt = tt;
       const keys = await board.submit(r.stage, entry);
       r.key = keys.key;
       const list = bestPerPlayer(await board.top(r.stage, true));
@@ -12737,11 +13129,62 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     edit.textContent = saved.name ? '바꾸기' : '이름 정하기';
     ui.boardMe.append(edit);
   }
+  let boardMode = 'solo'; // solo | coop | vs
+  const BOARD_FOOT = {
+    solo: '지역마다 한 사람의 가장 좋은 기록만 보여요.',
+    coop: '지역마다 한 팀의 가장 좋은 기록만 보여요. 방장 폰이 올려요.',
+    vs: '대결에서 1등 한 횟수로 줄 세워요. 같으면 대결 최고 점수가 높은 사람이 앞이에요.',
+  };
   async function renderBoard(fresh) {
+    for (const b of ui.boardModes.querySelectorAll('[data-board-mode]')) b.setAttribute('aria-pressed', String(b.dataset.boardMode === boardMode));
+    ui.boardPeriod.hidden = boardMode !== 'solo';
+    ui.boardStages.hidden = boardMode === 'vs';
+    ui.boardFoot.textContent = BOARD_FOOT[boardMode];
+    renderBoardMe();
+    ui.boardList.replaceChildren();
+    ui.boardEmpty.hidden = false;
+    if (boardMode === 'coop') {
+      await renderTeamBoard(fresh);
+      return;
+    }
+    if (boardMode === 'vs') {
+      await renderVsBoard(fresh);
+      return;
+    }
     const stage = boardStage;
     const week = boardWeek ? weekKey() : '';
     for (const b of ui.boardPeriod.querySelectorAll('[data-period]')) b.setAttribute('aria-pressed', String((b.dataset.period === 'week') === boardWeek));
     ui.periodNote.textContent = boardWeek ? `${weekLeft()} 새로 시작해요` : '처음부터 지금까지';
+    renderStageChips(stage);
+    const title = `${stage === ENDLESS_NO ? '무한 모드' : `${shownNo(stage)}. ${stageName(stage)}`}${boardWeek ? ' 이번 주' : ''}`;
+    ui.boardEmpty.textContent = `${title} 순위를 불러오는 중…`;
+    try {
+      const [all, prof] = await Promise.all([board.top(stage, fresh, week), loadProfiles(fresh).catch(() => null)]);
+      const list = bestPerPlayer(all);
+      if (boardMode !== 'solo' || boardStage !== stage || recordsView !== 'board' || boardWeek !== !!week) return;
+      if (!list.length) {
+        ui.boardEmpty.textContent = `${title}에는 아직 올라온 기록이 없어요. 첫 번째 주인공이 되어 보세요!`;
+        return;
+      }
+      ui.boardEmpty.hidden = true;
+      const rows = list.slice(0, 50).map((r, i) => boardRow(r, i + 1, prof));
+      const mine = list.findIndex((r) => r.pid === saved.pid);
+      if (mine >= 50) rows.push(boardRow(list[mine], mine + 1, prof));
+      ui.boardList.replaceChildren(...rows);
+    } catch (err) {
+      if (boardMode !== 'solo' || boardStage !== stage || recordsView !== 'board') return;
+      if (refused(err) && week) { // the database has no weekly boards yet: show the all-time one instead
+        boardWeek = false;
+        renderBoard(fresh);
+        return;
+      }
+      ui.boardEmpty.textContent = refused(err) && week ? '주간 순위는 아직 준비 중이에요. 역대 순위를 눌러 보세요!'
+        : refused(err) && stage === ENDLESS_NO ? '무한 모드 순위는 아직 준비 중이에요. 조금만 기다려 주세요!'
+        : refused(err) && stage > ENDLESS_NO ? '이 지역 순위는 아직 준비 중이에요. 조금만 기다려 주세요!'
+          : '순위를 불러오지 못했어요. 인터넷 연결을 확인하고 새로 고침을 눌러 주세요.';
+    }
+  }
+  function renderStageChips(stage) {
     const chips = STAGES.map((st, i) => ({ no: stageNoOf(i), color: st.color, label: String(i + 1), name: `${i + 1}. ${st.name}` }));
     chips.push({ no: ENDLESS_NO, color: '#ff4fd8', label: '∞ 무한', name: '무한 모드' });
     ui.boardStages.replaceChildren(...chips.map((c) => {
@@ -12755,39 +13198,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       b.textContent = c.label;
       return b;
     }));
-    renderBoardMe();
-    ui.boardList.replaceChildren();
-    ui.boardEmpty.hidden = false;
-    const title = `${stage === ENDLESS_NO ? '무한 모드' : `${shownNo(stage)}. ${stageName(stage)}`}${boardWeek ? ' 이번 주' : ''}`;
-    ui.boardEmpty.textContent = `${title} 순위를 불러오는 중…`;
-    try {
-      const list = bestPerPlayer(await board.top(stage, fresh, week));
-      if (boardStage !== stage || recordsView !== 'board' || boardWeek !== !!week) return;
-      if (!list.length) {
-        ui.boardEmpty.textContent = `${title}에는 아직 올라온 기록이 없어요. 첫 번째 주인공이 되어 보세요!`;
-        return;
-      }
-      ui.boardEmpty.hidden = true;
-      const rows = list.slice(0, 50).map((r, i) => boardRow(r, i + 1));
-      const mine = list.findIndex((r) => r.pid === saved.pid);
-      if (mine >= 50) rows.push(boardRow(list[mine], mine + 1));
-      ui.boardList.replaceChildren(...rows);
-    } catch (err) {
-      if (boardStage !== stage || recordsView !== 'board') return;
-      if (refused(err) && week) { // the database has no weekly boards yet: show the all-time one instead
-        boardWeek = false;
-        renderBoard(fresh);
-        return;
-      }
-      ui.boardEmpty.textContent = refused(err) && week ? '주간 순위는 아직 준비 중이에요. 역대 순위를 눌러 보세요!'
-        : refused(err) && stage === ENDLESS_NO ? '무한 모드 순위는 아직 준비 중이에요. 조금만 기다려 주세요!'
-        : refused(err) && stage > ENDLESS_NO ? '이 지역 순위는 아직 준비 중이에요. 조금만 기다려 주세요!'
-          : '순위를 불러오지 못했어요. 인터넷 연결을 확인하고 새로 고침을 눌러 주세요.';
-    }
   }
   // the database said no (its rules are older than this part of the game), as opposed to a network problem
   const refused = (err) => /HTTP 40[13]/.test(String(err && err.message));
-  function boardRow(r, n) {
+  function boardRow(r, n, prof) {
     const li = document.createElement('li');
     const me = r.pid === saved.pid;
     li.className = 'rank' + (n === 1 ? ' is-top' : '') + (me ? ' is-latest' : '');
@@ -12797,12 +13211,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const name = document.createElement('b');
     name.className = 'rank-name';
     name.textContent = r.name;
-    if (titleOf(r.tt)) {
-      const tt = document.createElement('span');
-      tt.className = `tag is-title tt-${titleTier(r.tt)}`;
-      tt.textContent = titleOf(r.tt);
-      scoreEl.append(tt);
-    }
+    const tt = titleFor(r.pid, r.tt, prof); // the title the player wears now
+    if (titleOf(tt)) scoreEl.append(titleTag(tt));
     scoreEl.append(name, `${fmt(r.score)}점`);
     if (r.clear) {
       const tag = document.createElement('span');
@@ -12825,6 +13235,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (!name) return false;
     saved.name = name;
     save();
+    sendProfile();
     return true;
   }
   async function shareRun() {
@@ -13000,11 +13411,22 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (!touchInput()) pause();
   });
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) pause();
+    if (document.hidden) {
+      pause();
+      keepRun(); // also catches a level-up screen left open
+    }
     else if (['title', 'stages', 'tree', 'result'].includes(state)) cloud.pull().then((changed) => changed && refreshMenus());
   });
 
   ui.start.addEventListener('click', launch);
+  ui.keptGo.addEventListener('click', () => {
+    audio.unlock();
+    resumeKept();
+  });
+  ui.keptDrop.addEventListener('click', () => {
+    dropKept();
+    renderKept();
+  });
   ui.pilotEdit.addEventListener('click', () => openNameDialog(false));
   ui.nameDialogForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -13195,7 +13617,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       coopSend({ t: 'bye' });
       coopGuestEnd({ lost: true });
     } else if ((run.endless || run.vs || coopHost()) && state === 'paused') endRun(false); // banked, not thrown away
-    else showTitle();
+    else {
+      if (!run.vs && !run.coop) dropKept(); // giving up a solo run throws it away for good
+      showTitle();
+    }
   });
   ui.again.addEventListener('click', () => startStage(Number(ui.again.dataset.stage) || 0));
   ui.toStages.addEventListener('click', showStages);
@@ -13228,11 +13653,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   ui.achvList.addEventListener('click', (e) => {
     const b = e.target.closest('[data-title]');
     if (!b || !saved.achv.includes(b.dataset.title)) return;
-    saved.title = saved.title === b.dataset.title ? '' : b.dataset.title;
+    saved.title = saved.title === b.dataset.title ? '' : b.dataset.title; // letting go of a title goes back to the automatic one
     save();
     sfx.play('item');
     renderGoals();
     renderPilot();
+    sendProfile();
   });
   ui.openTogether.addEventListener('click', () => {
     audio.unlock();
@@ -13296,6 +13722,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     else vsJoin(next.code);
   });
   window.addEventListener('pagehide', () => {
+    keepRun();
     if (vs.code) board.drop(`${roomPath()}/p/${saved.pid}`);
   });
   ui.hangarBack.addEventListener('click', () => (vs.code ? showTogether() : showTitle()));
@@ -13371,6 +13798,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const t = e.target.closest('[data-view]');
     if (t) setRecordsView(t.dataset.view);
   });
+  ui.boardModes.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-board-mode]');
+    if (!b) return;
+    boardMode = b.dataset.boardMode;
+    renderBoard(false);
+  });
   ui.boardPeriod.addEventListener('click', (e) => {
     const b = e.target.closest('[data-period]');
     if (!b) return;
@@ -13416,6 +13849,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     submitRun();
   });
   ui.boardRetry.addEventListener('click', () => {
+    if (lastRun && lastRun.team) {
+      lastRun.team.status = 'idle';
+      submitTeam(lastRun);
+      return;
+    }
     if (lastRun) lastRun.status = 'idle';
     submitRun();
   });
@@ -13468,6 +13906,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     buildGrid();
     if (state === 'playing') {
       run.t += dt;
+      keepT -= dt;
+      if (keepT <= 0) {
+        keepT = 6;
+        keepRun();
+      }
       if (player.alive) updatePlayer(dt);
       updateDirector(dt);
       vsUpdate(dt);
