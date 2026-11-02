@@ -498,6 +498,7 @@ button { font: inherit; color: inherit; }
 .recipe.is-done { opacity: 0.55; }
 .recipe.is-hot { border-color: rgba(127, 231, 255, 0.55); color: var(--ink); }
 .recipe.is-hot.is-ready { border-color: var(--amber); }
+.recipe.is-special b { color: #c9b6ff; }
 .recipes.is-compact { gap: 4px; }
 .recipes-sub { margin: 12px 0 0; font-size: 0.8125rem; font-weight: 700; color: var(--amber); }
 .recipes-sub[hidden] { display: none; }
@@ -1807,11 +1808,17 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     supernova: { name: '초신성 포', pair: ['energy', 'fire'], color: '#fff1b8', icon: 'supernova', about: '힘을 모아 쏜 초신성 포탄이 적을 꿰뚫고 크게 터져요' },
     phoenix: { name: '불사조', pair: ['fire', 'guard'], color: '#ff9b4a', icon: 'phoenix', about: '불꽃 새가 날아들며 적을 태우고 체력을 채워 줘요' },
     hole: { name: '블랙홀', pair: ['energy', 'guard'], color: '#b48cff', icon: 'hole', about: '적이 몰린 곳에 블랙홀을 열어 빨아들이고 터뜨려요' },
+    // special ultimates: one particular pair of combined skills makes them (in place of what their families would make)
+    aurora: { name: '오로라 장막', sig: ['laser', 'nova'], color: '#7dffc8', icon: 'aurora', about: '빛의 장막이 화면 아래에서 위로 휩쓸며 모든 적을 태우고 적 총알을 지워요' },
+    armada: { name: '은하 함대', sig: ['missile', 'drones'], color: '#9ad8ff', icon: 'fleet', about: '아군 전투기 편대가 날아올라 앞의 적에게 탄막을 퍼부어요' },
+    chrono: { name: '시간 정지', sig: ['lightning', 'aura'], color: '#c9b6ff', icon: 'clock', about: '시간을 멈춰 적과 적 총알이 얼어붙고, 다시 흐를 때 멈췄던 적이 한꺼번에 피해를 받아요' },
   };
   const RAINBOW = ['#ff5a6e', '#ffa94d', '#ffe08a', '#b8f36b', '#7fe7ff', '#a88bff'];
   function ultFor(a, b) {
+    const special = Object.keys(ULTS).find((id) => ULTS[id].sig && a !== b && ULTS[id].sig.includes(a) && ULTS[id].sig.includes(b));
+    if (special) return special;
     const key = [FAMILY[a], FAMILY[b]].sort().join('+');
-    return Object.keys(ULTS).find((id) => ULTS[id].pair.slice().sort().join('+') === key);
+    return Object.keys(ULTS).find((id) => ULTS[id].pair && ULTS[id].pair.slice().sort().join('+') === key);
   }
   const PASSIVES = {
     armor: { name: '강화 장갑', icon: 'armor', per: '최대 체력 +20' },
@@ -2033,6 +2040,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     fuel: '<rect x="5" y="6" width="11" height="15" rx="2" /><path d="M8 6V3h5v3M16 9l3 2v7a1.5 1.5 0 0 1-3 0v-3M8 12h5" />',
     skip: '<path d="M5 5l9 7-9 7z" /><path d="M18 5v14" />',
     meteor: '<circle cx="15" cy="15" r="5" /><path d="M11 11L3 3M13 9L8 4M9 13L4 8" />',
+    aurora: '<path d="M3 9c3-3 6-3 9 0s6 3 9 0" /><path d="M3 14c3-3 6-3 9 0s6 3 9 0" /><path d="M3 19c3-2 6-2 9 0s6 2 9 0" />',
+    fleet: '<path d="M12 3l3 7H9z" /><path d="M6 11l3 7H3z" /><path d="M18 11l3 7h-6z" />',
     constellation: '<circle cx="5" cy="7" r="1.6" /><circle cx="12" cy="4" r="1.6" /><circle cx="19" cy="9" r="1.6" /><circle cx="15" cy="18" r="1.6" /><circle cx="7" cy="17" r="1.6" /><path d="M6.4 6.5L10.5 4.6M13.5 4.8l4 3.4M18.4 10.6l-2.6 5.8M13.5 18H8.6M6.6 15.4L5.3 8.6" />',
     supernova: '<circle cx="12" cy="12" r="3.5" /><path d="M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4M4.6 4.6l2.8 2.8M16.6 16.6l2.8 2.8M4.6 19.4l2.8-2.8M16.6 7.4l2.8-2.8" />',
     phoenix: '<path d="M12 21c-1-3-1-6 0-9 1 3 1 6 0 9z" /><path d="M12 12C9 8 5 7 2 8c2 2 5 3 8 4M12 12c3-4 7-5 10-4-2 2-5 3-8 4" /><circle cx="12" cy="6" r="2" />',
@@ -5516,6 +5525,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   const rails = []; // railgun lines fading out
   let chestSkip = false; // the player passed on a combination: this crate gives an ordinary pick
   let cine = 0; // seconds of slow motion left after an ultimate fusion
+  let chronoT = 0; // seconds of stopped time left (the 시간 정지 ultimate): enemies and their fire stand still
+  let chronoDmg = 0; // what every stopped ship takes when time runs again
   let build = { weapons: [], passives: [] };
   const director = { budget: 0, next: null, mid: 0, final: false };
   const enemies = [];
@@ -7724,6 +7735,34 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         shakeBy(5);
         sfx.play('laser');
       }
+    } else if (w.ult === 'aurora') { // a curtain of light sweeps up the whole screen
+      w.cd -= dt;
+      if (w.cd <= 0) {
+        w.cd += 3.2 * cdMul;
+        ufx.push({ type: 'wave', y0: H + 30, y: H + 30, t: 0, T: 1.5, w: 64 * A, dmg: 150 * K, hit: new Set() });
+        sfx.play('nova');
+      }
+    } else if (w.ult === 'armada') { // a flight of friendly fighters climbs past the ship, firing ahead
+      w.cd -= dt;
+      if (w.cd <= 0) {
+        w.cd += 4 * cdMul;
+        const x0 = clamp(player.x, 80, W - 80);
+        const looks = saved.ships.filter((id) => SHIPS.some((sd) => sd.id === id));
+        for (let k = 0; k < 5; k++) {
+          const look = SHIPS.findIndex((sd) => sd.id === (looks.length ? pick(looks) : 'star'));
+          ufx.push({ type: 'wing', x: x0 + (k - 2) * 36, y: H + 30 + Math.abs(k - 2) * 28, vy: -230 * stats.speedMul, t: 0, T: 3.2, fire: 0.15 + 0.04 * k, dmg: 24 * K, sx: Math.max(0, look) });
+        }
+        sfx.play('incoming');
+      }
+    } else if (w.ult === 'chrono') { // time stops; when it runs again, every ship that stood still is struck
+      w.cd -= dt;
+      if (w.cd <= 0) {
+        w.cd += 9 * cdMul;
+        chronoT = Math.max(chronoT, 2.2);
+        chronoDmg = Math.max(chronoDmg, 110 * K);
+        ufx.push({ type: 'chrono', x: player.x, y: player.y, t: 0, T: 2.2, r: 170 * A });
+        sfx.play('charge');
+      }
     } else if (w.ult === 'phoenix') {
       updatePhoenix(w, dt, K, A);
     } else if (w.ult === 'hole') {
@@ -7813,6 +7852,42 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     for (let i = ufx.length - 1; i >= 0; i--) {
       const f = ufx[i];
       f.t += dt;
+      if (f.type === 'wave') { // the aurora: whatever the curtain passes is burnt once, and enemy fire in it vanishes
+        f.y = f.y0 - (f.y0 + 60) * Math.min(1, f.t / f.T);
+        const half = f.w / 2;
+        for (const e of enemies) {
+          if (e.dead || e.t < 0 || e.ghost || f.hit.has(e)) continue;
+          if (Math.abs(e.y - f.y) < half + (e.boss ? 40 : e.r)) {
+            f.hit.add(e);
+            damage(e, f.dmg, e.x, e.y);
+          }
+        }
+        for (let j = eShots.length - 1; j >= 0; j--) {
+          const b = eShots[j];
+          if (Math.abs(b.y - f.y) < half) {
+            if (Math.random() < 0.3) spark(b.x, b.y, '#7dffc8', 1);
+            removeAt(eShots, j);
+          }
+        }
+        if (f.t >= f.T) removeAt(ufx, i);
+        continue;
+      }
+      if (f.type === 'wing') { // a friendly fighter: climbs and fires straight ahead
+        f.y += f.vy * dt;
+        f.fire -= dt;
+        if (f.fire <= 0) {
+          f.fire += 0.12;
+          if (f.y > 30 && f.y < H - 30 && pShots.length < MAX_PSHOTS) {
+            pShots.push({ kind: 'bolt', x: f.x, y: f.y - 16, vx: 0, vy: -760, a: 0, dmg: f.dmg, pierce: 0, size: 0.85, plasma: false, spr: boltOf('#9ad8ff'), last: null, trail: false, ult: true });
+          }
+        }
+        if (f.y < -60 || f.t >= f.T) removeAt(ufx, i);
+        continue;
+      }
+      if (f.type === 'chrono') {
+        if (f.t >= f.T) removeAt(ufx, i);
+        continue;
+      }
       if (f.type === 'meteor') {
         const u = Math.min(1, f.t / f.T);
         f.x = f.sx + (f.tx - f.sx) * u;
@@ -8433,7 +8508,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         removeAt(pShots, i);
         continue;
       }
+      if (s.ult) ultNow = true;
       damage(hit, s.dmg * frontArmor(hit, s), s.x, s.y);
+      ultNow = false;
       if (s.pierce > 0) {
         s.pierce -= 1;
         s.last = hit;
@@ -8532,9 +8609,30 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   function flushUltBursts() { // the chain bursts an ultimate set off, outside the ultimate's own turn
     for (const b of ultBursts.splice(0)) blastAt(b.x, b.y, 44 * stats.area, b.dmg, null, '#ffe08a');
   }
+  // time runs again: every ship on screen is struck at once
+  function chronoShatter() {
+    chronoT = 0;
+    const dmg = chronoDmg;
+    chronoDmg = 0;
+    if (!dmg) return;
+    ultNow = true;
+    try {
+      for (const e of enemies.slice()) {
+        if (e.dead || e.t < 0 || e.ghost || e.y < -20 || e.y > H + 20) continue;
+        damage(e, dmg, e.x, e.y);
+        if (sparks.length < fxCap(480)) spark(e.x, e.y, '#c9b6ff', 2);
+      }
+    } finally {
+      ultNow = false;
+    }
+    rings.push({ x: player.x, y: player.y, r: 10, max: 260, life: 0.45, full: 0.45, color: '#c9b6ff', wide: true });
+    shakeBy(4);
+    sfx.play('bomb');
+  }
   function damage(e, amount, x, y) {
     if (e.dead || e.t < 0 || e.ghost) return;
     if (e.boss && e.step !== 'fight') return;
+    if (chronoT > 0) amount *= 1.3; // a ship frozen in time breaks more easily
     const critP = stats.crit + (ultNow ? stats.ultCrit : 0);
     const crit = critP > 0 && Math.random() < critP;
     if (crit) amount *= stats.critMul;
@@ -10015,6 +10113,74 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
       ctx.globalCompositeOperation = 'lighter';
       ctx.globalAlpha = 1;
+      if (f.type === 'wave') { // the aurora: rippling green, blue and violet bands with a bright crest
+        const k = Math.min(1, f.t / 0.2) * Math.max(0, Math.min(1, (f.T - f.t) / 0.3));
+        const hh = f.w || 60;
+        for (const [col, off, al] of [['#7dffc8', 0, 0.42], ['#5ad1ff', 9, 0.3], ['#c38bff', -11, 0.26]]) {
+          ctx.globalAlpha = al * k * fx;
+          ctx.fillStyle = col;
+          ctx.beginPath();
+          ctx.moveTo(0, f.y + hh / 2 + off);
+          for (let x = 0; x <= W + 24; x += 24) ctx.lineTo(x, f.y - hh / 2 + off + Math.sin(x * 0.03 + clock * 4 + off) * 8);
+          ctx.lineTo(W, f.y + hh / 2 + off);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.globalAlpha = 0.9 * k * fx;
+        ctx.strokeStyle = '#eafff6';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let x = 0; x <= W + 24; x += 24) {
+          const y = f.y - hh / 2 + Math.sin(x * 0.03 + clock * 4) * 8;
+          if (x) ctx.lineTo(x, y);
+          else ctx.moveTo(x, y);
+        }
+        ctx.stroke();
+        continue;
+      }
+      if (f.type === 'wing') { // a friendly fighter in the flight: the player's own fighters, smaller
+        const sd = SHIPS[Math.round(f.sx) || 0] || SHIPS[0];
+        const spr = SPR.ships && SPR.ships[sd.id];
+        ctx.globalAlpha = fx;
+        ctx.drawImage(FLAME, f.x - 3, f.y + 9, 6, 12 + Math.random() * 6);
+        ctx.drawImage(dot(sd.tone), f.x - 14, f.y - 8, 28, 28);
+        if (spr) {
+          ctx.globalCompositeOperation = 'source-over';
+          ctx.globalAlpha = 0.95;
+          const s = spr.size * 0.62;
+          ctx.drawImage(spr.img, f.x - s / 2, f.y - s / 2, s, s);
+        }
+        continue;
+      }
+      if (f.type === 'chrono') { // stopped time: a pale veil over everything and a clock face round the ship
+        const k = Math.min(1, f.t / 0.15) * Math.max(0, Math.min(1, (f.T - f.t) / 0.3));
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = 0.15 * k;
+        ctx.fillStyle = '#9aa8ff';
+        ctx.fillRect(-20, -20, W + 40, H + 40);
+        ctx.globalCompositeOperation = 'lighter';
+        const R = (f.r || 170) * Math.min(1, f.t / 0.3 + 0.2);
+        ctx.globalAlpha = 0.8 * k * fx;
+        ctx.strokeStyle = '#c9b6ff';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, R, 0, TAU);
+        ctx.stroke();
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let n = 0; n < 12; n++) {
+          const a = (n / 12) * TAU;
+          ctx.moveTo(f.x + Math.cos(a) * R * 0.86, f.y + Math.sin(a) * R * 0.86);
+          ctx.lineTo(f.x + Math.cos(a) * R, f.y + Math.sin(a) * R);
+        }
+        const ha = -Math.PI / 2 + f.t * 0.15; // the hands barely creep
+        ctx.moveTo(f.x, f.y);
+        ctx.lineTo(f.x + Math.cos(ha) * R * 0.5, f.y + Math.sin(ha) * R * 0.5);
+        ctx.moveTo(f.x, f.y);
+        ctx.lineTo(f.x + Math.cos(ha * 4) * R * 0.78, f.y + Math.sin(ha * 4) * R * 0.78);
+        ctx.stroke();
+        continue;
+      }
       if (f.type === 'meteor') {
         const dx = f.tx - f.sx;
         const dy = f.ty - f.sy;
@@ -10582,31 +10748,49 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     let far = 0;
     let shown = 0;
     listEl.replaceChildren(...Object.entries(ULTS).map(([id, u]) => {
-      const pool = ready.slice();
-      const parts = u.pair.map((f) => { // this family's slot: a combined skill the player has, if any
-        const i = pool.findIndex((w) => FAMILY[w.id] === f);
-        return i >= 0 ? pool.splice(i, 1)[0] : null;
-      });
+      // the two places of the recipe: a particular combined skill (special ultimates) or any of a family
+      const places = u.sig ? u.sig.map((wid) => ({ wid })) : u.pair.map((f) => ({ f }));
+      const fits = (w, p) => (p.wid ? w.id === p.wid : FAMILY[w.id] === p.f);
+      // the player's combined skills in those places: a whole pair that really makes this ultimate first
+      let parts = [null, null];
+      for (let i = 0; i < ready.length && !parts[1]; i++) {
+        for (let j = 0; j < ready.length; j++) {
+          if (i === j) continue;
+          if (fits(ready[i], places[0]) && fits(ready[j], places[1]) && ultFor(ready[i].id, ready[j].id) === id) {
+            parts = [ready[i], ready[j]];
+            break;
+          }
+        }
+      }
+      if (!parts[1]) {
+        const pool = ready.slice();
+        parts = places.map((p) => {
+          const i = pool.findIndex((w) => fits(w, p));
+          return i >= 0 ? pool.splice(i, 1)[0] : null;
+        });
+        if (parts[0] && parts[1] && ultFor(parts[0].id, parts[1].id) !== id) parts[1] = null; // that pair makes another one
+      }
       const got = parts.filter(Boolean).length;
-      const soon = got + (nearby.some((w) => u.pair.includes(FAMILY[w.id])) ? 1 : 0);
+      const soon = got + (nearby.some((w) => places.some((p) => fits(w, p))) ? 1 : 0);
       const done = have.has(id);
-      const isFar = compact && !done && soon === 0; // nothing of either family yet, nor one about to combine
+      const can = got === 2 && run.ults < ultLimit();
+      const isFar = compact && !done && soon === 0; // nothing for it yet, nor one about to combine
       if (isFar) far += 1;
       else shown += 1;
       const li = document.createElement('li');
-      li.className = `recipe${done ? ' is-done' : got === 2 && run.ults < ultLimit() ? ' is-ready' : ''}${!done && got === 1 ? ' is-hot' : ''}${isFar ? ' is-far' : ''}`;
+      li.className = `recipe${u.sig ? ' is-special' : ''}${done ? ' is-done' : can ? ' is-ready' : ''}${!done && got === 1 ? ' is-hot' : ''}${isFar ? ' is-far' : ''}`;
       const left = document.createElement('span');
-      const words = parts.map((w, k) => (w ? `${WEAPONS[w.id].evo.name} ✓` : `${FAMILY_NAME[u.pair[k]]} 합체`));
+      const words = parts.map((w, k) => (w ? `${WEAPONS[w.id].evo.name} ✓` : places[k].wid ? WEAPONS[places[k].wid].evo.name : `${FAMILY_NAME[places[k].f]} 합체`));
       left.textContent = [...words.filter((t, k) => parts[k]), ...words.filter((t, k) => !parts[k])].join(' + '); // what they have first
       const right = document.createElement('b');
-      right.textContent = `${u.name}${done ? ' 완료' : got === 2 && run.ults < ultLimit() ? ' 준비' : ''}`;
+      right.textContent = `${u.sig ? '특별 · ' : ''}${u.name}${done ? ' 완료' : can ? ' 준비' : ''}`;
       li.append(left, right);
       return li;
     }));
     if (compact) ui.choiceUltHead.hidden = !allRecipes && shown === 0;
     else {
       const names = (f) => Object.keys(FAMILY).filter((wid) => FAMILY[wid] === f).map((wid) => WEAPONS[wid].evo.name).join('·');
-      ui.ultFamily.textContent = Object.keys(FAMILY_NAME).map((f) => `${FAMILY_NAME[f]} 합체: ${names(f)}`).join(' / ');
+      ui.ultFamily.textContent = `${Object.keys(FAMILY_NAME).map((f) => `${FAMILY_NAME[f]} 합체: ${names(f)}`).join(' / ')}. 특별 궁극기는 정해진 두 합체 스킬로만 만들어져요(그 두 스킬은 계열 궁극기 대신 특별 궁극기가 돼요).`;
     }
     return far;
   }
@@ -10630,6 +10814,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     hudDirty = true;
   }
   function clearField() {
+    chronoT = 0;
+    chronoDmg = 0;
     enemies.length = 0;
     pShots.length = 0;
     eShots.length = 0;
@@ -11009,7 +11195,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ui.quitNote.textContent = coop.on ? (coop.pauseRemote ? `${coop.partner || '친구'}님이 일시정지했어요. ` : '친구 화면도 같이 멈춰요. ') + (coopGuest() ? '나가면 지금까지 점수와 코인을 받아요.' : '끝내면 둘 다 지금 점수와 코인을 받아요.')
       : run.vs ? '대결은 계속돼요. 끝내면 지금 점수로 대결 순위에 남아요.'
       : run.endless ? '끝내면 지금까지 모은 점수와 코인을 받아요.' : '그만하면 이번 판의 기록과 코인은 남지 않아요.';
-    ui.ultNote.textContent = `합체 스킬 2개를 가진 채 보급 상자를 열면 궁극기가 하나 더 생겨요. 두 합체 스킬도 그대로 계속 나가고, 궁극기에 쓴 스킬에는 ★ 표시가 붙어요. ${run.endless ? '무한 모드는 제한이 없어요: 합체 스킬 2개만 있으면(궁극기에 이미 쓴 것도 돼요) 아직 없는 종류의 궁극기를 계속 만들어요. 6종 모두 모을 수 있어요.' : `한 판에 두 번까지 할 수 있어요(지금 ${run.ults}/${ULT_PER_RUN}). 두 번째는 아직 안 쓴 합체 스킬 2개가 더 있어야 해요.`}`;
+    ui.ultNote.textContent = `합체 스킬 2개를 가진 채 보급 상자를 열면 궁극기가 하나 더 생겨요. 두 합체 스킬도 그대로 계속 나가고, 궁극기에 쓴 스킬에는 ★ 표시가 붙어요. ${run.endless ? `무한 모드는 제한이 없어요: 합체 스킬 2개만 있으면(궁극기에 이미 쓴 것도 돼요) 아직 없는 종류의 궁극기를 계속 만들어요. ${Object.keys(ULTS).length}종 모두 모을 수 있어요.` : `한 판에 두 번까지 할 수 있어요(지금 ${run.ults}/${ULT_PER_RUN}). 두 번째는 아직 안 쓴 합체 스킬 2개가 더 있어야 해요.`}`;
     renderSlots(ui.pauseSlots);
     renderRecipes(ui.recipes);
     renderUltGuide();
@@ -11437,7 +11623,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ...Object.keys(WEAPONS).map((w) => A(`evo_${w}`, 1, `${WEAPONS[w].evo.name} 장인`, `${WEAPONS[w].evo.name} 만들어 보기`, inSet('evos', w), 1)),
     A('evoAll', 2, '합체 도감 완성', '합체 스킬 9종 모두 만들어 보기', (L) => L.evos.length, Object.keys(WEAPONS).length),
     A('ult', 1, '궁극의 힘', '궁극 합체 처음 하기', (L) => L.ults.length, 1, { coins: 300 }),
-    A('ultAll', 2, '궁극 수집가', '궁극기 6종 모두 만들어 보기', (L) => L.ults.length, Object.keys(ULTS).length, { coins: 2000 }),
+    A('ultAll', 2, '궁극 수집가', `궁극기 ${Object.keys(ULTS).length}종 모두 만들어 보기`, (L) => L.ults.length, Object.keys(ULTS).length, { coins: 2000 }),
     // endless and skill
     A('end2', 0, '무한의 문턱', '무한 모드 구역 2 도달', lifeOf('maxSector'), 2),
     A('end5', 1, '끝없는 도전자', '무한 모드 구역 5 도달', lifeOf('maxSector'), 5, { coins: 600 }),
@@ -12977,7 +13163,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   const STEPS = ['', 'hover', 'dash', 'aim'];
   const BULLET_TONES = Object.keys(EBULLET);
   const ITEM_KINDS = ['coin', 'heal', 'magnet', 'bomb', 'chest', 'mystery'];
-  const UFX_TYPES = ['meteor', 'pillar', 'shell', 'fire', 'hole'];
+  const UFX_TYPES = ['meteor', 'pillar', 'shell', 'fire', 'hole', 'wave', 'wing', 'chrono'];
   const WEAPON_IDS = [...Object.keys(WEAPONS), 'ult'];
   const ULT_IDS = Object.keys(ULTS);
   const PALETTE = [...new Set(['#7fe7ff', ...Object.values(TIER_TONES).flat(), ...Object.values(EVO_TONES), ...SHIPS.map((sd) => sd.tone),
@@ -13597,7 +13783,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     body.push(listB.length);
     for (const b of listB) {
       if (!b.id) b.id = nextId();
-      body.push(b.id, I16(b.x * 4), I16(b.y * 4), I16(b.vx * 10), I16(b.vy * 10), I16(b.r * 10), Math.max(0, BULLET_TONES.indexOf(b.tone)) | (b.split ? 256 : 0) | (Math.max(0, SHOT_SHAPES.indexOf(b.shape)) << 9));
+      const still = chronoT > 0 ? 0 : 1; // stopped time: the friend's phone must not slide the bullets on
+      body.push(b.id, I16(b.x * 4), I16(b.y * 4), I16(b.vx * 10 * still), I16(b.vy * 10 * still), I16(b.r * 10), Math.max(0, BULLET_TONES.indexOf(b.tone)) | (b.split ? 256 : 0) | (Math.max(0, SHOT_SHAPES.indexOf(b.shape)) << 9));
     }
     const listS = pShots.slice(-cap.s);
     body.push(listS.length);
@@ -13881,7 +14068,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       const type = UFX_TYPES[u[0]];
       if (!type) continue;
       const f = { type, x: u[1], y: u[2], t: u[3], T: u[4], sx: u[6], sy: u[7], tx: u[8], ty: u[9], spin: u[10], rot: u[10], blastR: u[11] };
-      if (type === 'pillar') f.w = u[5];
+      if (type === 'pillar' || type === 'wave') f.w = u[5];
       else if (type === 'hole') f.R = u[5];
       else f.r = u[5];
       ufx.push(f);
@@ -15313,10 +15500,15 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
       if (coop.ally) coopHostStep(dt);
     }
-    updateEnemies(dt);
+    const edt = chronoT > 0 ? 0 : dt; // stopped time: the enemies, their fire and their beams wait
+    if (chronoT > 0) {
+      chronoT -= dt;
+      if (chronoT <= 0) chronoShatter();
+    }
+    updateEnemies(edt);
     updatePlayerShots(dt);
-    updateEnemyShots(dt);
-    updateHazards(dt);
+    updateEnemyShots(edt);
+    updateHazards(edt);
     ultNow = true;
     try {
       updateUltFx(dt);
