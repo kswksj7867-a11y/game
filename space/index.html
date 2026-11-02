@@ -499,6 +499,8 @@ button { font: inherit; color: inherit; }
 .recipe.is-hot { border-color: rgba(127, 231, 255, 0.55); color: var(--ink); }
 .recipe.is-hot.is-ready { border-color: var(--amber); }
 .recipes.is-compact { gap: 4px; }
+.recipes-sub { margin: 12px 0 0; font-size: 0.8125rem; font-weight: 700; color: var(--amber); }
+.recipes-sub[hidden] { display: none; }
 .recipes.is-compact:not(.show-all) .recipe.is-far { display: none; }
 .link-btn {
   appearance: none;
@@ -727,6 +729,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .board-me b { color: var(--ink); }
 .board .name-form { margin: 6px 0 10px; }
 .rank-name { margin-right: 8px; font-family: var(--font-ui); font-weight: 700; }
+.rank-who, .rank-pts { white-space: nowrap; }
 
 /* ---------- quick chat, weekly boards, titles ---------- */
 .chat-bar {
@@ -1283,6 +1286,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         <details class="recipes-box" open>
           <summary>합체 레시피</summary>
           <ul class="recipes is-compact" id="choice-recipes"></ul>
+          <p class="recipes-sub" id="choice-ult-head">궁극 합체</p>
+          <ul class="recipes is-compact" id="choice-ults"></ul>
           <button type="button" class="link-btn" id="recipes-more" hidden>레시피 모두 보기</button>
         </details>
       </section>
@@ -1294,18 +1299,17 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           <p id="pause-wait-text"></p>
           <button type="button" class="btn" id="pause-alone" hidden>친구 없이 혼자 계속하기</button>
         </div>
+        <button type="button" class="btn btn-primary" id="resume">계속하기</button>
         <div class="slots" id="pause-slots"></div>
         <details class="recipes-box" open>
           <summary>합체 레시피</summary>
           <ul class="recipes" id="recipes"></ul>
           <p class="note">준비된 합체는 보급 상자를 열면 이뤄져요. 중간 보스가 상자를 꼭 떨어뜨려요.</p>
-        </details>
-        <details class="recipes-box">
-          <summary>궁극 합체</summary>
+          <p class="recipes-sub">궁극 합체 · 합체 스킬 2개 + 보급 상자</p>
           <ul class="recipes" id="ult-guide"></ul>
+          <p class="note" id="ult-family"></p>
           <p class="note" id="ult-note">합체 스킬 2개를 가진 채 보급 상자를 열면 궁극기가 하나 더 생겨요. 두 합체 스킬도 그대로 계속 나가고, 궁극기에 쓴 스킬에는 ★ 표시가 붙어요. 한 판에 한 번이에요.</p>
         </details>
-        <button type="button" class="btn btn-primary" id="resume">계속하기</button>
         <div class="row row-3">
           <button type="button" class="btn" data-toggle="music" aria-pressed="true">음악</button>
           <button type="button" class="btn" data-toggle="sfx" aria-pressed="true">효과음</button>
@@ -1502,7 +1506,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     treeReset: $('tree-reset'), treeConfirm: $('tree-confirm'), treeRefund: $('tree-refund'),
     treeResetCancel: $('tree-reset-cancel'), treeResetOk: $('tree-reset-ok'),
     titleBest: $('title-best'), start: $('start'), stageList: $('stage-list'), stagesBack: $('stages-back'),
-    choiceEyebrow: $('choice-eyebrow'), choiceTitle: $('choice-title'), cards: $('cards'), choiceSlots: $('choice-slots'), choiceRecipes: $('choice-recipes'), recipesMore: $('recipes-more'),
+    choiceEyebrow: $('choice-eyebrow'), choiceTitle: $('choice-title'), cards: $('cards'), choiceSlots: $('choice-slots'), choiceRecipes: $('choice-recipes'), choiceUlts: $('choice-ults'), choiceUltHead: $('choice-ult-head'), ultFamily: $('ult-family'), recipesMore: $('recipes-more'),
     ultGuide: $('ult-guide'), pauseInfo: $('pause-info'), pauseWait: $('pause-wait'), pauseWaitText: $('pause-wait-text'), pauseAlone: $('pause-alone'), pauseSlots: $('pause-slots'), recipes: $('recipes'), resume: $('resume'), quit: $('quit'),
     resultEyebrow: $('result-eyebrow'), resultTitle: $('result-title'), finalScore: $('final-score'), finalSeal: $('final-seal'),
     finalNote: $('final-note'), stTime: $('st-time'), stLevel: $('st-level'), stKills: $('st-kills'), stStage: $('st-stage'),
@@ -1543,6 +1547,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   const PASSIVE_SLOTS = 5;
   const MAX_ENEMIES = 260;
   const MAX_ESHOTS = 560;
+  const MAX_PSHOTS = 900; // our own shots (forking bolts can multiply fast)
   const MAX_GEMS = 360;
   // Shared leaderboard: the name of a Firebase Realtime Database. Its web address depends on the region it was
   // created in, so the game tries each region once and keeps the address that answers.
@@ -1566,14 +1571,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 
   // `bias` makes some squads more common in a region so each one plays differently.
   const STAGES = [
-    { name: '달 궤도', about: '첫 출격 지역. 적이 천천히 늘어나요.', mul: 1, color: '#a88bff', sky: ['#0d1236', '#070918'], neb: ['#a88bff', '#7fe7ff', '#ff6f91'], planet: '#b9b5d8', bias: {} },
-    { name: '소행성대', about: '바위와 혜성 사이로 폭격기가 지나가요.', mul: 1.2, color: '#ffa94d', sky: ['#1d1531', '#08070f'], neb: ['#ffa94d', '#ff6f91', '#a88bff'], rocks: true, planet: '#c98b5a', bias: { rocks: 2, comets: 2, bombers: 1.7, minefield: 1.4 } },
-    { name: '푸른 성운', about: '벌떼와 유령기가 사방에서 몰려와요.', mul: 1.45, color: '#3fe0b2', sky: ['#072a35', '#04080f'], neb: ['#3fe0b2', '#7fe7ff', '#a88bff'], rocks: true, planet: '#3d9fae', bias: { seekers: 2, snake: 2, hsnake: 2, phantoms: 2, splitters: 1.5, ambush: 1.5 } },
-    { name: '사건의 지평선', about: '광선함과 저격기가 길목을 막아요.', mul: 1.75, color: '#ff5a6e', sky: ['#2a0d1f', '#080409'], neb: ['#ff5a6e', '#a88bff', '#ffa94d'], rocks: true, early: 0.7, planet: '#ff7a45', bias: { lancers: 2, snipers: 2, spinner: 1.6, minefield: 1.5, wall: 1.4 } },
-    { name: '은하 중심', about: '모함과 수리선을 앞세운 총공세예요.', mul: 2.1, color: '#ffc24b', sky: ['#2a2210', '#0a0805'], neb: ['#ffc24b', '#ff6f91', '#a88bff'], rocks: true, early: 0.55, planet: '#ffd27a', bias: { carrier: 1.7, healers: 1.7, shieldwall: 1.7, spinner: 1.3, lancers: 1.3 } },
-    { name: '얼음 고리', about: '얼어붙은 고리 사이로 서리 함대가 몰려와요. 쪼개지는 적과 기뢰가 많아요.', mul: 2.35, color: '#9ad8ff', sky: ['#0b2440', '#040a14'], neb: ['#bfe6ff', '#7fe7ff', '#a88bff'], rocks: true, early: 0.55, planet: '#d6f1ff', bias: { splitters: 1.6, minefield: 1.4, rain: 1.25, wall: 1.2, rocks: 1.6, comets: 1.4 } },
-    { name: '기계 성단', about: '기계 군단의 포대와 저격기가 빈틈없이 지켜요.', mul: 2.65, color: '#39ff88', sky: ['#0a2a22', '#030a08'], neb: ['#39ff88', '#3fe0b2', '#7fe7ff'], rocks: true, early: 0.5, planet: '#6c7686', bias: { gunner: 1.9, snipers: 1.8, shieldwall: 1.7, lancers: 1.6, tank: 1.5, escort: 1.4 } },
-    { name: '공허의 끝', about: '빛이 사라지는 마지막 지역. 그림자 함대가 사방에서 덮쳐요.', mul: 3, color: '#ff4fd8', sky: ['#1a0826', '#040208'], neb: ['#ff4fd8', '#8a4fff', '#2a1638'], early: 0.45, planet: '#3a1d52', bias: { phantoms: 2.2, ambush: 2, seekers: 1.7, spinner: 1.6, carrier: 1.5, healers: 1.3 } },
+    { name: '달 궤도', style: 'pellet', about: '첫 출격 지역. 적이 천천히 늘어나요.', mul: 1, color: '#a88bff', sky: ['#0d1236', '#070918'], neb: ['#a88bff', '#7fe7ff', '#ff6f91'], planet: '#b9b5d8', bias: {} },
+    { name: '소행성대', style: 'shard', about: '바위와 혜성 사이로 폭격기가 지나가요.', mul: 1.2, color: '#ffa94d', sky: ['#1d1531', '#08070f'], neb: ['#ffa94d', '#ff6f91', '#a88bff'], rocks: true, planet: '#c98b5a', bias: { rocks: 2, comets: 2, bombers: 1.7, minefield: 1.4 } },
+    { name: '푸른 성운', style: 'spore', about: '벌떼와 유령기가 사방에서 몰려와요.', mul: 1.45, color: '#3fe0b2', sky: ['#072a35', '#04080f'], neb: ['#3fe0b2', '#7fe7ff', '#a88bff'], rocks: true, planet: '#3d9fae', bias: { seekers: 2, snake: 2, hsnake: 2, phantoms: 2, splitters: 1.5, ambush: 1.5 } },
+    { name: '사건의 지평선', style: 'needle', about: '광선함과 저격기가 길목을 막아요.', mul: 1.75, color: '#ff5a6e', sky: ['#2a0d1f', '#080409'], neb: ['#ff5a6e', '#a88bff', '#ffa94d'], rocks: true, early: 0.7, planet: '#ff7a45', bias: { lancers: 2, snipers: 2, spinner: 1.6, minefield: 1.5, wall: 1.4 } },
+    { name: '은하 중심', style: 'halo', about: '모함과 수리선을 앞세운 총공세예요.', mul: 2.1, color: '#ffc24b', sky: ['#2a2210', '#0a0805'], neb: ['#ffc24b', '#ff6f91', '#a88bff'], rocks: true, early: 0.55, planet: '#ffd27a', bias: { carrier: 1.7, healers: 1.7, shieldwall: 1.7, spinner: 1.3, lancers: 1.3 } },
+    { name: '얼음 고리', style: 'frost', about: '얼어붙은 고리 사이로 서리 함대가 몰려와요. 쪼개지는 적과 기뢰가 많아요.', mul: 2.35, color: '#9ad8ff', sky: ['#0b2440', '#040a14'], neb: ['#bfe6ff', '#7fe7ff', '#a88bff'], rocks: true, early: 0.55, planet: '#d6f1ff', bias: { splitters: 1.6, minefield: 1.4, rain: 1.25, wall: 1.2, rocks: 1.6, comets: 1.4 } },
+    { name: '기계 성단', style: 'bolt', about: '기계 군단의 포대와 저격기가 빈틈없이 지켜요.', mul: 2.65, color: '#39ff88', sky: ['#0a2a22', '#030a08'], neb: ['#39ff88', '#3fe0b2', '#7fe7ff'], rocks: true, early: 0.5, planet: '#6c7686', bias: { gunner: 1.9, snipers: 1.8, shieldwall: 1.7, lancers: 1.6, tank: 1.5, escort: 1.4 } },
+    { name: '공허의 끝', style: 'void', about: '빛이 사라지는 마지막 지역. 그림자 함대가 사방에서 덮쳐요.', mul: 3, color: '#ff4fd8', sky: ['#1a0826', '#040208'], neb: ['#ff4fd8', '#8a4fff', '#2a1638'], early: 0.45, planet: '#3a1d52', bias: { phantoms: 2.2, ambush: 2, seekers: 1.7, spinner: 1.6, carrier: 1.5, healers: 1.3 } },
   ];
   const ENDLESS = STAGES.length; // in the list of places to fight, endless mode comes after every region
   // Stage numbers in records, boards and rooms: regions 1-5 kept theirs, endless mode is 6 (it came right after the
@@ -1739,6 +1744,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     { id: 'falcon', name: '팔콘', price: 16000, hp: 140, dmg: 1.1, hitbox: 4, gun: 'crescent', tone: '#ff5a6e', flame: 'hot', engines: [[-5, 15]], bars: [4, 4, 2, 3], gunName: '초승달 칼날', about: '넓게 퍼지는 초승달 칼날이 앞의 적을 모두 베어요. 화면 맨 위까지는 닿지 않아요.', perk: '치명타 확률 +8%, 치명타 피해 +40%.', add: { crit: 0.08, critMul: 0.4 } },
     { id: 'quasar', name: '퀘이사', price: 20000, hp: 130, dmg: 1.1, hitbox: 4.5, gun: 'cluster', tone: '#ff4fd8', flame: 'hot', engines: [[-6, 16]], bars: [3, 5, 2, 2], gunName: '성단 폭탄', about: '날아가다 터지며 별 조각을 사방으로 뿌리는 폭탄을 쏴요.', perk: '범위와 크기 +15%.', mul: { area: 1.15 } },
     { id: 'lumen', name: '루멘', price: 25000, hp: 135, dmg: 1.1, hitbox: 4, gun: 'beam', tone: '#fff3b0', flame: 'cool', engines: [[-4, 15]], bars: [4, 4, 5, 3], gunName: '빛의 기둥', about: '끊이지 않는 빛기둥을 앞으로 쏴서 그 줄의 적을 모두 태워요. 레벨이 오르면 굵어져요.', perk: '보스에게 주는 피해 +20%.', mul: { bossMul: 1.2 } },
+    { id: 'vulcan', name: '벌컨', price: 22000, hp: 145, dmg: 1, hitbox: 4.5, gun: 'gatling', tone: '#8fb3ff', flame: 'hot', engines: [[-7, 16]], bars: [4, 4, 5, 2], gunName: '회전 기관포', about: '쏠수록 총열이 빨리 돌아 총알이 쏟아져요. 맞으면 총열이 멈췄다가 처음부터 다시 돌아요.', perk: '받는 피해 −8%.', mul: { taken: 0.92 } },
+    { id: 'ricochet', name: '리코셰', price: 28000, hp: 120, dmg: 1.05, hitbox: 3.5, gun: 'shuriken', tone: '#4d7cff', flame: 'cool', engines: [[-4, 14]], bars: [3, 4, 4, 4], gunName: '튕기는 표창', about: '가장 가까운 적에게 큰 표창을, 양옆으로 작은 표창을 던져요. 표창은 화면 벽과 천장에 튕기며 여러 적을 베어요. 레벨이 오르면 표창이 늘고 더 많이 튕겨요.', perk: '범위와 크기 +10%, 투사체 속도 +15%.', mul: { area: 1.1, speedMul: 1.15 } },
+    { id: 'hydra', name: '히드라', price: 35000, hp: 135, dmg: 1.1, hitbox: 4, gun: 'hydra', tone: '#37e27a', flame: 'cool', engines: [[-5, 15]], bars: [4, 5, 3, 3], gunName: '갈라지는 독탄', about: '날아가다 두 갈래로, 또 두 갈래로 갈라지는 독탄을 쏴요. 레벨이 오르면 더 여러 번 갈라져요.', perk: '경험치 +10%, 치명타 확률 +5%.', mul: { xpMul: 1.1 }, add: { crit: 0.05 } },
   ];
   const BEE_TONE = '#ffd23f';
   const shipOf = (id) => SHIPS.find((sd) => sd.id === id) || SHIPS[0];
@@ -1828,14 +1836,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       id: 'growth', name: '성장', tone: 'cyan', nodes: [
         { id: 'study', name: '학습', icon: 'book', max: 10, cost: 40, row: 0, about: (r) => `경험치 +${4 * r}%` },
         { id: 'pull', name: '자력', icon: 'tractor', max: 8, cost: 40, row: 1, col: 0, req: ['study', 1], about: (r) => `경험치·아이템을 끌어오는 거리 +${8 * r}%` },
-        { id: 'greed', name: '탐욕', icon: 'coin', max: 10, cost: 60, row: 1, col: 1, req: ['study', 1], about: (r) => `얻는 코인 +${8 * r}%` },
+        { id: 'greed', name: '탐욕', icon: 'coin', max: 10, cost: 60, row: 1, col: 1, req: ['study', 1], about: (r) => `얻는 코인 +${6 * r}%` },
         { id: 'fortune', name: '행운', icon: 'luck', max: 8, cost: 60, row: 2, col: 0, req: ['pull', 2], about: (r) => `아이템이 나올 확률 +${5 * r}%` },
         { id: 'reroll', name: '다시 뽑기', icon: 'reroll', max: 5, cost: 150, row: 2, col: 1, req: ['greed', 2], about: (r) => `판마다 스킬을 ${r}번 다시 뽑을 수 있어요` },
         { id: 'supply', name: '보급 탐지', icon: 'chest', max: 6, cost: 90, row: 3, col: 0, req: ['fortune', 2], about: (r) => `보급 상자가 나올 확률 +${12 * r}%` },
         { id: 'headstart', name: '빠른 출발', icon: 'missile', max: 5, cost: 150, row: 3, col: 1, req: ['reroll', 1], about: (r) => `출격하자마자 레벨 업 ${r}번` },
         { id: 'automag', name: '자동 자석', icon: 'tractor', max: 4, cost: 160, row: 4, col: 0, req: ['supply', 1], about: (r) => `${AUTOMAG_EVERY[r - 1]}초마다 경험치를 모두 끌어와요` },
         { id: 'bossxp', name: '보스 경험치', icon: 'target', max: 4, cost: 120, row: 4, col: 1, req: ['headstart', 1], about: (r) => `보스가 주는 경험치 +${25 * r}%` },
-        { id: 'interest', name: '이자', icon: 'coin', max: 5, cost: 300, row: 5, col: 0, req: ['automag', 1], about: (r) => `판이 끝날 때 가진 코인의 ${r}%를 더 받아요 (최대 ${200 * r})` },
+        { id: 'interest', name: '이자', icon: 'coin', max: 5, cost: 300, row: 5, col: 0, req: ['automag', 1], about: (r) => `판이 끝날 때 가진 코인의 ${r}%를 더 받아요 (최대 ${100 * r})` },
         { id: 'luckycard', name: '행운의 카드', icon: 'cards', max: 5, cost: 130, row: 5, col: 1, req: ['bossxp', 1], about: (r) => `레벨 업 카드에 가진 스킬이 나올 확률 +${10 * r}%` },
         { id: 'choice4', name: '넓은 선택', icon: 'cards', max: 1, cost: 2200, row: 6, req: ['luckycard', 2], about: () => '레벨 업 때 스킬 4개 중에서 골라요' },
       ],
@@ -1866,7 +1874,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         { id: 'bounty', name: '현상금', icon: 'coin', max: 5, cost: 100, row: 3, col: 0, req: ['lucky', 1], about: (r) => `보스가 주는 코인 +${30 * r}%` },
         { id: 'overclock', name: '과열 가속', icon: 'gauge', max: 5, cost: 120, row: 3, col: 1, req: ['execute', 1], about: (r) => `보스와 싸울 때 재사용 시간 −${6 * r}%` },
         { id: 'secondwind', name: '재정비', icon: 'repair', max: 4, cost: 110, row: 4, col: 0, req: ['bounty', 1], about: (r) => `중간 보스를 잡으면 체력 +${20 * r}` },
-        { id: 'crate', name: '보급 확장', icon: 'chest', max: 5, cost: 120, row: 4, col: 1, req: ['overclock', 1], about: (r) => `보급 상자를 주울 때 코인 +${5 * r}` },
+        { id: 'crate', name: '보급 확장', icon: 'chest', max: 5, cost: 120, row: 4, col: 1, req: ['overclock', 1], about: (r) => `보급 상자를 주울 때 코인 +${2 * r}` },
         { id: 'panic', name: '위기 폭탄', icon: 'bomb', max: 3, cost: 220, row: 5, col: 0, req: ['secondwind', 1], about: (r) => `체력이 30% 아래로 떨어지면 폭탄이 저절로 터져요 (한 판에 ${r}번)` },
         { id: 'score', name: '점수 배율', icon: 'crit', max: 10, cost: 150, row: 5, col: 1, req: ['crate', 1], about: (r) => `점수 +${5 * r}%` },
         { id: 'magnetboss', name: '전리품 회수', icon: 'tractor', max: 1, cost: 900, row: 6, req: ['score', 3], about: () => '보스를 잡으면 화면의 경험치와 코인을 모두 끌어와요' },
@@ -1915,7 +1923,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   };
   // Prices from the earlier, cheaper tree, to refund old purchases fairly.
   const OLD_BASE = { might: 30, haste: 35, reach: 35, crit: 50, bossdmg: 45, critdmg: 70, pierce: 120, fury: 60, extra: 800, hull: 30, regen: 40, plating: 40, medic: 45, evade: 50, vital: 70, barrier: 150, thorns: 90, revive: 900, study: 30, pull: 30, greed: 40, fortune: 45, reroll: 80, supply: 60, headstart: 90, automag: 100, choice4: 700, cannonM: 40, missileM: 40, dronesM: 40, laserM: 45, novaM: 45, lightningM: 50, auraM: 50, evoM: 150, pick: 500, timewarp: 40, bombplus: 45, chain: 55, lucky: 50, execute: 90, bounty: 70, overclock: 90, secondwind: 80, crate: 100 };
-  const COIN_DROP = 0.05; // chance per kill; bigger ships drop two
+  const COIN_DROP = 0.04; // chance per kill; bigger ships drop two
 
   // Squads the director can send: when they start (seconds into the run), how often, and how much spawn budget they use.
   const PATTERNS = [
@@ -2116,6 +2124,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       coins: Math.max(0, Math.floor(Number(raw.coins) || 0)),
       earned: Math.max(0, Math.floor(Number(raw.earned) || 0)),
       tree: cleanTree(raw.tree),
+      treeEp: Math.max(0, Math.floor(Number(raw.treeEp) || 0)),
       spent: Number.isFinite(raw.spent) ? Math.max(0, Math.floor(raw.spent)) : -1,
       name: cleanName(raw.name),
       pid: typeof raw.pid === 'string' && /^[a-z0-9]{8,24}$/.test(raw.pid) ? raw.pid : newPid(),
@@ -2128,6 +2137,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       title: typeof raw.title === 'string' ? raw.title.slice(0, 16) : '',
       rev: Math.max(0, Math.floor(Number(raw.rev) || 0)),
       account: cleanAccount(raw.account),
+      shipScan: Math.max(0, Math.floor(Number(raw.shipScan) || 0)),
     };
   })();
   function cleanLife(raw) {
@@ -2389,7 +2399,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   function packProgress() {
     return JSON.stringify({
-      unlocked: saved.unlocked, cleared: saved.cleared, coins: saved.coins, earned: saved.earned, tree: saved.tree, spent: saved.spent,
+      unlocked: saved.unlocked, cleared: saved.cleared, coins: saved.coins, earned: saved.earned, tree: saved.tree, treeEp: saved.treeEp, spent: saved.spent,
       ships: saved.ships, ship: saved.ship, life: saved.life, daily: saved.daily, achv: saved.achv, title: saved.title,
       name: saved.name, pid: saved.pid, records: saved.records.slice(-120),
     });
@@ -2408,6 +2418,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       coins: Math.max(0, Math.floor(Number(raw.coins) || 0)),
       earned: Math.max(0, Math.floor(Number(raw.earned) || 0)),
       tree: cleanTree(raw.tree),
+      treeEp: Math.max(0, Math.floor(Number(raw.treeEp) || 0)),
       spent: Math.max(0, Math.floor(Number(raw.spent) || 0)),
       ships: cleanShips(raw.ships),
       ship: typeof raw.ship === 'string' ? raw.ship : 'star',
@@ -2441,37 +2452,61 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       a.bonus = a.bonus || b.bonus;
     }
   }
+  // Fighters and skill-tree levels bought in either copy: kept in both. Resolves true when this copy gained something.
+  function mergeOwned(p) {
+    let gained = false;
+    for (const id of p.ships) {
+      if (!saved.ships.includes(id)) {
+        saved.ships.push(id);
+        gained = true;
+      }
+    }
+    if (p.treeEp > saved.treeEp) { // the tree was reset there after this copy last heard: that tree counts
+      saved.tree = { ...p.tree };
+      saved.treeEp = p.treeEp;
+      saved.spent = p.spent;
+      return true;
+    }
+    if (p.treeEp === saved.treeEp) {
+      for (const [id, r] of Object.entries(p.tree)) {
+        if (r > (saved.tree[id] || 0)) {
+          saved.tree[id] = r;
+          gained = true;
+        }
+      }
+      saved.spent = Math.max(saved.spent, p.spent);
+    }
+    return gained;
+  }
   // First link on a device: keep the best of what this device and the account each have.
   function mergeProgress(p) {
     saved.unlocked = Math.max(saved.unlocked, p.unlocked);
     saved.cleared = saved.cleared.map((c, i) => c || p.cleared[i]);
     saved.coins = Math.max(saved.coins, p.coins);
     saved.earned = Math.max(saved.earned, p.earned);
-    for (const [id, r] of Object.entries(p.tree)) saved.tree[id] = Math.max(rank(id), r);
-    saved.spent = Math.max(saved.spent, p.spent);
-    for (const id of p.ships) if (!saved.ships.includes(id)) saved.ships.push(id);
+    mergeOwned(p);
     if (saved.ship === 'star' && p.ships.includes(p.ship)) saved.ship = p.ship; // keep flying what the account flies
     mergeGoals(p);
     if (!saved.title) saved.title = p.title;
     mergeRecords(p.records);
     if (p.pid) saved.pid = p.pid;
   }
-  // Later on: the server copy is newer (played somewhere else), so it replaces this one; history is kept from both.
+  // Later on: the server copy is newer (played somewhere else), so its numbers replace this one's; history is kept from
+  // both, and so is everything bought in either place (a fighter bought here is never taken away by the other copy).
   function adoptProgress(p) {
-    saved.unlocked = p.unlocked;
-    saved.cleared = p.cleared;
+    saved.unlocked = Math.max(saved.unlocked, p.unlocked);
+    saved.cleared = saved.cleared.map((c, i) => c || p.cleared[i]);
     saved.coins = p.coins;
-    saved.earned = p.earned;
-    saved.tree = p.tree;
-    saved.spent = p.spent;
-    saved.ships = p.ships;
-    if (p.ships.includes(p.ship)) saved.ship = p.ship;
+    saved.earned = Math.max(saved.earned, p.earned);
+    mergeOwned(p);
+    if (saved.ships.includes(p.ship) && p.ship !== 'star') saved.ship = p.ship; // the starter isn't a choice worth copying over
     mergeGoals(p);
     if (p.title) saved.title = p.title;
     if (p.name) saved.name = p.name;
     if (p.pid) saved.pid = p.pid;
     mergeRecords(p.records);
   }
+  const mergeOwnedBack = (p) => saved.ships.some((id) => !p.ships.includes(id)) || Object.entries(saved.tree).some(([id, r]) => r > (p.tree[id] || 0));
   const cloud = (() => {
     let timer = 0;
     let lastPull = 0;
@@ -2504,12 +2539,17 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
             return false;
           }
           const rev = Number(doc.rev) || 0;
+          const p = readProgress(doc.data);
+          if (!p) return false;
           if (rev > saved.rev) {
-            const p = readProgress(doc.data);
-            if (!p) return false;
             adoptProgress(p);
             saved.rev = rev;
             writeLocal();
+            if (mergeOwnedBack(p)) this.schedule(); // this copy had something the server copy lacked: send it back
+            return true;
+          }
+          if (mergeOwned(p)) { // an older copy can still hold a fighter bought there: keep it, and send the union back
+            save();
             return true;
           }
           if (rev < saved.rev) this.schedule();
@@ -2520,6 +2560,65 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       },
     };
   })();
+  // ---------- fighters this player has flown are theirs ----------
+  // A fighter that cleared a region, or flew a run that went up on a board, was bought: one that went missing (a sync
+  // between two places that kept separate copies, such as Safari and the home-screen app) comes back.
+  const SHIP_SCAN = 1; // raise to look through the boards once more
+  function shipsFlownHere() {
+    const found = new Set(saved.life.shipClears);
+    for (const id of saved.achv) if (id.startsWith('fly_')) found.add(id.slice(4));
+    for (const r of saved.records) if (typeof r.ship === 'string') found.add(r.ship);
+    return found;
+  }
+  async function shipsFlownOnBoards() {
+    const found = new Set();
+    // a name only counts as this player's when their account holds it
+    let nameMine = false;
+    if (saved.account && saved.name && canAccount()) {
+      try {
+        nameMine = (await board.get(`v1/names/${await nameKeyOf(saved.name)}`)) === saved.account.owner;
+      } catch {
+        nameMine = false;
+      }
+    }
+    const mine = (pid, name) => pid === saved.pid || (nameMine && name === saved.name);
+    const weeks = [weekKey(), weekKey(Date.now() - 7 * 86400e3)];
+    const jobs = [];
+    for (let i = 0; i <= ENDLESS; i++) { // every region and the endless mode
+      const s = stageNoOf(i);
+      jobs.push(board.top(s, true).then((list) => list.forEach((r) => mine(r.pid, r.name) && found.add(r.ship))));
+      for (const w of weeks) jobs.push(board.top(s, true, w).then((list) => list.forEach((r) => mine(r.pid, r.name) && found.add(r.ship))));
+      jobs.push(board.teamTop(s, true).then((list) => list.forEach((r) => {
+        if (mine(r.pid, r.name)) found.add(r.ship);
+        if (mine(r.pid2, r.name2)) found.add(r.ship2);
+      })));
+    }
+    jobs.push(board.get(`v1/players/${saved.pid}`).then((p) => p && typeof p.s === 'string' && found.add(p.s)));
+    const done = await Promise.allSettled(jobs);
+    return { found, ok: done.some((d) => d.status === 'fulfilled') };
+  }
+  async function restoreShips() {
+    const found = shipsFlownHere();
+    let scanned = false;
+    if (board.on && saved.shipScan < SHIP_SCAN) {
+      const res = await shipsFlownOnBoards().catch(() => ({ found: new Set(), ok: false }));
+      for (const id of res.found) found.add(id);
+      scanned = res.ok;
+    }
+    const back = [...found].filter((id) => id !== 'star' && SHIPS.some((sd) => sd.id === id) && !saved.ships.includes(id));
+    if (scanned) saved.shipScan = SHIP_SCAN;
+    if (!back.length) {
+      if (scanned) save();
+      return;
+    }
+    saved.ships.push(...back);
+    save();
+    checkAchv();
+    toast(`사라졌던 전투기를 되찾았어요: ${back.map((id) => shipOf(id).name).join(', ')}`);
+    if (state === 'hangar') renderHangar();
+    else refreshMenus();
+  }
+
   // An account opened through Google needs no password: its key is random and Google keeps it.
   async function createKeyAccount(name) {
     const key = hexOf(window.crypto.getRandomValues(new Uint8Array(32)));
@@ -2979,8 +3078,143 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     });
   }
   const EBULLET = {};
-  for (const [name, color] of Object.entries({ coral: COLOR.coral, amber: COLOR.amber, violet: COLOR.violet, teal: COLOR.teal, cyan: COLOR.cyan, lime: COLOR.lime, red: COLOR.danger })) {
-    EBULLET[name] = bulletSprite(color);
+  const ETONE = { coral: COLOR.coral, amber: COLOR.amber, violet: COLOR.violet, teal: COLOR.teal, cyan: COLOR.cyan, lime: COLOR.lime, red: COLOR.danger, pink: '#ff4fd8' };
+  for (const [name, color] of Object.entries(ETONE)) EBULLET[name] = bulletSprite(color);
+  // Each region's bullets have their own shape; every shape keeps the dark rim and the white-hot middle, so it reads
+  // on any background. Shapes that point somewhere are painted pointing right and turned as they fly.
+  const SHOT_SHAPES = ['orb', 'shard', 'spore', 'needle', 'halo', 'crystal', 'bolt', 'void'];
+  const SHOT_TURNS = { shard: true, needle: true, bolt: true, void: true };
+  function shotPoly(g, pts) { // (poly() is the art module's own)
+    g.beginPath();
+    pts.forEach(([x, y], k) => (k ? g.lineTo(x, y) : g.moveTo(x, y)));
+    g.closePath();
+  }
+  function shapeSprite(shape, color) {
+    return sprite(48, 2, (g) => {
+      const halo = g.createRadialGradient(0, 0, 6, 0, 0, 24);
+      halo.addColorStop(0, rgba(color, 0.45));
+      halo.addColorStop(1, rgba(color, 0));
+      g.fillStyle = halo;
+      g.fillRect(-24, -24, 48, 48);
+      const dark = rgba(COLOR.void, 0.92);
+      const body = (r) => {
+        const grd = g.createRadialGradient(-1.5, -1.5, 0, 0, 0, r);
+        grd.addColorStop(0, '#ffffff');
+        grd.addColorStop(0.38, '#ffffff');
+        grd.addColorStop(0.66, color);
+        grd.addColorStop(1, shade(color, -0.25));
+        return grd;
+      };
+      if (shape === 'shard') { // a sharp rock splinter
+        g.fillStyle = dark;
+        shotPoly(g, [[16, 0], [2, -10], [-12, -3], [-9, 6], [3, 10]]);
+        g.fill();
+        g.fillStyle = body(12);
+        shotPoly(g, [[12.5, 0], [2, -7], [-8.5, -2], [-6.5, 4], [2.5, 7]]);
+        g.fill();
+      } else if (shape === 'spore') { // a soft, lumpy spore
+        g.fillStyle = dark;
+        for (const [x, y, r] of [[0, 0, 12], [-5, -5, 7], [6, -4, 6.5], [-4, 6, 6.5], [6, 5, 6]]) {
+          g.beginPath();
+          g.arc(x, y, r, 0, TAU);
+          g.fill();
+        }
+        g.fillStyle = body(10);
+        for (const [x, y, r] of [[0, 0, 9], [-4.5, -4.5, 4.5], [5, -3.5, 4], [-3.5, 5, 4], [5, 4.5, 3.5]]) {
+          g.beginPath();
+          g.arc(x, y, r, 0, TAU);
+          g.fill();
+        }
+      } else if (shape === 'needle') { // a long, thin needle
+        g.fillStyle = dark;
+        shotPoly(g, [[20, 0], [5, -7.5], [-15, -5.5], [-15, 5.5], [5, 7.5]]);
+        g.fill();
+        const grd = g.createLinearGradient(-15, 0, 19, 0);
+        grd.addColorStop(0, rgba(color, 0.35));
+        grd.addColorStop(0.4, color);
+        grd.addColorStop(0.7, '#ffffff');
+        grd.addColorStop(1, '#ffffff');
+        g.fillStyle = grd;
+        shotPoly(g, [[16.5, 0], [4, -4.5], [-12, -3], [-12, 3], [4, 4.5]]);
+        g.fill();
+      } else if (shape === 'halo') { // a bright orb inside a ring
+        g.fillStyle = dark;
+        g.beginPath();
+        g.arc(0, 0, 10, 0, TAU);
+        g.fill();
+        g.strokeStyle = dark;
+        g.lineWidth = 6;
+        g.beginPath();
+        g.arc(0, 0, 14, 0, TAU);
+        g.stroke();
+        g.strokeStyle = color;
+        g.lineWidth = 2.6;
+        g.beginPath();
+        g.arc(0, 0, 14, 0, TAU);
+        g.stroke();
+        g.fillStyle = body(8);
+        g.beginPath();
+        g.arc(0, 0, 8, 0, TAU);
+        g.fill();
+      } else if (shape === 'crystal') { // a six-sided ice crystal
+        const hex = (r) => Array.from({ length: 6 }, (_, k) => [Math.cos((k * TAU) / 6) * r, Math.sin((k * TAU) / 6) * r]);
+        g.fillStyle = dark;
+        shotPoly(g, hex(13));
+        g.fill();
+        g.fillStyle = body(11);
+        shotPoly(g, hex(10));
+        g.fill();
+        g.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+        g.lineWidth = 1.4;
+        g.beginPath();
+        for (let k = 0; k < 3; k++) {
+          const a = (k * TAU) / 6;
+          g.moveTo(Math.cos(a) * 9, Math.sin(a) * 9);
+          g.lineTo(-Math.cos(a) * 9, -Math.sin(a) * 9);
+        }
+        g.stroke();
+      } else if (shape === 'bolt') { // a short laser bolt (the capsule stands upright: turned to point right)
+        g.save();
+        g.rotate(Math.PI / 2);
+        g.fillStyle = dark;
+        capsule(g, 7, 30);
+        g.fill();
+        g.fillStyle = color;
+        capsule(g, 4.5, 25);
+        g.fill();
+        g.fillStyle = '#ffffff';
+        capsule(g, 2.2, 17);
+        g.fill();
+        g.restore();
+      } else if (shape === 'void') { // a dark hole with a burning rim and a spark that circles it
+        g.fillStyle = dark;
+        g.beginPath();
+        g.arc(0, 0, 13, 0, TAU);
+        g.fill();
+        g.strokeStyle = color;
+        g.lineWidth = 4;
+        g.beginPath();
+        g.arc(0, 0, 9, 0, TAU);
+        g.stroke();
+        g.fillStyle = '#1a0326';
+        g.beginPath();
+        g.arc(0, 0, 6.5, 0, TAU);
+        g.fill();
+        g.fillStyle = '#ffffff';
+        g.beginPath();
+        g.arc(7, -5, 3, 0, TAU);
+        g.fill();
+        g.beginPath();
+        g.arc(0, 0, 2, 0, TAU);
+        g.fill();
+      }
+    });
+  }
+  const SHOT_IMG = { orb: EBULLET };
+  function shotImg(shape, tone) {
+    if (shape === 'orb' || !SHOT_IMG[shape] && !SHOT_SHAPES.includes(shape)) return EBULLET[tone] || EBULLET.coral;
+    const set = SHOT_IMG[shape] || (SHOT_IMG[shape] = {});
+    return set[tone] || (set[tone] = shapeSprite(shape, ETONE[tone] || ETONE.coral));
   }
   function capsule(g, r, h) {
     g.beginPath();
@@ -3779,9 +4013,73 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     g.stroke();
     shipGlass(g, -8, 2, 4, '#ffe08a');
   }
+  // Vulcan: a heavy steel-blue gunship, a rotary cannon of six barrels at the nose and ammunition drums on the flanks.
+  function paintVulcan(g) {
+    lamp(g, -7, 17, 5, '#ffb347');
+    lamp(g, 7, 17, 5, '#ffb347');
+    for (const side of [-1, 1]) {
+      hull(g, '#5e7bb8', poly([[side * 6, -4], [side * 22, 2], [side * 24, 12], [side * 14, 14], [side * 7, 10]]), 20);
+      hull(g, '#3d4f78', circlePath(side * 17, 7, 5), 8);
+      seams(g, [[side * 13, 4, side * 21, 10]]);
+      lamp(g, side * 23, 11, 2.6, '#ffb347');
+    }
+    hull(g, '#8fb3ff', poly([[0, -14], [7, -8], [8, 10], [4, 16], [-4, 16], [-8, 10], [-7, -8]]), 18);
+    hull(g, '#4a5a7a', poly([[-5, -24], [5, -24], [6, -12], [-6, -12]]), 10);
+    g.fillStyle = '#1b2236';
+    for (const x of [-3.6, -1.2, 1.2, 3.6]) g.fillRect(x - 0.6, -26, 1.2, 12);
+    g.fillStyle = '#c9d6ff';
+    g.fillRect(-6, -14, 12, 1.6);
+    shipGlass(g, -2, 4, 4.5, '#ffd166');
+  }
+  // Ricochet: a slim royal-blue dart with a throwing star mounted on its back and swept, star-tipped wings.
+  function paintRicochet(g) {
+    lamp(g, -4, 15, 4.5, '#7da2ff');
+    lamp(g, 4, 15, 4.5, '#7da2ff');
+    for (const side of [-1, 1]) {
+      hull(g, '#3557c9', poly([[side * 3, -8], [side * 25, 6], [side * 22, 10], [side * 10, 8], [side * 4, 12]]), 20);
+      seams(g, [[side * 6, -2, side * 21, 7]]);
+      lamp(g, side * 24, 7, 3, '#bcd0ff');
+    }
+    hull(g, '#4d7cff', poly([[0, -24], [4, -12], [5, 10], [2, 15], [-2, 15], [-5, 10], [-4, -12]]), 18);
+    g.save();
+    g.translate(0, 6);
+    hull(g, '#dfe8ff', (p) => {
+      p.beginPath();
+      for (let k = 0; k < 8; k++) {
+        const a = (k * Math.PI) / 4 + Math.PI / 8;
+        const rr = k % 2 ? 2.4 : 7.5;
+        if (k) p.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+        else p.moveTo(Math.cos(a) * rr, Math.sin(a) * rr);
+      }
+      p.closePath();
+    }, 10);
+    g.restore();
+    lamp(g, 0, 6, 3, '#ffffff');
+    shipGlass(g, -10, 3, 4, '#bcd0ff');
+  }
+  // Hydra: an emerald serpent ship with three forward heads, each with a glowing eye, and a ridged tail.
+  function paintHydra(g) {
+    lamp(g, -5, 17, 5, '#6dffa0');
+    lamp(g, 5, 17, 5, '#6dffa0');
+    for (const [x, len, tilt] of [[-9, 17, -0.18], [9, 17, 0.18], [0, 23, 0]]) {
+      g.save();
+      g.translate(x, -4);
+      g.rotate(tilt);
+      hull(g, x ? '#1f9e57' : '#37e27a', poly([[-3.4, 2], [3.4, 2], [2.6, -len + 4], [0, -len], [-2.6, -len + 4]]), 12);
+      lamp(g, 0, -len + 5, 2.6, '#d4ff6b');
+      g.restore();
+    }
+    hull(g, '#2bbf68', poly([[-10, -4], [10, -4], [12, 6], [6, 15], [-6, 15], [-12, 6]]), 20);
+    seams(g, [[-8, 2, 8, 2], [-6, 8, 6, 8]]);
+    for (const side of [-1, 1]) {
+      hull(g, '#1f9e57', poly([[side * 11, 0], [side * 20, 8], [side * 13, 12]]), 10);
+    }
+    shipGlass(g, 4, 4, 4, '#d4ff6b');
+  }
   const SHIP_PAINT = {
     star: paintPlayer, wasp: paintWasp, titan: paintTitan, seraph: paintSeraph, nox: paintNox, dragon: paintDragon,
     hive: paintHive, aurora: paintAurora, tempest: paintTempest, falcon: paintFalcon, quasar: paintQuasar, lumen: paintLumen,
+    vulcan: paintVulcan, ricochet: paintRicochet, hydra: paintHydra,
   };
   function paintCruiser(g) {
     for (const x of [-30, -12, 12, 30]) lamp(g, x, -26, 10, P.orange);
@@ -5319,7 +5617,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       invuln: 0.8 + 0.08 * rank('evade'),
       healMul: 1 + 0.15 * rank('medic'),
       xpMul: (1 + 0.04 * rank('study')) * (sd.id === 'dragon' ? 1.1 : 1),
-      coinMul: (1 + 0.08 * rank('greed')) * stage.mul,
+      coinMul: (1 + 0.06 * rank('greed')) * (1 + (stage.mul - 1) * 0.5), // a harder region pays more, but not as much more as it is harder
       chestMul: 1 + 0.12 * rank('supply'),
       bombMul: 1 + 0.3 * rank('bombplus'),
       bulletK: 1 - 0.02 * rank('timewarp'),
@@ -5855,12 +6153,117 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 
   // ---------- enemy behaviour ----------
   // Optional behaviours: home (seconds of homing, with turn and speed), wave (snaking), acc (speeds up to max),
-  // split (bursts into n bullets after that many seconds), r (size).
+  // curve (turns at that many radians a second for curveT seconds), drag (brakes), split (bursts into n bullets after
+  // that many seconds: a ring, or with mode 'fan' / 'aim' a fan of `fan` degrees along its flight or at the ship, with
+  // kidSpeed, kidTone and kid options), shape (the look; the region's own unless given), r (size).
   function addShot(x, y, vx, vy, tone, opt) {
     if (eShots.length >= MAX_ESHOTS) return;
-    const b = { x, y, vx, vy, r: 4, tone, dmg: 8 * hitScale(), t: 0 };
+    const b = { x, y, vx, vy, r: 4, tone, dmg: 8 * hitScale(), t: 0, shape: REGION_SHAPE[stage.style] || 'orb' };
     if (opt) Object.assign(b, opt);
     eShots.push(b);
+  }
+  function burstShot(b) {
+    const sp = b.kidSpeed || bulletSpeed() * 0.62;
+    const tone = b.kidTone || 'coral';
+    if (b.mode === 'fan' || b.mode === 'aim') {
+      const base = b.mode === 'aim' ? Math.atan2(player.y - b.y, player.x - b.x) : Math.atan2(b.vy, b.vx);
+      for (let k = 0; k < b.n; k++) {
+        const a = base + ((k - (b.n - 1) / 2) * (b.fan || 20) * Math.PI) / 180;
+        addShot(b.x, b.y, Math.cos(a) * sp, Math.sin(a) * sp, tone, b.kid);
+      }
+    } else ringShot(b.x, b.y, sp, b.n, rand(0, TAU), tone, b.kid);
+  }
+  // Each region's look, and its basic shot and gunner volleys. Ships still fly the same manoeuvres everywhere, but what
+  // comes at you changes: shards that crack, spores that drift and snake, needles that speed up, rings, crystals that
+  // stop and shatter, twin bolts, and void orbs that bend in from the side.
+  const REGION_SHAPE = { pellet: 'orb', shard: 'shard', spore: 'spore', needle: 'needle', halo: 'halo', frost: 'crystal', bolt: 'bolt', void: 'void' };
+  // a shot that arcs into the ship from one side: it starts off to the side and turns as it flies
+  function bendShot(x, y, speed, tone, side, opt) {
+    const dist = Math.hypot(player.x - x, player.y - y);
+    const T = clamp(dist / speed, 0.7, 2.4);
+    const turn = 1.1 * side;
+    const a = Math.atan2(player.y - y, player.x - x) - turn / 2;
+    addShot(x, y, Math.cos(a) * speed, Math.sin(a) * speed, tone, { curve: turn / T, curveT: T, ...opt });
+  }
+  function regionShot(x, y, speed) {
+    const late = run.t > 420 && Math.random() < 0.4;
+    switch (stage.style) {
+      case 'shard': // a rock splinter that cracks into three
+        shootAt(x, y, speed * 0.9, 1, 0, 'amber', { split: 0.75, n: 3, mode: 'fan', fan: 22, kidSpeed: speed * 0.85, kidTone: 'amber', kid: { r: 3 } });
+        break;
+      case 'spore': // drifts toward the ship, then snakes
+        shootAt(x, y, speed * 0.72, 1, 0, 'teal', { home: 0.9, turn: 1.3, speed: speed * 0.72, wave: 2.2, wf: 5, r: 5 });
+        break;
+      case 'needle': // starts slow, then shoots ahead
+        shootAt(x, y, speed * 0.6, 1, 0, 'red', { acc: 1.2, max: speed * (late ? 1.8 : 1.55) });
+        break;
+      case 'halo': // two rings side by side
+        shootAt(x, y, speed * 0.9, 2, 12, 'amber', late ? { acc: 0.8, max: speed * 1.5 } : null);
+        break;
+      case 'frost': // brakes to a stop in the air, then shatters toward the ship
+        shootAt(x, y, speed * 1.15, 1, 0, 'cyan', { drag: 1.6, split: 1, n: 3, mode: 'aim', fan: 26, kidSpeed: speed * 0.8, kidTone: 'cyan', kid: { r: 3 } });
+        break;
+      case 'bolt': { // twin bolts side by side
+        const a = Math.atan2(player.y - y, player.x - x);
+        for (const s of [-1, 1]) addShot(x - Math.sin(a) * 6 * s, y + Math.cos(a) * 6 * s, Math.cos(a) * speed * 1.05, Math.sin(a) * speed * 1.05, 'lime', late ? { acc: 0.6, max: speed * 1.5 } : null);
+        break;
+      }
+      case 'void': // bends in from one side
+        bendShot(x, y, speed * 0.9, 'pink', Math.random() < 0.5 ? -1 : 1);
+        break;
+      default:
+        shootAt(x, y, speed, 1, 0, 'coral', late ? { acc: 1.1, max: speed * 1.8 } : null);
+    }
+  }
+  // gunners: three volleys in turn (only the first early on)
+  function gunnerVolley(e, speed, kind) {
+    const x = e.x;
+    const y = e.y + 16;
+    const n = e.spread;
+    const ring = 10 + stageIndex;
+    switch (stage.style) {
+      case 'shard':
+        if (kind === 0) shootAt(x, y, speed * 0.5, 1, 0, 'amber', { r: 8, split: 0.9, n: 7, mode: 'aim', fan: 13, kidSpeed: speed * 0.95, kidTone: 'amber', kid: { r: 3.5 } }); // a shell bursts into a fan
+        else if (kind === 1) shootAt(x, y, speed * 0.85, n, 13, 'amber');
+        else ringShot(e.x, e.y, speed * 0.55, 6 + stageIndex, rand(0, TAU), 'amber', { split: 0.8, n: 2, mode: 'fan', fan: 34, kidSpeed: speed * 0.6, kidTone: 'amber', kid: { r: 3 } });
+        break;
+      case 'spore':
+        if (kind === 0) shootAt(x, y, speed * 0.5, n + 2, 14, 'teal', { wave: 2.4, wf: 4, r: 5 }); // a slow, drifting cloud
+        else if (kind === 1) shootAt(x, y, speed * 0.7, n, 16, 'teal', { wave: 2.6, wf: 6 });
+        else ringShot(e.x, e.y, speed * 0.5, ring, rand(0, TAU), 'teal', { wave: 1.8, wf: 3, r: 5 });
+        break;
+      case 'needle':
+        if (kind === 0) for (let k = 0; k < 5; k++) shootAt(x, y, speed * (0.4 + 0.1 * k), 1, 0, 'red', { acc: 1.1, max: speed * 1.6 }); // a line of needles
+        else if (kind === 1) shootAt(x, y, speed * 0.55, n, 12, 'red', { acc: 1.1, max: speed * 1.45 });
+        else ringShot(e.x, e.y, speed * 0.35, ring, rand(0, TAU), 'red', { acc: 1.4, max: speed * 1.3 });
+        break;
+      case 'halo':
+        if (kind === 0) ringShot(e.x, e.y, speed * 0.3, ring + 2, rand(0, TAU), 'amber', { acc: 1.2, max: speed * 1.25 }); // a ring that swells out
+        else if (kind === 1) for (const dx of [-16, 16]) shootAt(x + dx, y, speed * 0.8, n, 13, 'amber');
+        else ringShot(e.x, e.y, speed * 0.65, ring, rand(0, TAU), 'amber');
+        break;
+      case 'frost':
+        if (kind === 0) ringShot(e.x, e.y, speed * 0.9, 6, rand(0, TAU), 'cyan', { drag: 1.4, split: 0.85, n: 3, mode: 'fan', fan: 40, kidSpeed: speed * 0.55, kidTone: 'cyan', kid: { r: 3 } }); // a snowflake
+        else if (kind === 1) shootAt(x, y, speed * 1.1, 3, 22, 'cyan', { drag: 1.6, split: 1, n: 3, mode: 'aim', fan: 24, kidSpeed: speed * 0.75, kidTone: 'cyan', kid: { r: 3 } });
+        else ringShot(e.x, e.y, speed * 0.6, ring, rand(0, TAU), 'cyan');
+        break;
+      case 'bolt':
+        if (kind === 0) for (let k = 0; k < 6; k++) shootAt(x, y, speed * (0.75 + 0.1 * k), 1, 0, 'lime'); // a rail of bolts
+        else if (kind === 1) {
+          const a = Math.atan2(player.y - y, player.x - x);
+          for (const s of [-1, 1]) shootAt(x - Math.sin(a) * 7 * s, y + Math.cos(a) * 7 * s, speed * 0.85, n, 14, 'lime');
+        } else ringShot(e.x, e.y, speed * 0.65, ring, rand(0, TAU), 'lime');
+        break;
+      case 'void':
+        if (kind === 0) ringShot(e.x, e.y, speed * 0.55, 8, rand(0, TAU), 'pink', { curve: 1.1, curveT: 2.2 }); // a spinning spiral
+        else if (kind === 1) for (let k = 0; k < n; k++) bendShot(x, y, speed * (0.7 + 0.05 * k), 'pink', k % 2 ? 1 : -1);
+        else ringShot(e.x, e.y, speed * 0.6, ring, rand(0, TAU), 'pink', { curve: -0.8, curveT: 1.6 });
+        break;
+      default:
+        if (kind === 0) shootAt(x, y, speed * 0.85, n, 13, 'amber');
+        else if (kind === 1) shootAt(x, y, speed * 0.7, n, 16, 'amber', { wave: 2.6, wf: 6 });
+        else ringShot(e.x, e.y, speed * 0.65, ring, rand(0, TAU), 'amber');
+    }
   }
   function shootAt(x, y, speed, count, spreadDeg, tone, opt) {
     const base = Math.atan2(player.y - y, player.x - x);
@@ -6085,7 +6488,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           e.fireT -= dt;
           if (e.fireT <= 0 && e.y > 20 && e.y < H * 0.7) {
             e.fireT = 2.2;
-            shootAt(e.x, e.y + 16, speed * 0.8, 1, 0, 'amber');
+            regionShot(e.x, e.y + 16, speed * 0.8);
           }
           if (e.y > H + 40) e.dead = true;
           break;
@@ -6099,7 +6502,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           break;
       }
       if (!e.dead && e.fireAt >= 0 && e.t >= e.fireAt && e.y > 10 && e.y < H * 0.7) {
-        shootAt(e.x, e.y + 8, speed, 1, 0, 'coral', run.t > 420 && Math.random() < 0.4 ? { acc: 1.1, max: speed * 1.8 } : null);
+        regionShot(e.x, e.y + 8, speed);
         e.fireAt = e.fireAgain ? e.t + 1.4 : -1;
         e.fireAgain = false;
       }
@@ -6168,10 +6571,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       e.fireT -= dt;
       if (e.fireT <= 0) {
         e.fireT = e.volley;
-        const kind = run.t < 200 ? 0 : e.volleyN % 3; // aimed fan, snaking fan, or a ring
-        if (kind === 0) shootAt(e.x, e.y + 16, speed * 0.85, e.spread, 13, 'amber');
-        else if (kind === 1) shootAt(e.x, e.y + 16, speed * 0.7, e.spread, 16, 'amber', { wave: 2.6, wf: 6 });
-        else ringShot(e.x, e.y, speed * 0.65, 10 + stageIndex, rand(0, TAU), 'amber');
+        gunnerVolley(e, speed, run.t < 200 ? 0 : e.volleyN % 3); // the region's three volleys in turn
         e.volleyN += 1;
       }
       if (e.st >= e.life) e.step = 'leave';
@@ -6671,12 +7071,13 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     gun.cd -= dt;
     gun.a += dt;
     if (sd.gun === 'dragon') dragonOrbs(dt, tier, D);
+    if (sd.gun === 'gatling') gun.spin = Math.min(1, (gun.spin || 0) + dt / 3.5); // spins up while firing; a hit stops it
     if (gun.cd > 0) return;
     const bolt = (x, ang, dmg, size, spr, speed = 640, pierce = 0, extra = {}) => pShots.push({
       kind: 'bolt', x, y: player.y - 16, vx: Math.sin(ang) * speed * sp, vy: -Math.cos(ang) * speed * sp, a: ang,
       dmg, pierce: pierce + rank('pierce'), size: size * stats.area, plasma: false, spr, last: null, trail: tier >= 2, ...extra,
     });
-    if (sd.gun !== 'rail' && sd.gun !== 'homing' && sd.gun !== 'beam' && sd.gun !== 'arc') muzzle(player.x, player.y - 22, sd.tone, 20 + 4 * tier);
+    if (sd.gun !== 'rail' && sd.gun !== 'homing' && sd.gun !== 'beam' && sd.gun !== 'arc') muzzle(player.x, player.y - 22, sd.tone, 20 + 4 * tier + (sd.gun === 'gatling' ? 10 * gun.spin : 0));
     if (sd.gun === 'twin') {
       gun.cd += 0.18 * cdMul;
       const n = 2 + tier;
@@ -6741,6 +7142,37 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         cluster: 6 + 2 * tier, fuse: 1, frag: 8 * D, fragSize: 0.6 * stats.area, fragSp: 320 * sp, fragPierce: rank('pierce'), blastR: 28 * stats.area,
       });
       sfx.play('missile');
+    } else if (sd.gun === 'gatling') { // a rotary cannon: slow and loose at first, a tight hail at full spin
+      const s = gun.spin || 0;
+      gun.cd += (0.17 - 0.105 * s) * cdMul;
+      const n = 1 + (s > 0.55 ? 1 : 0) + (tier >= 2 && s > 0.85 ? 1 : 0);
+      const loose = 0.13 - 0.1 * s;
+      const color = s > 0.85 ? '#fff3b0' : s > 0.45 ? '#ffd166' : '#ff9a3d';
+      for (let k = 0; k < n; k++) bolt(player.x + (k - (n - 1) / 2) * 7, rand(-loose, loose), (5 + 0.5 * tier) * D, 0.8, boltOf(color), 720);
+      gun.shots = (gun.shots || 0) + 1;
+      if (s < 0.5 || gun.shots % 2 === 0) sfx.play('shot');
+    } else if (sd.gun === 'shuriken') { // a big star at the nearest ship ahead, small ones thrown wide that bounce off the walls
+      gun.cd += (0.42 - 0.03 * tier) * cdMul;
+      let near = null;
+      let nd = Infinity;
+      for (const e of enemies) {
+        if (e.dead || e.t < 0 || e.ghost || e.y < 0 || e.y > player.y) continue;
+        const d = (e.x - player.x) ** 2 + (e.y - player.y) ** 2;
+        if (d < nd) {
+          nd = d;
+          near = e;
+        }
+      }
+      const bb = liveBoss();
+      if (!near && bb && bb.y < player.y) near = bb;
+      const aim = near ? clamp(Math.atan2(near.x - player.x, player.y - near.y), -0.8, 0.8) : 0;
+      bolt(player.x, aim, 22 * D, 1.6, starOf('#7da2ff'), 520, 1 + tier, { ric: 1 + tier });
+      for (const a of tier >= 2 ? [-0.65, -0.35, 0.35, 0.65] : [-0.5, 0.5]) bolt(player.x, a, 16 * D, 1.1, starOf('#7da2ff'), 520, 1 + tier, { ric: 2 + tier });
+      sfx.play('dash');
+    } else if (sd.gun === 'hydra') { // venom bolts that fork as they fly
+      gun.cd += (0.34 - 0.02 * tier) * cdMul;
+      for (const x of [-5, 5]) bolt(player.x + x, x * 0.006, 12 * D, 1, boltOf('#6dffa0'), 560, 1, { fork: 1 + Math.min(2, tier), forkT: 0.17 });
+      sfx.play('shot');
     } else if (sd.gun === 'beam') { // a steady beam: every tick burns whatever stands in its column
       gun.cd += 0.1 * cdMul;
       const w = (5 + 2 * tier) * stats.area;
@@ -6861,6 +7293,40 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       BOLTS.set(color, c);
     }
     return BOLTS.get(color);
+  }
+  // Ricochet's throwing star: four points round a white-hot middle.
+  const STARS = new Map();
+  function starOf(color) {
+    if (!STARS.has(color)) {
+      STARS.set(color, Object.assign(sprite(40, 2, (g) => {
+        const halo = g.createRadialGradient(0, 0, 3, 0, 0, 20);
+        halo.addColorStop(0, rgba(color, 0.55));
+        halo.addColorStop(1, rgba(color, 0));
+        g.fillStyle = halo;
+        g.fillRect(-20, -20, 40, 40);
+        const star = (r, w) => {
+          g.beginPath();
+          for (let k = 0; k < 8; k++) {
+            const a = (k * Math.PI) / 4;
+            const rr = k % 2 ? w : r;
+            if (k) g.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+            else g.moveTo(Math.cos(a) * rr, Math.sin(a) * rr);
+          }
+          g.closePath();
+        };
+        g.fillStyle = rgba(COLOR.void, 0.85);
+        star(16, 6);
+        g.fill();
+        g.fillStyle = color;
+        star(13, 4.2);
+        g.fill();
+        g.fillStyle = '#ffffff';
+        g.beginPath();
+        g.arc(0, 0, 3.2, 0, TAU);
+        g.fill();
+      }), { look: [3, color], square: true }));
+    }
+    return STARS.get(color);
   }
   // A longer bolt with a white diamond head: the look of a gun mastered to Lv 4.
   const LANCES = new Map();
@@ -7626,6 +8092,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     player.hp -= amount * stats.taken;
     player.invuln = stats.invuln;
+    if (gun) gun.spin = 0; // the rotary cannon stops and has to spin up again
     if (!ctxNow) { // the longest stretch without a hit
       run.noHit = Math.max(run.noHit, run.t - run.lastHit);
       run.lastHit = run.t;
@@ -7792,6 +8259,34 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         s.a = Math.atan2(s.vx + Math.cos(s.wt * 14 + s.wph) * amp * 14, -s.vy);
       } else s.x += s.vx * dt;
       s.y += s.vy * dt;
+      if (s.ric > 0) { // a throwing star bounces off the sides and the top, and may cut the same ship again
+        if ((s.x < 10 && s.vx < 0) || (s.x > W - 10 && s.vx > 0)) {
+          s.vx = -s.vx;
+          s.ric -= 1;
+          s.last = null;
+        }
+        if (s.y < 12 && s.vy < 0) {
+          s.vy = -s.vy;
+          s.ric -= 1;
+          s.last = null;
+        }
+      }
+      if (s.spr && s.spr.square) s.a = (s.a || 0) + dt * 15; // stars spin
+      if (s.fork > 0) { // a venom bolt splits in two, and those split again
+        s.forkT -= dt;
+        if (s.forkT <= 0) {
+          const sp = Math.hypot(s.vx, s.vy);
+          const a0 = Math.atan2(s.vx, -s.vy);
+          for (const d of [-0.14, 0.14]) {
+            if (pShots.length >= MAX_PSHOTS) break;
+            const a = a0 + d;
+            pShots.push({ ...s, vx: Math.sin(a) * sp, vy: -Math.cos(a) * sp, a, dmg: s.dmg * 0.8, fork: s.fork - 1, forkT: 0.2, last: null, size: s.size * 0.92 });
+          }
+          if (sparks.length < fxCap(400)) spark(s.x, s.y, '#6dffa0', 2);
+          removeAt(pShots, i);
+          continue;
+        }
+      }
       if (s.y < -30 || s.y > H + 30 || s.x < -30 || s.x > W + 30 || s.life <= 0) {
         removeAt(pShots, i);
         continue;
@@ -7867,6 +8362,18 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         b.vx = Math.cos(a) * sp;
         b.vy = Math.sin(a) * sp;
       }
+      if (b.curveT > 0) { // bends while it lasts
+        b.curveT -= dt;
+        const a = Math.atan2(b.vy, b.vx) + b.curve * dt;
+        const sp = Math.hypot(b.vx, b.vy);
+        b.vx = Math.cos(a) * sp;
+        b.vy = Math.sin(a) * sp;
+      }
+      if (b.drag) { // brakes to a stop in the air
+        const f = Math.max(0, 1 - b.drag * dt);
+        b.vx *= f;
+        b.vy *= f;
+      }
       if (b.acc && Math.hypot(b.vx, b.vy) < b.max) {
         b.vx *= 1 + b.acc * dt;
         b.vy *= 1 + b.acc * dt;
@@ -7874,11 +8381,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       const k = (slowR2 && (b.x - player.x) ** 2 + (b.y - player.y) ** 2 < slowR2 ? slowK : 1) * stats.bulletK;
       b.x += b.vx * dt * k;
       b.y += b.vy * dt * k;
-      if (b.split && b.t >= b.split) { // bombs burst into a ring
-        const { x, y, n } = b;
+      if (b.split && b.t >= b.split) { // bombs burst into a ring (or a fan, by region)
         removeAt(eShots, i);
-        ringShot(x, y, bulletSpeed() * 0.62, n, rand(0, TAU), 'coral');
-        spark(x, y, COLOR.danger, 4);
+        burstShot(b);
+        spark(b.x, b.y, ETONE[b.kidTone] || COLOR.danger, 4);
         continue;
       }
       if (b.y > H + 24 || b.y < -40 || b.x < -24 || b.x > W + 24) {
@@ -8126,7 +8632,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         run.stat.chests += 1;
         mission('chest');
       }
-      const bonus = 5 * rank('crate');
+      const bonus = 2 * rank('crate');
       if (bonus) run.coins += bonus * stats.coinMul;
       at(bonus ? `보급 상자! 코인 +${num(bonus * stats.coinMul)}` : '보급 상자!', COLOR.amber);
       sfx.play('item');
@@ -8608,7 +9114,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const fl = sd.flame === 'hot' ? FLAME_HOT : FLAME;
     const big = sd.id === 'titan' ? 1.4 : 1;
     for (const [ex, ey] of sd.engines) {
-      for (const x of ex ? [ex, -ex] : [0]) ctx.drawImage(fl, x - 4 * big, ey, 8 * big, (12 + Math.random() * 8) * big);
+      for (const x of ex ? [ex, -ex] : [0]) blit(fl, x - 4 * big, ey, 8 * big, (12 + Math.random() * 8) * big);
     }
     glow(dot(sd.tone), 0, 18, 30, 0.4);
     ctx.globalCompositeOperation = 'source-over';
@@ -8652,6 +9158,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   const BAR_KINDS = new Set(['gunner', 'tank', 'carrier', 'shield', 'spinner', 'lancer', 'healer', 'bomber', 'splitter']);
   function drawEnemies() {
+    turnBase();
     const art = artSprites(skyIdx);
     for (const e of enemies) {
       if (e.dead || e.t < 0) continue;
@@ -8686,9 +9193,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       if (alpha <= 0.02) continue;
       ctx.globalAlpha = alpha;
       if (angle) {
-        ctx.save();
-        ctx.translate(e.x, e.y);
-        ctx.rotate(angle);
+        turnTo(e.x, e.y, angle);
         if (e.kind === 'diver') {
           ctx.globalCompositeOperation = 'lighter';
           ctx.globalAlpha = 0.55;
@@ -8707,7 +9212,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           ctx.globalAlpha = alpha * 0.5;
           ctx.drawImage(spr.flash, -size / 2, -size / 2, size, size);
         }
-        ctx.restore();
+        unturn();
       } else {
         ctx.drawImage(img, e.x - size / 2, e.y - size / 2, size, size);
         if (e.flash > 0) {
@@ -8816,6 +9321,75 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 
   // How strongly our own attacks and explosions are drawn (a setting, so enemy fire is easy to pick out).
   const fxAlpha = () => (saved.dimFx ? 0.4 : 0.85);
+  // ---------- turned sprites without save()/restore() ----------
+  // save() and restore() copy the whole drawing state; done for every shot and ship in a crowded fight they cost more
+  // than the drawing itself. A turned sprite instead gets its matrix set straight from the base matrix (taken once with
+  // turnBase()), and unturn() puts the base back. Changes to alpha, colours or blending stay: callers set them back.
+  // The box round a sprite's visible pixels (worked out once per sprite), and a drawImage that uses only that box:
+  // a bolt's square is mostly empty, and empty pixels cost a phone as much to blend as lit ones.
+  function trimOf(c) {
+    if (c.trim !== undefined) return c.trim;
+    let box = null;
+    try {
+      const w = c.width;
+      const h = c.height;
+      const data = c.getContext('2d').getImageData(0, 0, w, h).data;
+      let x0 = w;
+      let y0 = h;
+      let x1 = -1;
+      let y1 = -1;
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          if (data[(y * w + x) * 4 + 3] > 3) {
+            if (x < x0) x0 = x;
+            if (x > x1) x1 = x;
+            if (y < y0) y0 = y;
+            if (y > y1) y1 = y;
+          }
+        }
+      }
+      if (x1 >= 0) { // two pixels to spare all round, so smoothing at the edge still reads the empty pixels next to it
+        x0 = Math.max(0, x0 - 2);
+        y0 = Math.max(0, y0 - 2);
+        x1 = Math.min(w - 1, x1 + 2);
+        y1 = Math.min(h - 1, y1 + 2);
+      }
+      const bw = x1 - x0 + 1;
+      const bh = y1 - y0 + 1;
+      if (x1 >= 0 && bw * bh < w * h * 0.8) box = [x0, y0, bw, bh, x0 / w, y0 / h, bw / w, bh / h];
+    } catch {
+      box = null;
+    }
+    c.trim = box;
+    return box;
+  }
+  function blit(img, dx, dy, dw, dh) {
+    const t = img.trim !== undefined ? img.trim : trimOf(img);
+    if (!t) ctx.drawImage(img, dx, dy, dw, dh);
+    else ctx.drawImage(img, t[0], t[1], t[2], t[3], dx + t[4] * dw, dy + t[5] * dh, t[6] * dw, t[7] * dh);
+  }
+  let baseM = null;
+  function turnBase() {
+    baseM = ctx.getTransform ? ctx.getTransform() : null;
+  }
+  function turnTo(x, y, a) {
+    if (!baseM) { // very old browsers: the usual way
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(a);
+      return;
+    }
+    const m = baseM;
+    const c = Math.cos(a);
+    const s = Math.sin(a);
+    ctx.setTransform(m.a * c + m.c * s, m.b * c + m.d * s, m.c * c - m.a * s, m.d * c - m.b * s, m.a * x + m.c * y + m.e, m.b * x + m.d * y + m.f);
+  }
+  function unturn() {
+    if (!baseM) ctx.restore();
+    else ctx.setTransform(baseM.a, baseM.b, baseM.c, baseM.d, baseM.e, baseM.f);
+  }
+  const TRAIL_STEPS = [[0.02, 0.42], [0.04, 0.18]];
+  const ORB_TAIL = [[0.035, 8, 0.45], [0.07, 6, 0.22]];
   function glow(img, x, y, size, alpha) {
     ctx.globalCompositeOperation = 'lighter';
     ctx.globalAlpha = alpha;
@@ -9307,6 +9881,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ctx.restore();
   }
   function drawPlayerShots() {
+    turnBase();
     ctx.globalCompositeOperation = 'lighter';
     ctx.globalAlpha = fxAlpha();
     // with a crowd of shots on screen (many combined skills at once) the after-images go, so phones keep up
@@ -9325,28 +9900,28 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         }
         ctx.globalAlpha = fxAlpha();
         if (s.tier >= 2 || s.spiral) ctx.drawImage(dot(tone), s.x - d * 0.9, s.y - d * 0.9, d * 1.8, d * 1.8);
-        ctx.save();
-        ctx.translate(s.x, s.y);
-        ctx.rotate(s.spin);
         ctx.globalCompositeOperation = 'source-over';
+        turnTo(s.x, s.y, s.spin);
         ctx.drawImage(img, -d / 2, -d / 2, d, d);
-        ctx.restore();
+        unturn();
+        ctx.globalCompositeOperation = 'lighter';
         continue;
       }
       if (s.kind === 'missile') {
         const a = Math.atan2(s.vy, s.vx);
-        ctx.save();
-        ctx.translate(s.x, s.y);
-        ctx.rotate(a);
         const tone = s.tone || COLOR.orange;
         const big = s.tier >= 2 ? 1.35 : 1;
+        turnTo(s.x, s.y, a);
         ctx.drawImage(dot(tone), -19 * big, -7 * big, 14 * big, 14 * big);
-        ctx.rotate(Math.PI / 2);
-        ctx.drawImage(flameOf(tone), -3.5 * big, 5, 7 * big, (9 + Math.random() * 7) * big);
-        ctx.rotate(-Math.PI / 2);
+        unturn();
+        turnTo(s.x, s.y, a + Math.PI / 2); // the flame trails behind
+        blit(flameOf(tone), -3.5 * big, 5, 7 * big, (9 + Math.random() * 7) * big);
+        unturn();
         ctx.globalCompositeOperation = 'source-over';
+        turnTo(s.x, s.y, a);
         ctx.drawImage(MISSILE, -8, -8, 16, 16);
-        ctx.restore();
+        unturn();
+        ctx.globalCompositeOperation = 'lighter';
         continue;
       }
       if (s.kind === 'orb' && s.tone === BEE_TONE) { // a bee: a gold body with beating wings
@@ -9362,7 +9937,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
       if (s.kind === 'orb') {
         const tone = s.tone || '#ff6f91';
-        for (const [k, r, al] of [[0.035, 8, 0.45], [0.07, 6, 0.22]]) { // a short comet tail
+        for (const [k, r, al] of ORB_TAIL) { // a short comet tail
           ctx.globalAlpha = al * fxAlpha();
           ctx.drawImage(dot(tone), s.x - s.vx * k - r, s.y - s.vy * k - r, r * 2, r * 2);
         }
@@ -9373,9 +9948,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
       if (s.kind === 'blade') { // a crescent of light, bright edge first
         const R = 22 * s.size;
-        ctx.save();
-        ctx.translate(s.x, s.y);
-        ctx.rotate(s.a || 0);
+        turnTo(s.x, s.y, s.a || 0);
         for (const [k, t, color, al] of [[1.18, 13, s.tone, 0.3], [1, 8, s.tone, 0.9], [0.9, 3, '#ffffff', 0.95]]) {
           ctx.globalAlpha = al * fxAlpha();
           ctx.fillStyle = color;
@@ -9386,11 +9959,18 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           ctx.closePath();
           ctx.fill();
         }
-        ctx.restore();
+        unturn();
         ctx.globalAlpha = fxAlpha();
         continue;
       }
       const img = s.spr || (s.plasma ? PLASMA : BOLT);
+      if (img.square) { // a spinning throwing star
+        const r = 11 * s.size;
+        turnTo(s.x, s.y, s.a || 0);
+        ctx.drawImage(img, -r, -r, r * 2, r * 2);
+        unturn();
+        continue;
+      }
       const w = 8 * s.size;
       const h = 24 * s.size;
       if (s.shell) { // the heavy shell glows hot
@@ -9398,34 +9978,48 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         ctx.drawImage(dot('#ff9b4a'), s.x - r, s.y - r, r * 2, r * 2);
       }
       if (s.trail && !busy) { // mastered guns leave two fading after-images
-        for (const [k, al] of [[0.02, 0.42], [0.04, 0.18]]) {
+        for (const [k, al] of TRAIL_STEPS) {
           ctx.globalAlpha = al * fxAlpha();
-          ctx.save();
-          ctx.translate(s.x - s.vx * k, s.y - s.vy * k);
-          ctx.rotate(s.a || 0);
-          ctx.drawImage(img, -w, -h / 2, w * 2, h);
-          ctx.restore();
+          turnTo(s.x - s.vx * k, s.y - s.vy * k, s.a || 0);
+          blit(img, -w, -h / 2, w * 2, h);
+          unturn();
         }
         ctx.globalAlpha = fxAlpha();
       }
       if (s.a) {
-        ctx.save();
-        ctx.translate(s.x, s.y);
-        ctx.rotate(s.a);
-        ctx.drawImage(img, -w, -h / 2, w * 2, h);
-        ctx.restore();
+        turnTo(s.x, s.y, s.a);
+        blit(img, -w, -h / 2, w * 2, h);
+        unturn();
       } else {
-        ctx.drawImage(img, s.x - w, s.y - h / 2, w * 2, h);
+        blit(img, s.x - w, s.y - h / 2, w * 2, h);
       }
     }
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
   }
   function drawEnemyShots() {
+    const m = ctx.getTransform ? ctx.getTransform() : null;
+    let turned = false;
     for (const b of eShots) {
+      const shape = b.shape || 'orb';
       const s = 5 * (b.r + 1) * (b.split ? 1 + 0.15 * Math.sin(b.t * 20) : 1);
-      ctx.drawImage(EBULLET[b.tone] || EBULLET.coral, b.x - s / 2, b.y - s / 2, s, s);
+      const img = shotImg(shape, b.tone);
+      if (m && SHOT_TURNS[shape]) { // pointed along its flight (the void one spins); one matrix, no save and restore
+        const a = shape === 'void' ? b.t * 7 : Math.atan2(b.vy, b.vx) + (shape === 'shard' ? Math.sin(b.t * 9) * 0.6 : 0);
+        const c = Math.cos(a);
+        const sn = Math.sin(a);
+        ctx.setTransform(m.a * c + m.c * sn, m.b * c + m.d * sn, m.c * c - m.a * sn, m.d * c - m.b * sn, m.a * b.x + m.c * b.y + m.e, m.b * b.x + m.d * b.y + m.f);
+        ctx.drawImage(img, -s / 2, -s / 2, s, s);
+        turned = true;
+      } else {
+        if (turned) {
+          ctx.setTransform(m);
+          turned = false;
+        }
+        ctx.drawImage(img, b.x - s / 2, b.y - s / 2, s, s);
+      }
     }
+    if (turned) ctx.setTransform(m);
   }
 
   function drawGems() {
@@ -9459,12 +10053,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const fx = fxAlpha();
     for (const b of blooms) {
       const k = Math.max(0, b.life / b.full);
+      if (k * fx < 0.02) continue; // faded out: nothing to see
       const d = b.size * (1.25 - 0.45 * k);
       ctx.globalAlpha = k * fx;
       ctx.drawImage(dot(b.color), b.x - d / 2, b.y - d / 2, d, d);
     }
     for (const p of sparks) {
       const k = Math.max(0, p.life / p.max);
+      if (k * fx < 0.02) continue;
       const d = p.w * 4.2 * (0.35 + 0.65 * k);
       ctx.globalAlpha = k * fx;
       ctx.drawImage(dot(p.color), p.x - d / 2, p.y - d / 2, d, d);
@@ -9504,14 +10100,13 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
     }
     ctx.globalCompositeOperation = 'source-over';
+    turnBase();
     for (const d of debris) {
       ctx.globalAlpha = Math.max(0, d.life / d.full);
-      ctx.save();
-      ctx.translate(d.x, d.y);
-      ctx.rotate(d.rot);
+      turnTo(d.x, d.y, d.rot);
       ctx.fillStyle = d.color;
       ctx.fillRect(-d.s, -d.s * 0.45, d.s * 2, d.s * 0.9);
-      ctx.restore();
+      unturn();
     }
     ctx.globalAlpha = 1;
   }
@@ -9651,25 +10246,49 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       return li;
     }));
     if (compact) {
+      far += renderUltGuide(ui.choiceUlts, true);
       listEl.classList.toggle('show-all', allRecipes);
       ui.recipesMore.hidden = far === 0;
       ui.recipesMore.textContent = allRecipes ? '관련 레시피만 보기' : `레시피 모두 보기 (+${far})`;
     }
   }
 
-  function renderUltGuide() {
-    const fam = (f) => `${FAMILY_NAME[f]}(${Object.keys(FAMILY).filter((id) => FAMILY[id] === f).map((id) => WEAPONS[id].name).join('·')})`;
+  // The ultimate recipes: any two combined skills make the ultimate their families point to. Each row names the
+  // player's own combined skills where they have them. Compact (the level-up screen): only rows they are near.
+  function renderUltGuide(listEl = ui.ultGuide, compact = false) {
     const have = new Set(build.weapons.filter((w) => w.id === 'ult').map((w) => w.ult));
-    ui.ultGuide.replaceChildren(...Object.entries(ULTS).map(([id, u]) => {
+    const ready = fusable();
+    const nearby = build.weapons.filter((w) => w.id !== 'ult' && !w.evolved && canEvolve(w)); // one chest from combined
+    let far = 0;
+    let shown = 0;
+    listEl.replaceChildren(...Object.entries(ULTS).map(([id, u]) => {
+      const pool = ready.slice();
+      const parts = u.pair.map((f) => { // this family's slot: a combined skill the player has, if any
+        const i = pool.findIndex((w) => FAMILY[w.id] === f);
+        return i >= 0 ? pool.splice(i, 1)[0] : null;
+      });
+      const got = parts.filter(Boolean).length;
+      const soon = got + (nearby.some((w) => u.pair.includes(FAMILY[w.id])) ? 1 : 0);
+      const done = have.has(id);
+      const isFar = compact && !done && soon === 0; // nothing of either family yet, nor one about to combine
+      if (isFar) far += 1;
+      else shown += 1;
       const li = document.createElement('li');
-      li.className = `recipe${have.has(id) ? ' is-ready' : ''}`;
+      li.className = `recipe${done ? ' is-done' : got === 2 && run.ults < ultLimit() ? ' is-ready' : ''}${!done && got === 1 ? ' is-hot' : ''}${isFar ? ' is-far' : ''}`;
       const left = document.createElement('span');
-      left.textContent = u.pair[0] === u.pair[1] ? `${fam(u.pair[0])} 둘` : `${fam(u.pair[0])} + ${fam(u.pair[1])}`;
+      const words = parts.map((w, k) => (w ? `${WEAPONS[w.id].evo.name} ✓` : `${FAMILY_NAME[u.pair[k]]} 합체`));
+      left.textContent = [...words.filter((t, k) => parts[k]), ...words.filter((t, k) => !parts[k])].join(' + '); // what they have first
       const right = document.createElement('b');
-      right.textContent = u.name;
+      right.textContent = `${u.name}${done ? ' 완료' : got === 2 && run.ults < ultLimit() ? ' 준비' : ''}`;
       li.append(left, right);
       return li;
     }));
+    if (compact) ui.choiceUltHead.hidden = !allRecipes && shown === 0;
+    else {
+      const names = (f) => Object.keys(FAMILY).filter((wid) => FAMILY[wid] === f).map((wid) => WEAPONS[wid].evo.name).join('·');
+      ui.ultFamily.textContent = Object.keys(FAMILY_NAME).map((f) => `${FAMILY_NAME[f]} 합체: ${names(f)}`).join(' / ');
+    }
+    return far;
   }
 
   // ---------- screens ----------
@@ -10193,12 +10812,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const timeMs = Math.round(secs * 1000);
     const score = given ? given.score : scoreNow(cleared);
     const stageNo = stageNoOf(endless ? ENDLESS : stageIndex);
-    const record = { id: uid(), stage: stageNo, cleared, timeMs, level: run.level, kills: run.kills, score, at: new Date().toISOString() };
+    const record = { id: uid(), stage: stageNo, cleared, timeMs, level: run.level, kills: run.kills, score, at: new Date().toISOString(), ship: run.ship };
     if (endless) Object.assign(record, { sector: run.sector + 1, combo: run.bestCombo });
     const prev = bestRecord(saved.records.filter((r) => r.stage === stageNo));
     const unlockedBefore = saved.unlocked;
     const timeCoins = Math.floor(secs / 10) * stats.coinMul;
-    const interest = Math.min(200 * rank('interest'), Math.floor(saved.coins * 0.01 * rank('interest')));
+    const interest = Math.min(100 * rank('interest'), Math.floor(saved.coins * 0.01 * rank('interest')));
     const earned = given ? Math.max(0, Math.floor(given.earned)) : Math.floor(run.coins + timeCoins + (cleared ? 100 * (stageIndex + 1) : 0) + interest);
     saved.coins += earned;
     saved.earned += earned;
@@ -10634,6 +11253,24 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
   }
   const isOnline = (pid, prof) => pid === saved.pid || !!(prof && prof.get(pid) && Date.now() - prof.get(pid).at < ONLINE_MS);
+  // A board row's pieces: the title, the dot with the name, and the score each stay whole; a line may only break
+  // between them (a phone used to split a score in two: "188," on one line, "715점" on the next).
+  const ROW_BREAK = '\u200b';
+  function rankWho(pid, name, prof) {
+    const who = document.createElement('span');
+    who.className = 'rank-who';
+    const b = document.createElement('b');
+    b.className = 'rank-name';
+    b.textContent = name;
+    who.append(onDot(pid, prof), b);
+    return who;
+  }
+  function rankPts(text) {
+    const s = document.createElement('span');
+    s.className = 'rank-pts';
+    s.textContent = text;
+    return s;
+  }
   function onDot(pid, prof) {
     if (!prof || (pid !== saved.pid && !prof.get(pid))) return '';
     const on = isOnline(pid, prof);
@@ -10757,16 +11394,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     li.querySelector('.rank-no').textContent = String(n);
     const scoreEl = li.querySelector('.rank-score');
     [[r.pid, r.name], [r.pid2, r.name2]].forEach(([pid, name], k) => {
-      if (k) scoreEl.append(' & ');
+      if (k) scoreEl.append('& ');
       const tt = titleFor(pid, '', prof);
-      if (titleOf(tt)) scoreEl.append(titleTag(tt));
-      scoreEl.append(onDot(pid, prof));
-      const b = document.createElement('b');
-      b.className = 'rank-name';
-      b.textContent = name;
-      scoreEl.append(b);
+      if (titleOf(tt)) scoreEl.append(titleTag(tt), ROW_BREAK);
+      scoreEl.append(rankWho(pid, name, prof), ROW_BREAK);
     });
-    scoreEl.append(`${fmt(r.score)}점`);
+    scoreEl.append(rankPts(`${fmt(r.score)}점`));
     if (r.clear) {
       const tag = document.createElement('span');
       tag.className = 'tag is-clear';
@@ -10792,11 +11425,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     li.querySelector('.rank-no').textContent = String(n);
     const scoreEl = li.querySelector('.rank-score');
     const tt = me ? myTitle() : p.tt;
-    if (titleOf(tt)) scoreEl.append(titleTag(tt));
-    const name = document.createElement('b');
-    name.className = 'rank-name';
-    name.textContent = me ? saved.name || p.n : p.n;
-    scoreEl.append(onDot(p.pid, prof), name, `${fmt(p.w)}승`);
+    if (titleOf(tt)) scoreEl.append(titleTag(tt), ROW_BREAK);
+    scoreEl.append(rankWho(p.pid, me ? saved.name || p.n : p.n, prof), ROW_BREAK, rankPts(`${fmt(p.w)}승`));
     if (me) {
       const tag = document.createElement('span');
       tag.className = 'tag';
@@ -11090,7 +11720,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   function takeRisk(o) {
     const r = RISKS.find((x) => x.id === o.id);
     if (!r) return;
-    for (const [k, v] of Object.entries(r.fx)) run.risk[k] *= v;
+    for (const [k, v] of Object.entries(r.fx)) {
+      if (k === 'coin') run.risk.coin += v - 1; // coin bonuses add up, as the cards say
+      else run.risk[k] *= v;
+    }
     run.risk.n += 1;
     recompute();
     if (coop.ally) coop.recalc = true; // the other ship's numbers change too
@@ -11864,7 +12497,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   const ULT_IDS = Object.keys(ULTS);
   const PALETTE = [...new Set(['#7fe7ff', ...Object.values(TIER_TONES).flat(), ...Object.values(EVO_TONES), ...SHIPS.map((sd) => sd.tone),
     '#b8f36b', '#ffa94d', '#ff7a3d', '#ff6f91', '#c9b6ff', '#ff5a3d', COLOR.orange, COLOR.cyan, COLOR.amber, COLOR.violet, COLOR.teal,
-    COLOR.coral, COLOR.lime, COLOR.danger, COLOR.steel, COLOR.ink, '#ffffff', '#ffe08a', '#9ad8ff', '#bfefff', '#fff3b0', '#ffd27a', '#ffb3f0'])];
+    COLOR.coral, COLOR.lime, COLOR.danger, COLOR.steel, COLOR.ink, '#ffffff', '#ffe08a', '#9ad8ff', '#bfefff', '#fff3b0', '#ffd27a', '#ffb3f0',
+    '#ff9a3d', '#ffd166', '#7da2ff', '#6dffa0'])];
   const colorIdx = (c) => Math.max(0, PALETTE.indexOf(c));
   const PAGE_ID = Math.random().toString(36).slice(2, 10); // this page load; a reload mid-run means a fresh start
   const coopHost = () => coop.on && coop.role === 'host';
@@ -12478,7 +13112,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     body.push(listB.length);
     for (const b of listB) {
       if (!b.id) b.id = nextId();
-      body.push(b.id, I16(b.x * 4), I16(b.y * 4), I16(b.vx * 10), I16(b.vy * 10), I16(b.r * 10), BULLET_TONES.indexOf(b.tone) | (b.split ? 256 : 0));
+      body.push(b.id, I16(b.x * 4), I16(b.y * 4), I16(b.vx * 10), I16(b.vy * 10), I16(b.r * 10), Math.max(0, BULLET_TONES.indexOf(b.tone)) | (b.split ? 256 : 0) | (Math.max(0, SHOT_SHAPES.indexOf(b.shape)) << 9));
     }
     const listS = pShots.slice(-cap.s);
     body.push(listS.length);
@@ -12615,6 +13249,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       const tone = body[i++];
       b.tone = BULLET_TONES[tone & 255] || 'coral';
       b.split = tone & 256 ? 1 : 0;
+      b.shape = SHOT_SHAPES[(tone >> 9) & 15] || 'orb';
       if (!coop.gone || !coop.gone.has(id)) {
         shots.set(id, b);
         eShots.push(b);
@@ -12642,7 +13277,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       s.plasma = !!(packed & 16384);
       if (s.kind === 'bolt') {
         s.a = a;
-        s.spr = sprType === 1 ? boltOf(color) : sprType === 2 ? lanceOf(color) : null;
+        s.spr = sprType === 1 ? boltOf(color) : sprType === 2 ? lanceOf(color) : sprType === 3 ? starOf(color) : null;
         s.trail = !!(packed & 2048);
         s.shell = packed & 4096 ? 1 : 0;
       } else {
@@ -13267,6 +13902,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     saved.coins += refund;
     saved.spent = 0;
     saved.tree = {};
+    saved.treeEp += 1;
     save();
     ui.treeConfirm.hidden = true;
     renderTree();
@@ -13445,12 +14081,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     li.innerHTML = '<span class="rank-no"></span><span class="rank-score"></span><span class="rank-date"></span><span class="rank-meta"></span>';
     li.querySelector('.rank-no').textContent = String(n);
     const scoreEl = li.querySelector('.rank-score');
-    const name = document.createElement('b');
-    name.className = 'rank-name';
-    name.textContent = r.name;
     const tt = titleFor(r.pid, r.tt, prof); // the title the player wears now
-    if (titleOf(tt)) scoreEl.append(titleTag(tt));
-    scoreEl.append(onDot(r.pid, prof), name, `${fmt(r.score)}점`);
+    if (titleOf(tt)) scoreEl.append(titleTag(tt), ROW_BREAK);
+    scoreEl.append(rankWho(r.pid, r.name, prof), ROW_BREAK, rankPts(`${fmt(r.score)}점`));
     if (r.clear) {
       const tag = document.createElement('span');
       tag.className = 'tag is-clear';
@@ -13506,7 +14139,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     li.innerHTML = '<span class="rank-no"></span><span class="rank-score"></span><span class="rank-date"></span><span class="rank-meta"></span>';
     li.querySelector('.rank-no').textContent = String(rank);
     const scoreEl = li.querySelector('.rank-score');
-    scoreEl.textContent = `${fmt(r.score)}점`;
+    scoreEl.append(rankPts(`${fmt(r.score)}점`));
     if (r.cleared) {
       const tag = document.createElement('span');
       tag.className = 'tag is-clear';
@@ -14334,7 +14967,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   resize();
   showTitle(false);
   checkAchv(); // players from before achievements get what they already earned
-  cloud.pull(true).then((changed) => changed && refreshMenus());
+  cloud.pull(true).then((changed) => changed && refreshMenus()).finally(() => restoreShips().catch(() => {}));
   {
     const code = new URLSearchParams(location.search).get('room');
     if (board.on && code && /^[0-9]{4}$/.test(code)) {
