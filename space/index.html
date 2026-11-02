@@ -947,6 +947,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .sd-head div { display: grid; gap: 2px; }
 .sd-name { font-family: var(--font-display); font-weight: 400; font-size: 1.5rem; line-height: 1.1; }
 .sd-gun { font-size: 0.875rem; font-weight: 700; color: var(--tone); }
+.ship-power { font-family: var(--font-data); font-size: 0.75rem; font-weight: 700; color: var(--amber); }
+.sd-power { display: block; font-family: var(--font-data); font-size: 0.8125rem; font-weight: 700; color: var(--amber); }
 .sd-bars { display: grid; gap: 5px; }
 .sd-bar { display: grid; grid-template-columns: 2.6rem minmax(0, 1fr); align-items: center; gap: 8px; font-size: 0.8125rem; color: var(--muted); }
 .sd-bar i { position: relative; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
@@ -1762,24 +1764,38 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   // Fighters: bought with coins in the hangar. bars = [체력, 화력, 연사, 회피] out of 5; hitbox is the core's radius.
   const SHIPS = [
     { id: 'star', name: '스타라이트', price: 0, hp: 120, dmg: 1, hitbox: 4, gun: 'twin', tone: '#7fe7ff', flame: 'cool', engines: [[-4.5, 13]], bars: [3, 2, 3, 3], gunName: '쌍발 광탄', about: '광탄 두 발을 곧게 쏴요. 레벨이 오르면 줄이 늘어나요.', perk: '무난한 기본 전투기예요.' },
-    { id: 'wasp', name: '와스프', price: 4000, hp: 100, dmg: 1, hitbox: 3, gun: 'fan', tone: '#b8f36b', flame: 'cool', engines: [[-3.5, 14]], bars: [2, 2, 5, 5], gunName: '부채 산탄', about: '다섯 갈래로 퍼지는 산탄을 빠르게 뿌려요.', perk: '맞는 점이 작아서 피하기 쉬워요. 체력은 낮아요.' },
-    { id: 'titan', name: '타이탄', price: 6000, hp: 170, dmg: 1.05, hitbox: 5, gun: 'shell', tone: '#ffa94d', flame: 'hot', engines: [[-9, 18]], bars: [5, 4, 1, 1], gunName: '중포탄', about: '느리지만 적을 꿰뚫고 마지막에 터지는 큰 포탄을 쏴요.', perk: '체력이 높고 받는 피해 −10%. 맞는 점이 커요.' },
-    { id: 'seraph', name: '세라프', price: 8000, hp: 130, dmg: 1, hitbox: 4, gun: 'homing', tone: '#ff6f91', flame: 'cool', engines: [[0, 15]], bars: [3, 3, 3, 3], gunName: '유도 광구', about: '적을 끝까지 쫓아가는 빛 구슬을 쏴요.', perk: '초당 체력 0.5 회복, 끌어오는 거리 +30%.' },
-    { id: 'nox', name: '녹스', price: 10000, hp: 110, dmg: 1.1, hitbox: 4, gun: 'rail', tone: '#a88bff', flame: 'cool', engines: [[-5, 14]], bars: [2, 5, 2, 3], gunName: '레일건', about: '가장 단단한 적을 노려 한 줄로 꿰뚫는 레일건을 쏴요.', perk: '치명타 확률 +15%.' },
-    { id: 'dragon', name: '노바 드래곤', price: 18000, hp: 150, dmg: 1.15, hitbox: 4, gun: 'dragon', tone: '#ff7a3d', flame: 'hot', engines: [[-4, 16]], bars: [4, 5, 4, 3], gunName: '용의 숨결', about: '불꽃 구슬이 둘레를 돌고, 화염탄을 쏴요.', perk: '모든 피해 +15%, 경험치 +10%.' },
+    { id: 'wasp', name: '와스프', price: 4000, hp: 105, dmg: 1, gunMul: 2.29, hitbox: 3, gun: 'fan', tone: '#b8f36b', flame: 'cool', engines: [[-3.5, 14]], bars: [2, 2, 5, 5], gunName: '부채 산탄', about: '다섯 갈래로 퍼지는 산탄을 빠르게 뿌려요.', perk: '맞는 점이 작아서 피하기 쉬워요. 체력은 낮아요.' },
+    { id: 'titan', name: '타이탄', price: 6000, hp: 170, dmg: 1.05, gunMul: 0.8, hitbox: 5, gun: 'shell', tone: '#ffa94d', flame: 'hot', engines: [[-9, 18]], bars: [5, 4, 1, 1], gunName: '중포탄', about: '느리지만 적을 꿰뚫고 마지막에 터지는 큰 포탄을 쏴요.', perk: '체력이 높고 받는 피해 −10%. 맞는 점이 커요.' },
+    { id: 'seraph', name: '세라프', price: 8000, hp: 130, dmg: 1, gunMul: 1.63, hitbox: 4, gun: 'homing', tone: '#ff6f91', flame: 'cool', engines: [[0, 15]], bars: [3, 3, 3, 3], gunName: '유도 광구', about: '적을 끝까지 쫓아가는 빛 구슬을 쏴요.', perk: '초당 체력 0.5 회복, 끌어오는 거리 +30%.' },
+    { id: 'nox', name: '녹스', price: 10000, hp: 115, dmg: 1.1, gunMul: 0.98, hitbox: 4, gun: 'rail', tone: '#a88bff', flame: 'cool', engines: [[-5, 14]], bars: [2, 5, 2, 3], gunName: '레일건', about: '가장 단단한 적을 노려 한 줄로 꿰뚫는 레일건을 쏴요.', perk: '치명타 확률 +15%.' },
+    { id: 'dragon', name: '노바 드래곤', price: 18000, hp: 155, dmg: 1.15, gunMul: 2.4, hitbox: 4, gun: 'dragon', tone: '#ff7a3d', flame: 'hot', engines: [[-4, 16]], bars: [4, 5, 4, 3], gunName: '용의 숨결', about: '불꽃 구슬이 둘레를 돌고, 화염탄을 쏴요.', perk: '모든 피해 +15%, 경험치 +10%.' },
     // `mul` and `add` adjust the fighter's stats on top of everything else
-    { id: 'hive', name: '하이브', price: 9000, hp: 120, dmg: 1, hitbox: 4, gun: 'bees', tone: '#ffd23f', flame: 'cool', engines: [[-4, 14]], bars: [3, 3, 4, 3], gunName: '꿀벌 드론', about: '작은 벌 드론이 적을 쏘고 다음 적에게 날아가요. 레벨이 오르면 벌이 늘고 더 여러 번 쏴요.', perk: '아이템이 나올 확률 +15%.', mul: { luck: 1.15 } },
-    { id: 'aurora', name: '오로라', price: 12000, hp: 115, dmg: 1, hitbox: 3.5, gun: 'wave', tone: '#3fe0b2', flame: 'cool', engines: [[-3.5, 14]], bars: [3, 3, 4, 4], gunName: '오로라 물결', about: '서로 엇갈리며 물결치는 빛줄기가 적을 꿰뚫어요.', perk: '맞는 점이 작고, 경험치 +15%.', mul: { xpMul: 1.15 } },
-    { id: 'tempest', name: '템페스트', price: 14000, hp: 120, dmg: 1.05, hitbox: 4, gun: 'arc', tone: '#9ad8ff', flame: 'cool', engines: [[-4.5, 14]], bars: [3, 4, 3, 3], gunName: '연쇄 전격', about: '가장 가까운 적에게 전기가 튀고, 옆의 적에게로 줄줄이 번져요.', perk: '재사용 시간 −8%.', mul: { cdMul: 0.92 } },
-    { id: 'falcon', name: '팔콘', price: 16000, hp: 140, dmg: 1.1, hitbox: 4, gun: 'crescent', tone: '#ff5a6e', flame: 'hot', engines: [[-5, 15]], bars: [4, 4, 2, 3], gunName: '초승달 칼날', about: '넓게 퍼지는 초승달 칼날이 앞의 적을 모두 베어요. 화면 맨 위까지는 닿지 않아요.', perk: '치명타 확률 +8%, 치명타 피해 +40%.', add: { crit: 0.08, critMul: 0.4 } },
-    { id: 'quasar', name: '퀘이사', price: 20000, hp: 130, dmg: 1.1, hitbox: 4.5, gun: 'cluster', tone: '#ff4fd8', flame: 'hot', engines: [[-6, 16]], bars: [3, 5, 2, 2], gunName: '성단 폭탄', about: '날아가다 터지며 별 조각을 사방으로 뿌리는 폭탄을 쏴요.', perk: '범위와 크기 +15%.', mul: { area: 1.15 } },
-    { id: 'lumen', name: '루멘', price: 25000, hp: 135, dmg: 1.1, hitbox: 4, gun: 'beam', tone: '#fff3b0', flame: 'cool', engines: [[-4, 15]], bars: [4, 4, 5, 3], gunName: '빛의 기둥', about: '끊이지 않는 빛기둥을 앞으로 쏴서 그 줄의 적을 모두 태워요. 레벨이 오르면 굵어져요.', perk: '보스에게 주는 피해 +20%.', mul: { bossMul: 1.2 } },
-    { id: 'vulcan', name: '벌컨', price: 22000, hp: 145, dmg: 1, hitbox: 4.5, gun: 'gatling', tone: '#8fb3ff', flame: 'hot', engines: [[-7, 16]], bars: [4, 4, 5, 2], gunName: '회전 기관포', about: '쏠수록 총열이 빨리 돌아 총알이 쏟아져요. 맞으면 총열이 멈췄다가 처음부터 다시 돌아요.', perk: '받는 피해 −8%.', mul: { taken: 0.92 } },
-    { id: 'ricochet', name: '리코셰', price: 28000, hp: 120, dmg: 1.05, hitbox: 3.5, gun: 'shuriken', tone: '#4d7cff', flame: 'cool', engines: [[-4, 14]], bars: [3, 4, 4, 4], gunName: '튕기는 표창', about: '가장 가까운 적에게 큰 표창을, 양옆으로 작은 표창을 던져요. 표창은 화면 벽과 천장에 튕기며 여러 적을 베어요. 레벨이 오르면 표창이 늘고 더 많이 튕겨요.', perk: '범위와 크기 +10%, 투사체 속도 +15%.', mul: { area: 1.1, speedMul: 1.15 } },
-    { id: 'hydra', name: '히드라', price: 35000, hp: 135, dmg: 1.1, hitbox: 4, gun: 'hydra', tone: '#37e27a', flame: 'cool', engines: [[-5, 15]], bars: [4, 5, 3, 3], gunName: '갈라지는 독탄', about: '날아가다 두 갈래로, 또 두 갈래로 갈라지는 독탄을 쏴요. 레벨이 오르면 더 여러 번 갈라져요.', perk: '경험치 +10%, 치명타 확률 +5%.', mul: { xpMul: 1.1 }, add: { crit: 0.05 } },
+    { id: 'hive', name: '하이브', price: 9000, hp: 125, dmg: 1, gunMul: 0.93, hitbox: 4, gun: 'bees', tone: '#ffd23f', flame: 'cool', engines: [[-4, 14]], bars: [3, 3, 4, 3], gunName: '꿀벌 드론', about: '작은 벌 드론이 적을 쏘고 다음 적에게 날아가요. 레벨이 오르면 벌이 늘고 더 여러 번 쏴요.', perk: '아이템이 나올 확률 +15%.', mul: { luck: 1.15 } },
+    { id: 'aurora', name: '오로라', price: 12000, hp: 120, dmg: 1, gunMul: 1.97, hitbox: 3.5, gun: 'wave', tone: '#3fe0b2', flame: 'cool', engines: [[-3.5, 14]], bars: [3, 3, 4, 4], gunName: '오로라 물결', about: '서로 엇갈리며 물결치는 빛줄기가 적을 꿰뚫어요.', perk: '맞는 점이 작고, 경험치 +15%.', mul: { xpMul: 1.15 } },
+    { id: 'tempest', name: '템페스트', price: 14000, hp: 130, dmg: 1.05, gunMul: 0.96, hitbox: 4, gun: 'arc', tone: '#9ad8ff', flame: 'cool', engines: [[-4.5, 14]], bars: [3, 4, 3, 3], gunName: '연쇄 전격', about: '가장 가까운 적에게 전기가 튀고, 옆의 적에게로 줄줄이 번져요.', perk: '재사용 시간 −8%.', mul: { cdMul: 0.92 } },
+    { id: 'falcon', name: '팔콘', price: 16000, hp: 140, dmg: 1.1, gunMul: 1.09, hitbox: 4, gun: 'crescent', tone: '#ff5a6e', flame: 'hot', engines: [[-5, 15]], bars: [4, 4, 2, 3], gunName: '초승달 칼날', about: '넓게 퍼지는 초승달 칼날이 앞의 적을 모두 베어요. 화면 맨 위까지는 닿지 않아요.', perk: '치명타 확률 +8%, 치명타 피해 +40%.', add: { crit: 0.08, critMul: 0.4 } },
+    { id: 'quasar', name: '퀘이사', price: 20000, hp: 145, dmg: 1.1, gunMul: 2, hitbox: 4.5, gun: 'cluster', tone: '#ff4fd8', flame: 'hot', engines: [[-6, 16]], bars: [3, 5, 2, 2], gunName: '성단 폭탄', about: '날아가다 터지며 별 조각을 사방으로 뿌리는 폭탄을 쏴요.', perk: '범위와 크기 +15%.', mul: { area: 1.15 } },
+    { id: 'lumen', name: '루멘', price: 25000, hp: 150, dmg: 1.1, gunMul: 1.42, hitbox: 4, gun: 'beam', tone: '#fff3b0', flame: 'cool', engines: [[-4, 15]], bars: [4, 4, 5, 3], gunName: '빛의 기둥', about: '끊이지 않는 빛기둥을 앞으로 쏴서 그 줄의 적을 모두 태워요. 레벨이 오르면 굵어져요.', perk: '보스에게 주는 피해 +20%.', mul: { bossMul: 1.2 } },
+    { id: 'vulcan', name: '벌컨', price: 22000, hp: 155, dmg: 1, gunMul: 1.21, hitbox: 4.5, gun: 'gatling', tone: '#8fb3ff', flame: 'hot', engines: [[-7, 16]], bars: [4, 4, 5, 2], gunName: '회전 기관포', about: '쏠수록 총열이 빨리 돌아 총알이 쏟아져요. 맞으면 총열이 멈췄다가 처음부터 다시 돌아요.', perk: '받는 피해 −8%.', mul: { taken: 0.92 } },
+    { id: 'ricochet', name: '리코셰', price: 28000, hp: 140, dmg: 1.05, gunMul: 0.8, hitbox: 3.5, gun: 'shuriken', tone: '#4d7cff', flame: 'cool', engines: [[-4, 14]], bars: [3, 4, 4, 4], gunName: '튕기는 표창', about: '가장 가까운 적에게 큰 표창을, 양옆으로 작은 표창을 던져요. 표창은 화면 벽과 천장에 튕기며 여러 적을 베어요. 레벨이 오르면 표창이 늘고 더 많이 튕겨요.', perk: '범위와 크기 +10%, 투사체 속도 +15%.', mul: { area: 1.1, speedMul: 1.15 } },
+    { id: 'hydra', name: '히드라', price: 35000, hp: 165, dmg: 1.1, gunMul: 1.47, hitbox: 4, gun: 'hydra', tone: '#37e27a', flame: 'cool', engines: [[-5, 15]], bars: [4, 5, 3, 3], gunName: '갈라지는 독탄', about: '날아가다 두 갈래로, 또 두 갈래로 갈라지는 독탄을 쏴요. 레벨이 오르면 더 여러 번 갈라져요.', perk: '경험치 +10%, 치명타 확률 +5%.', mul: { xpMul: 1.1 }, add: { crit: 0.05 } },
   ];
   const BEE_TONE = '#ffd23f';
   const shipOf = (id) => SHIPS.find((sd) => sd.id === id) || SHIPS[0];
+  // A fighter's overall strength, shown in the hangar: 100 for the starter, rising with the price (200 at 35,000).
+  // Each gun's gunMul was measured and set so that the real strength (its gun on a boss and on a crowd, its bonuses
+  // with ordinary weapons, its health and hit size) matches this.
+  const shipPower = (sd) => Math.round(100 + sd.price / 350);
+  // the hangar's bars, from the fighter's real numbers (1 to 5)
+  function shipBars(sd) {
+    const taken = sd.id === 'titan' ? 0.9 : (sd.mul && sd.mul.taken) || 1;
+    const regen = sd.id === 'seraph' ? 0.5 : 0;
+    const life = (sd.hp / taken) * (1 + regen * 0.25);
+    const def = (life / 120) * (7 / (sd.hitbox + 3));
+    const attack = shipPower(sd) / 100 / Math.sqrt(def);
+    const bar = (v) => clamp(Math.round(v), 1, 5);
+    return [bar((life - 80) / 20), bar(2 + (attack - 1) * 4.3), sd.bars[2], bar(3 + (4 - sd.hitbox) * 2)];
+  }
 
   // Combined skills fall into three families; any two combined skills fuse into the ultimate their families point to.
   const FAMILY = { cannon: 'fire', missile: 'fire', flame: 'fire', laser: 'energy', lightning: 'energy', saw: 'energy', drones: 'guard', nova: 'guard', aura: 'guard' };
@@ -7096,7 +7112,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   function updateGun(dt, cdMul) {
     const sd = shipOf(run.ship);
     const tier = gunTier();
-    const D = stats.dmgMul * (1 + Math.min(1.5, (run.level - 1) * 0.03));
+    const D = stats.dmgMul * (1 + Math.min(1.5, (run.level - 1) * 0.03)) * (sd.gunMul || 1); // gunMul: the fighter's grade
     const sp = stats.speedMul;
     gun.cd -= dt;
     gun.a += dt;
@@ -7116,7 +7132,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     } else if (sd.gun === 'fan') {
       gun.cd += 0.24 * cdMul;
       const n = 5 + 2 * tier;
-      const spread = 0.42 + 0.04 * tier;
+      const spread = 0.3 + 0.03 * tier;
       for (let k = 0; k < n; k++) bolt(player.x, -spread + (2 * spread * k) / (n - 1), 5 * D, 0.7, boltOf('#b8f36b'), 600);
       sfx.play('shot');
     } else if (sd.gun === 'shell') {
@@ -13845,7 +13861,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   function renderHangar() {
     ui.hangarCoins.textContent = fmt(saved.coins);
-    ui.shipGrid.replaceChildren(...SHIPS.map((sd) => {
+    ui.shipGrid.replaceChildren(...SHIPS.slice().sort((a, b) => a.price - b.price).map((sd) => {
       const b = document.createElement('button');
       b.type = 'button';
       const own = saved.ships.includes(sd.id);
@@ -13864,7 +13880,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         state2.innerHTML = svgIcon('coin');
         state2.append(fmt(sd.price));
       }
-      b.append(shipArt(sd.id, 64), name, state2);
+      const power = document.createElement('span');
+      power.className = 'ship-power';
+      power.textContent = `전투력 ${shipPower(sd)}`;
+      b.append(shipArt(sd.id, 64), name, power, state2);
       return b;
     }));
     renderShipDetail();
@@ -13875,8 +13894,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const head = document.createElement('div');
     head.className = 'sd-head';
     const title = document.createElement('div');
-    title.innerHTML = '<b class="sd-name"></b><span class="sd-gun"></span>';
+    title.innerHTML = '<b class="sd-name"></b><span class="sd-power"></span><span class="sd-gun"></span>';
     title.querySelector('.sd-name').textContent = sd.name;
+    title.querySelector('.sd-power').textContent = `전투력 ${shipPower(sd)} · 비쌀수록 세요`;
     title.querySelector('.sd-gun').textContent = `고유 공격 · ${sd.gunName}`;
     head.append(shipArt(sd.id, 96), title);
     const about = document.createElement('p');
@@ -13884,12 +13904,13 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     about.textContent = `${sd.about} ${sd.perk}`;
     const bars = document.createElement('div');
     bars.className = 'sd-bars';
+    const real = shipBars(sd);
     ['체력', '화력', '연사', '회피'].forEach((label, i) => {
       const row = document.createElement('div');
       row.className = 'sd-bar';
       row.innerHTML = '<span></span><i></i>';
       row.querySelector('span').textContent = label;
-      row.querySelector('i').style.setProperty('--v', String(sd.bars[i] / 5));
+      row.querySelector('i').style.setProperty('--v', String(real[i] / 5));
       bars.append(row);
     });
     const btn = document.createElement('button');
