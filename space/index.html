@@ -5501,13 +5501,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     risk: { enemyHp: 1, bullet: 1, taken: 1, dmg: 1, spawn: 1, xp: 1, coin: 1, score: 1, maxHp: 1, n: 0 },
     ev: { t: 99, id: '', left: 0, tick: 0, last: '' },
   };
-  // endless mode has room for one more weapon and one more piece of gear
-  const weaponSlots = () => WEAPON_SLOTS + (run.endless ? 1 : 0);
+  // endless mode has no limits: room for every weapon and every piece of gear, so every weapon can combine
+  const weaponSlots = () => (run.endless ? Object.keys(WEAPONS).length : WEAPON_SLOTS);
   // Weapon slots hold the ordinary weapons; ultimates come on top of them and take no slot.
   const slotted = () => build.weapons.filter((w) => w.id !== 'ult');
-  // Combined skills not yet put into an ultimate: each one can go into one ultimate.
-  const fusable = () => build.weapons.filter((w) => w.evolved && w.id !== 'ult' && !w.used);
-  const passiveSlots = () => PASSIVE_SLOTS + (run.endless ? 1 : 0);
+  // Combined skills that can go into an ultimate: in a region each one goes into one ultimate; in endless mode any of
+  // them, again and again (each ultimate kind once, so all six can be made).
+  const fusable = () => build.weapons.filter((w) => w.evolved && w.id !== 'ult' && (run.endless || !w.used));
+  const passiveSlots = () => (run.endless ? Object.keys(PASSIVES).length : PASSIVE_SLOTS);
   // Endless mode: each sector raises the points per kill, and an unbroken combo doubles or triples them.
   const comboMul = () => 1 + Math.min(2, run.combo / 150);
   const scoreMul = () => (run.endless ? (1 + 0.25 * run.sector) * comboMul() : 1);
@@ -5833,7 +5834,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     if (o.kind === 'ult') {
       const u = ULTS[o.ult];
-      return { icon: u.icon, name: u.name, tag: '궁극 합체!', desc: `${WEAPONS[o.a].evo.name} + ${WEAPONS[o.b].evo.name}: ${u.about}. 두 합체 스킬도 그대로 계속 나가요!${run.endless ? '' : ` 한 판에 두 번까지 (${run.ults + 1}/${ULT_PER_RUN}번째).`}`, cls: 'is-ult' };
+      return { icon: u.icon, name: u.name, tag: '궁극 합체!', desc: `${WEAPONS[o.a].evo.name} + ${WEAPONS[o.b].evo.name}: ${u.about}. 두 합체 스킬도 그대로 계속 나가요!${run.endless ? ` 무한 모드는 제한 없이 모든 궁극기를 모을 수 있어요 (${run.ults + 1}/${Object.keys(ULTS).length}종째).` : ` 한 판에 두 번까지 (${run.ults + 1}/${ULT_PER_RUN}번째).`}`, cls: 'is-ult' };
     }
     if (o.kind === 'skip') {
       return { icon: 'skip', name: '건너뛰기', tag: '', desc: '지금은 합체하지 않아요. 대신 이번 상자에서 스킬 하나를 골라요.', cls: 'is-skip' };
@@ -10940,9 +10941,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     } else pendingStart = false;
     proceed();
   }
-  // Two combined skills that could fuse now (two ultimates per run in a region; in endless mode every two combined
-  // skills not used yet make one more). Both keep working after the fusion. A pair that makes an ultimate this ship
-  // doesn't have yet comes first, so a second fusion brings something new where it can.
+  // Two combined skills that could fuse now (two ultimates per run in a region; no limit in endless mode, where any two
+  // combined skills make each ultimate kind not made yet). Both keep working after the fusion. A pair that makes an
+  // ultimate this ship doesn't have yet comes first, so a second fusion brings something new where it can.
   function ultPair() {
     if (run.ults >= ultLimit()) return null;
     const ready = fusable();
@@ -10951,6 +10952,19 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const pairs = [];
     for (let i = 0; i < ready.length; i++) for (let j = i + 1; j < ready.length; j++) pairs.push([ready[i].id, ready[j].id]);
     const fresh = pairs.filter(([a, b]) => !have.has(ultFor(a, b)));
+    if (run.endless) return fresh.length ? pick(fresh) : null; // endless: each kind once, as many kinds as there are
+    if (run.ults + 1 < ultLimit() && fresh.length > 1) { // a first fusion that leaves the skills for a different second one
+      const leavesNew = fresh.filter(([a, b]) => {
+        const k = ultFor(a, b);
+        const rest = ready.filter((w) => w.id !== a && w.id !== b);
+        for (let i = 0; i < rest.length; i++) for (let j = i + 1; j < rest.length; j++) {
+          const k2 = ultFor(rest[i].id, rest[j].id);
+          if (k2 !== k && !have.has(k2)) return true;
+        }
+        return false;
+      });
+      if (leavesNew.length) return pick(leavesNew);
+    }
     return pick(fresh.length ? fresh : pairs);
   }
   const ULT_PER_RUN = 2;
@@ -10995,7 +11009,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ui.quitNote.textContent = coop.on ? (coop.pauseRemote ? `${coop.partner || '친구'}님이 일시정지했어요. ` : '친구 화면도 같이 멈춰요. ') + (coopGuest() ? '나가면 지금까지 점수와 코인을 받아요.' : '끝내면 둘 다 지금 점수와 코인을 받아요.')
       : run.vs ? '대결은 계속돼요. 끝내면 지금 점수로 대결 순위에 남아요.'
       : run.endless ? '끝내면 지금까지 모은 점수와 코인을 받아요.' : '그만하면 이번 판의 기록과 코인은 남지 않아요.';
-    ui.ultNote.textContent = `합체 스킬 2개를 가진 채 보급 상자를 열면 궁극기가 하나 더 생겨요. 두 합체 스킬도 그대로 계속 나가고, 궁극기에 쓴 스킬에는 ★ 표시가 붙어요. ${run.endless ? '무한 모드에서는 아직 안 쓴 합체 스킬 2개마다 한 번씩 할 수 있어요.' : `한 판에 두 번까지 할 수 있어요(지금 ${run.ults}/${ULT_PER_RUN}). 두 번째는 아직 안 쓴 합체 스킬 2개가 더 있어야 해요.`}`;
+    ui.ultNote.textContent = `합체 스킬 2개를 가진 채 보급 상자를 열면 궁극기가 하나 더 생겨요. 두 합체 스킬도 그대로 계속 나가고, 궁극기에 쓴 스킬에는 ★ 표시가 붙어요. ${run.endless ? '무한 모드는 제한이 없어요: 합체 스킬 2개만 있으면(궁극기에 이미 쓴 것도 돼요) 아직 없는 종류의 궁극기를 계속 만들어요. 6종 모두 모을 수 있어요.' : `한 판에 두 번까지 할 수 있어요(지금 ${run.ults}/${ULT_PER_RUN}). 두 번째는 아직 안 쓴 합체 스킬 2개가 더 있어야 해요.`}`;
     renderSlots(ui.pauseSlots);
     renderRecipes(ui.recipes);
     renderUltGuide();
