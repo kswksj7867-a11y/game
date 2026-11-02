@@ -3453,20 +3453,22 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   const FLAME = flameSprite(COLOR.cyan);
   const FLAME_HOT = flameSprite(COLOR.orange);
-  const SMOKE = sprite(64, 1, (g) => {
+  const paintSmoke = (g) => {
     const grd = g.createRadialGradient(0, 0, 0, 0, 0, 32);
     grd.addColorStop(0, rgba(COLOR.steel, 0.35));
     grd.addColorStop(0.6, rgba(COLOR.void, 0.28));
     grd.addColorStop(1, rgba(COLOR.void, 0));
     g.fillStyle = grd;
     g.fillRect(-32, -32, 64, 64);
-  });
+  };
+  const SMOKE = sprite(64, 1, paintSmoke);
+  SMOKE.big = (px) => sprite(64, px / 64, paintSmoke);
   // Soft glowing dots in any color, made on first use.
   const DOTS = new Map();
   function dot(color) {
     let c = DOTS.get(color);
     if (!c) {
-      c = sprite(32, 1, (g) => {
+      const paint = (g) => {
         const grd = g.createRadialGradient(0, 0, 0, 0, 0, 16);
         grd.addColorStop(0, 'rgba(255, 255, 255, 1)');
         grd.addColorStop(0.2, rgba(color, 0.95));
@@ -3474,7 +3476,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         grd.addColorStop(1, rgba(color, 0));
         g.fillStyle = grd;
         g.fillRect(-16, -16, 32, 32);
-      });
+      };
+      c = sprite(32, 1, paint);
+      c.big = (px) => sprite(32, px / 32, paint); // the same glow painted big (see soft())
       DOTS.set(color, c);
     }
     return c;
@@ -5568,6 +5572,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   let endT = 0;
   let clearRadius = 0;
   let hudBottom = 0; // where the instruments end, in field units
+  let hudMeasure = true; // read the instruments' height at the start of the next frame
   let clock = 0;
   let hudDirty = true;
   let shownSec = -1;
@@ -5580,6 +5585,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   let lastFrame = performance.now();
 
   // ---------- screen fitting ----------
+  const fitted = { w: 0, h: 0, dpr: 0 };
   function resize() {
     const availW = ui.stage.clientWidth;
     const availH = ui.stage.clientHeight;
@@ -5592,10 +5598,17 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     h = Math.floor(h);
     ui.frame.style.width = `${w}px`;
     ui.frame.style.height = `${h}px`;
-    dpr = Math.min(2, window.devicePixelRatio || 1);
+    const ndpr = Math.min(2, window.devicePixelRatio || 1);
+    if (w === fitted.w && h === fitted.h && ndpr === fitted.dpr) return; // the same size again: nothing to redo
+    fitted.w = w;
+    fitted.h = h;
+    fitted.dpr = ndpr;
+    dpr = ndpr;
     ui.canvas.width = Math.round(w * dpr);
     ui.canvas.height = Math.round(h * dpr);
     scale = w / W;
+    pxK = dpr * scale;
+    turnedReset();
     const oldH = H;
     H = h / scale;
     player.y = clamp(player.y * (H / oldH), 74, H - 26);
@@ -5619,7 +5632,49 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     vignette = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.42, W / 2, H / 2, Math.hypot(W, H) * 0.62);
     vignette.addColorStop(0, rgba(COLOR.void, 0));
     vignette.addColorStop(1, rgba(COLOR.void, 0.6));
+    skyPic.ok = false;
+    skyPic.colors = [stage.sky[0], stage.sky[1]];
     artSprites(skyIdx);
+  }
+  // ---------- the sky as one picture ----------
+  // The gradient, the nebula and the planet barely move (the nebula drifts 5 points a second). Stretching the small
+  // nebula over the whole screen and filling the gradient every frame cost a phone more than a whole quiet frame of
+  // fighting, so they are painted together into one screen-sized picture whenever the drift has moved a whole pixel,
+  // and that picture is copied pixel for pixel every frame. The vignette, which never changes, is kept the same way.
+  const skyPic = { ok: false, sky: null, neb: null, vig: null, grad: null, colors: null, ny: -1, py: 0 };
+  function skyReady() {
+    const cw = ui.canvas.width;
+    const ch = ui.canvas.height;
+    const K = dpr * scale;
+    const fit = (c) => {
+      const out = c || document.createElement('canvas');
+      if (out.width !== cw) out.width = cw;
+      if (out.height !== ch) out.height = ch;
+      return out;
+    };
+    skyPic.neb = fit(skyPic.neb); // the nebula, stretched to the screen once
+    let g = skyPic.neb.getContext('2d');
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, cw, ch);
+    g.drawImage(nebula, 0, 0, W * K, H * K);
+    skyPic.vig = fit(skyPic.vig);
+    g = skyPic.vig.getContext('2d');
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, cw, ch);
+    g.setTransform(K, 0, 0, K, 0, 0);
+    const v = g.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.42, W / 2, H / 2, Math.hypot(W, H) * 0.62);
+    v.addColorStop(0, rgba(COLOR.void, 0));
+    v.addColorStop(1, rgba(COLOR.void, 0.6));
+    g.fillStyle = v;
+    g.fillRect(0, 0, W, H);
+    skyPic.sky = fit(skyPic.sky);
+    g = skyPic.sky.getContext('2d');
+    const colors = skyPic.colors || stage.sky;
+    skyPic.grad = g.createLinearGradient(0, 0, 0, H * K);
+    skyPic.grad.addColorStop(0, colors[0]);
+    skyPic.grad.addColorStop(1, colors[1]);
+    skyPic.ny = -1;
+    skyPic.ok = true;
   }
   function makeStars() {
     const layers = [[50, 12, 0.7, 1.2, 0.5], [30, 30, 1, 1.6, 0.75], [14, 64, 1.4, 2.2, 1]];
@@ -9077,6 +9132,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 
   // ---------- drawing ----------
   function draw() {
+    turnedNew = 0;
     ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
@@ -9105,9 +9161,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     drawHazards(); // enemy beams and warnings stay readable over our effects
     drawTexts();
     ctx.restore();
-    if (vignette) {
-      ctx.fillStyle = vignette;
-      ctx.fillRect(0, 0, W, H);
+    if (vignette && skyPic.ok) { // a ready picture, copied pixel for pixel
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.drawImage(skyPic.vig, 0, 0);
+      ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
     }
     ctx.save(); // enemy fire goes on top of everything, the vignette included
     ctx.translate(sx, sy);
@@ -9141,7 +9198,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ctx.textBaseline = 'middle';
     ctx.globalCompositeOperation = 'lighter';
     ctx.globalAlpha = 0.4;
-    ctx.drawImage(dot(tone), -20, -20, 120, 40);
+    soft(dot(tone), -20, -20, 120, 40);
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
     ctx.save();
@@ -9165,11 +9222,30 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ctx.restore();
   }
   function drawBackground() {
-    ctx.fillStyle = bgGrad || COLOR.void;
-    ctx.fillRect(0, 0, W, H);
-    ctx.drawImage(nebula, 0, nebulaY - H, W, H);
-    ctx.drawImage(nebula, 0, nebulaY, W, H);
-    if (planet.img) ctx.drawImage(planet.img, planet.x - planet.size / 2, planet.y - planet.size / 2, planet.size, planet.size);
+    const K = dpr * scale;
+    if (!skyPic.ok || skyPic.sky.width !== ui.canvas.width || skyPic.sky.height !== ui.canvas.height) skyReady();
+    const ny = Math.round(nebulaY * K);
+    const py = Math.round(planet.y * K);
+    if (ny !== skyPic.ny || py !== skyPic.py) { // the drift moved a whole pixel: paint the sky picture again
+      skyPic.ny = ny;
+      skyPic.py = py;
+      const g = skyPic.sky.getContext('2d');
+      const ch = skyPic.neb.height;
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.globalAlpha = 1;
+      g.globalCompositeOperation = 'source-over';
+      g.fillStyle = skyPic.grad;
+      g.fillRect(0, 0, skyPic.sky.width, skyPic.sky.height);
+      g.drawImage(skyPic.neb, 0, ny - ch);
+      g.drawImage(skyPic.neb, 0, ny);
+      if (planet.img) {
+        g.setTransform(K, 0, 0, K, 0, 0);
+        g.drawImage(planet.img, planet.x - planet.size / 2, py / K - planet.size / 2, planet.size, planet.size);
+      }
+    }
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(skyPic.sky, 0, 0);
+    ctx.setTransform(K, 0, 0, K, 0, 0);
     ctx.globalCompositeOperation = 'lighter';
     ctx.fillStyle = COLOR.ink;
     for (const s of stars) {
@@ -9294,7 +9370,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       ctx.globalAlpha = (1 - k) * 0.9;
       for (let i = 0; i < 12; i++) {
         const a = (i / 12) * TAU + 0.3;
-        ctx.drawImage(dot(BUBBLE_TINTS[i % BUBBLE_TINTS.length]), x + Math.cos(a) * r - 4, y + Math.sin(a) * r - 4, 8, 8);
+        soft(dot(BUBBLE_TINTS[i % BUBBLE_TINTS.length]), x + Math.cos(a) * r - 4, y + Math.sin(a) * r - 4, 8, 8);
       }
       ctx.strokeStyle = 'rgba(220, 245, 255, 0.85)';
       ctx.lineWidth = 1.4 * (1 - k);
@@ -9366,7 +9442,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ctx.fillStyle = beamFill(player.x - w, player.x + w, '#fff3b0', 0.3);
     ctx.fillRect(player.x - w, 0, w * 2, y0);
     ctx.globalAlpha = fx;
-    ctx.drawImage(dot('#fff3b0'), player.x - 20, y0 - 20, 40, 40);
+    soft(dot('#fff3b0'), player.x - 20, y0 - 20, 40, 40);
     ctx.restore();
   }
   const BAR_KINDS = new Set(['gunner', 'tank', 'carrier', 'shield', 'spinner', 'lancer', 'healer', 'bomber', 'splitter']);
@@ -9559,7 +9635,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       const gx = e.x + face * (-26 + ((k * 23) % 56)) + Math.sin(ph) * 3;
       const gy = e.y - 10 + ((k * 7) % 12) - 6;
       ctx.globalAlpha = a;
-      ctx.drawImage(dot('#fff3b0'), gx - 5, gy - 5, 10, 10);
+      soft(dot('#fff3b0'), gx - 5, gy - 5, 10, 10);
     }
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
@@ -9717,7 +9793,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         ctx.globalAlpha = k;
         ctx.fillStyle = beamFill(b.x - b.width * 0.9, b.x + b.width * 0.9, COLOR.danger, 0.22);
         ctx.fillRect(b.x - b.width * 0.9, b.y, b.width * 1.8, h);
-        ctx.drawImage(dot(COLOR.danger), b.x - b.width, b.y - b.width, b.width * 2, b.width * 2);
+        soft(dot(COLOR.danger), b.x - b.width, b.y - b.width, b.width * 2, b.width * 2);
         ctx.restore();
       }
     }
@@ -9811,9 +9887,118 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   function glow(img, x, y, size, alpha) {
     ctx.globalCompositeOperation = 'lighter';
     ctx.globalAlpha = alpha;
-    ctx.drawImage(img, x - size / 2, y - size / 2, size, size);
+    soft(img, x - size / 2, y - size / 2, size, size);
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
+  }
+  // ---------- big soft glows ----------
+  // A glow is a round picture with no edges. Stretching the small 32-pixel one over an explosion makes the phone smooth
+  // every pixel it covers; copying from the same glow painted 256 pixels wide, without smoothing, costs about a third
+  // and looks the same (the white core even stays rounder). Small glows are drawn the usual way.
+  const softBig = new Map(); // 256-pixel glows
+  const softHuge = new Map(); // 512-pixel glows for the biggest explosions
+  let pxK = 2; // screen pixels per field point
+  function softPic(map, img, px, most) {
+    let pic = map.get(img);
+    if (!pic) {
+      if (map.size >= most) map.clear(); // a long run through many colours: start the collection again
+      pic = img.big(px);
+      map.set(img, pic);
+    }
+    return pic;
+  }
+  function soft(img, x, y, w, h) {
+    const px = w * pxK;
+    if (px < 96 || !img.big) {
+      ctx.drawImage(img, x, y, w, h);
+      return;
+    }
+    const pic = px <= 560 ? softPic(softBig, img, 256, 48) : softPic(softHuge, img, 512, 12);
+    if (px > 1150) { // more than twice even the big picture: smoothing keeps it soft
+      ctx.drawImage(pic, x, y, w, h);
+      return;
+    }
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(pic, x, y, w, h);
+    ctx.imageSmoothingEnabled = true;
+  }
+  // ---------- turned bolts ----------
+  // Turning a picture makes the phone look every pixel up through the turn, several times the cost of a straight copy.
+  // A bolt keeps its size and (for most guns) its angle for its whole flight, so each size and angle is turned once
+  // into a small picture at screen resolution, and every frame copies it straight onto the nearest whole pixel.
+  let turnedNew = 0; // new turned pictures this frame (a few per frame, so a new gun never stutters)
+  let turnedAll = 0;
+  const turnedSets = [];
+  function turnedReset() { // the screen changed size: the pictures no longer fit
+    for (const c of turnedSets) c.clear();
+    turnedAll = 0;
+  }
+  function turnedPic(img, w, h, a) {
+    const m = baseM;
+    if (!m || m.b || m.c) return null;
+    const k = m.a;
+    const qa = Math.round(a * 100);
+    const key = `${Math.round(w * k * 2)}|${Math.round(h * k * 2)}|${qa}`;
+    let cache = img.$turned;
+    if (!cache) {
+      cache = img.$turned = new Map();
+      turnedSets.push(cache);
+    }
+    let pic = cache.get(key);
+    if (pic) return pic;
+    if (turnedNew >= 8 || turnedAll >= 320) return null; // the plain way this time
+    turnedNew++;
+    turnedAll++;
+    const t = img.trim !== undefined ? img.trim : trimOf(img);
+    const lx = t ? -w + t[4] * w * 2 : -w;
+    const ly = t ? -h / 2 + t[5] * h : -h / 2;
+    const lw = t ? t[6] * w * 2 : w * 2;
+    const lh = t ? t[7] * h : h;
+    const ang = qa / 100;
+    const c = Math.cos(ang) * k;
+    const sn = Math.sin(ang) * k;
+    let x0 = Infinity;
+    let y0 = Infinity;
+    let x1 = -Infinity;
+    let y1 = -Infinity;
+    for (const [px, py] of [[lx, ly], [lx + lw, ly], [lx, ly + lh], [lx + lw, ly + lh]]) {
+      const X = c * px - sn * py;
+      const Y = sn * px + c * py;
+      x0 = Math.min(x0, X);
+      y0 = Math.min(y0, Y);
+      x1 = Math.max(x1, X);
+      y1 = Math.max(y1, Y);
+    }
+    pic = document.createElement('canvas');
+    pic.width = Math.ceil(x1 - x0) + 4;
+    pic.height = Math.ceil(y1 - y0) + 4;
+    pic.cx = 2 - x0; // where the bolt's centre lands in the picture
+    pic.cy = 2 - y0;
+    const g = pic.getContext('2d');
+    g.setTransform(c, sn, -sn, c, pic.cx, pic.cy);
+    if (t) g.drawImage(img, t[0], t[1], t[2], t[3], lx, ly, lw, lh);
+    else g.drawImage(img, lx, ly, lw, lh);
+    cache.set(key, pic);
+    return pic;
+  }
+  // a bolt turned by a round (x, y), as turnTo(x, y, a) + blit(img, -w, -h / 2, w * 2, h) would draw it
+  // (a straight bolt is a picture "turned" by 0: scaled once to the screen, then copied)
+  function boltAt(img, x, y, w, h, a) {
+    const pic = turnedPic(img, w, h, a);
+    if (!pic) {
+      if (!a) {
+        blit(img, x - w, y - h / 2, w * 2, h);
+        return;
+      }
+      turnTo(x, y, a);
+      blit(img, -w, -h / 2, w * 2, h);
+      unturn();
+      return;
+    }
+    const m = baseM;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(pic, Math.round(m.a * x + m.e - pic.cx), Math.round(m.d * y + m.f - pic.cy));
+    ctx.setTransform(m.a, m.b, m.c, m.d, m.e, m.f);
   }
   // A beam's cross-section from x0 to x1: soft edges, a solid body from `edge` inwards, a white core.
   function beamFill(x0, x1, color, edge) {
@@ -9911,7 +10096,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         ctx.globalAlpha = fade * fxAlpha();
         ctx.fillStyle = beamFill(-half * 1.7, half * 1.7, tone, 0.29);
         ctx.fillRect(-half * 1.7, -1000, half * 3.4, 1000);
-        ctx.drawImage(dot(tone), -half * 2.2, -half * 2.2, half * 4.4, half * 4.4);
+        soft(dot(tone), -half * 2.2, -half * 2.2, half * 4.4, half * 4.4);
         if (t >= 2) { // two bright strands twist around the beam
           ctx.lineWidth = 1.6;
           ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
@@ -9928,7 +10113,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         if (t >= 3) { // sparks race up the beam and a star burns at the muzzle
           for (let k = 0; k < 7; k++) {
             const y = -((clock * 1100 + k * 140) % 980);
-            ctx.drawImage(dot('#ffffff'), -half, y - half, half * 2, half * 2);
+            soft(dot('#ffffff'), -half, y - half, half * 2, half * 2);
           }
           const st = half * (3.4 + 0.5 * Math.sin(clock * 30));
           ctx.drawImage(GOLD_STAR, -st, -st, st * 2, st * 2);
@@ -9978,14 +10163,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
       for (const [x, y] of nodes) {
         const tw = 1 + 0.15 * Math.sin(clock * 8 + x);
-        ctx.drawImage(dot(rb('#ffe08a', Math.round(x))), x - 16 * tw, y - 16 * tw, 32 * tw, 32 * tw);
+        soft(dot(rb('#ffe08a', Math.round(x))), x - 16 * tw, y - 16 * tw, 32 * tw, 32 * tw);
         ctx.drawImage(GOLD_STAR, x - 22 * tw, y - 22 * tw, 44 * tw, 44 * tw);
       }
     } else if (w.ult === 'supernova' && w.charge > 0) {
       const r = 6 + 24 * w.charge;
       const x = player.x;
       const y = player.y - 38;
-      ctx.drawImage(dot('#fff1b8'), x - r * 1.8, y - r * 1.8, r * 3.6, r * 3.6);
+      soft(dot('#fff1b8'), x - r * 1.8, y - r * 1.8, r * 3.6, r * 3.6);
       for (let k = 0; k < 6; k++) {
         const a0 = clock * 5 + (k / 6) * TAU;
         ctx.strokeStyle = rgba(RAINBOW[k], 0.8);
@@ -10007,7 +10192,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     ctx.scale(A * 1.5, A * 1.5);
     ctx.globalCompositeOperation = 'lighter';
     ctx.globalAlpha = 0.55;
-    ctx.drawImage(dot(rb('#ff9b4a')), -44, -40, 88, 80); // the bird burns inside its own glow
+    soft(dot(rb('#ff9b4a')), -44, -40, 88, 80); // the bird burns inside its own glow
     ctx.globalAlpha = 1;
     for (const k of [-1, 0, 1]) { // tail feathers
       const g = ctx.createLinearGradient(0, 6, 0, 46);
@@ -10034,8 +10219,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       ctx.fillStyle = g;
       ctx.fill();
     }
-    ctx.drawImage(dot('#ffd27a'), -11, -16, 22, 32);
-    ctx.drawImage(dot('#ffffff'), -5, -19, 10, 10);
+    soft(dot('#ffd27a'), -11, -16, 22, 32);
+    soft(dot('#ffffff'), -5, -19, 10, 10);
     ctx.restore();
   }
   // Ultimate effects drawn under the ships (black holes, fire on the ground) or over them.
@@ -10067,11 +10252,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       for (let j = 1; j <= 3; j++) { // short fiery trail
         const b = a - j * 0.18;
         ctx.globalAlpha = (0.5 - j * 0.12) * fxAlpha();
-        ctx.drawImage(dot('#ff7a3d'), player.x + Math.cos(b) * R - 7, player.y + Math.sin(b) * R - 7, 14, 14);
+        soft(dot('#ff7a3d'), player.x + Math.cos(b) * R - 7, player.y + Math.sin(b) * R - 7, 14, 14);
       }
       ctx.globalAlpha = fxAlpha();
-      ctx.drawImage(dot('#ffb347'), x - 12, y - 12, 24, 24);
-      ctx.drawImage(dot('#ffffff'), x - 4, y - 4, 8, 8);
+      soft(dot('#ffb347'), x - 12, y - 12, 24, 24);
+      soft(dot('#ffffff'), x - 4, y - 4, 8, 8);
     }
     ctx.restore();
   }
@@ -10106,8 +10291,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           ctx.globalCompositeOperation = 'lighter';
           ctx.globalAlpha = k * 0.8 * fx;
           const s = f.r * (1.6 + 0.2 * Math.sin(clock * 20 + f.x));
-          ctx.drawImage(dot(rb('#ff7a3d', Math.round(f.x))), f.x - s, f.y - s, s * 2, s * 2);
-          ctx.drawImage(dot('#ffd27a'), f.x - s * 0.5, f.y - s * 0.7, s, s);
+          soft(dot(rb('#ff7a3d', Math.round(f.x))), f.x - s, f.y - s, s * 2, s * 2);
+          soft(dot('#ffd27a'), f.x - s * 0.5, f.y - s * 0.7, s, s);
         }
         continue;
       }
@@ -10143,7 +10328,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         const spr = SPR.ships && SPR.ships[sd.id];
         ctx.globalAlpha = fx;
         ctx.drawImage(FLAME, f.x - 3, f.y + 9, 6, 12 + Math.random() * 6);
-        ctx.drawImage(dot(sd.tone), f.x - 14, f.y - 8, 28, 28);
+        soft(dot(sd.tone), f.x - 14, f.y - 8, 28, 28);
         if (spr) {
           ctx.globalCompositeOperation = 'source-over';
           ctx.globalAlpha = 0.95;
@@ -10200,7 +10385,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           ctx.lineTo(f.x - ux * 90, f.y - uy * 90);
           ctx.stroke();
         }
-        ctx.drawImage(dot(rb('#ff9b4a', Math.round(f.sx))), f.x - 26, f.y - 26, 52, 52);
+        soft(dot(rb('#ff9b4a', Math.round(f.sx))), f.x - 26, f.y - 26, 52, 52);
         ctx.globalCompositeOperation = 'source-over';
         if (SPR.rock) {
           ctx.save();
@@ -10227,11 +10412,11 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           }
           ctx.stroke();
         }
-        ctx.drawImage(dot('#7fe7ff'), f.x - f.w * 1.6, H - f.w * 1.6, f.w * 3.2, f.w * 3.2);
+        soft(dot('#7fe7ff'), f.x - f.w * 1.6, H - f.w * 1.6, f.w * 3.2, f.w * 3.2);
       } else if (f.type === 'shell') {
         const r = f.r;
-        ctx.drawImage(dot('#fff1b8'), f.x - r * 2.4, f.y - r * 2.4, r * 4.8, r * 4.8);
-        ctx.drawImage(dot('#ffffff'), f.x - r, f.y - r, r * 2, r * 2);
+        soft(dot('#fff1b8'), f.x - r * 2.4, f.y - r * 2.4, r * 4.8, r * 4.8);
+        soft(dot('#ffffff'), f.x - r, f.y - r, r * 2, r * 2);
         for (let k = 0; k < 6; k++) {
           const a0 = clock * 7 + (k / 6) * TAU;
           ctx.strokeStyle = rgba(RAINBOW[k], 0.9);
@@ -10250,7 +10435,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const fx = fxAlpha();
     ctx.globalCompositeOperation = 'lighter';
     ctx.globalAlpha = 0.45 * k * fx;
-    ctx.drawImage(dot('#8b5cf6'), f.x - f.R, f.y - f.R, f.R * 2, f.R * 2);
+    soft(dot('#8b5cf6'), f.x - f.R, f.y - f.R, f.R * 2, f.R * 2);
     const cols = rank('ultform') ? [rb('#b48cff'), rb('#7fe7ff', 2), rb('#ffc24b', 4)] : ['#b48cff', '#7fe7ff', '#ffc24b'];
     for (let i = 0; i < 3; i++) {
       ctx.globalAlpha = (0.85 - i * 0.2) * k * fx;
@@ -10265,7 +10450,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       const a = j * 2.4 + f.rot * 2 + u * 5;
       const r = f.R * (1 - u);
       ctx.globalAlpha = u * k * fx;
-      ctx.drawImage(dot(j % 2 ? '#b48cff' : '#7fe7ff'), f.x + Math.cos(a) * r - 4, f.y + Math.sin(a) * r * 0.8 - 4, 8, 8);
+      soft(dot(j % 2 ? '#b48cff' : '#7fe7ff'), f.x + Math.cos(a) * r - 4, f.y + Math.sin(a) * r * 0.8 - 4, 8, 8);
     }
     ctx.globalAlpha = k;
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
@@ -10303,7 +10488,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       const pal = FLAME_PAL[f.pal || 0];
       const col = k > 0.62 ? pal[0] : k > 0.34 ? pal[1] : pal[2];
       ctx.globalAlpha = Math.min(1, k * 1.7) * 0.92 * fx;
-      ctx.drawImage(dot(col), f.x - s, f.y - s, s * 2, s * 2);
+      soft(dot(col), f.x - s, f.y - s, s * 2, s * 2);
     }
     ctx.restore();
   }
@@ -10322,7 +10507,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         const a = clock * 1.4 + (k / 6) * TAU;
         const x = player.x + Math.cos(a) * R * 0.9;
         const y = player.y + Math.sin(a) * R * 0.9;
-        ctx.drawImage(dot(tone), x - 7, y - 7, 14, 14);
+        soft(dot(tone), x - 7, y - 7, 14, 14);
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(a);
@@ -10361,7 +10546,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         const a = k * 2.4 + clock * 2.2 + u * 3;
         const r = R * (1 - u);
         ctx.globalAlpha = fx * (1 - u) * 0.9;
-        ctx.drawImage(dot(tone), player.x + Math.cos(a) * r - 5, player.y + Math.sin(a) * r - 5, 10, 10);
+        soft(dot(tone), player.x + Math.cos(a) * r - 5, player.y + Math.sin(a) * r - 5, 10, 10);
       }
     }
     ctx.restore();
@@ -10382,10 +10567,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           const u = 1 - k / n;
           const r = d * (0.22 + 0.32 * u);
           ctx.globalAlpha = 0.55 * u * fxAlpha();
-          ctx.drawImage(dot(tone), s.trail[k] - r, s.trail[k + 1] - r, r * 2, r * 2);
+          soft(dot(tone), s.trail[k] - r, s.trail[k + 1] - r, r * 2, r * 2);
         }
         ctx.globalAlpha = fxAlpha();
-        if (s.tier >= 2 || s.spiral) ctx.drawImage(dot(tone), s.x - d * 0.9, s.y - d * 0.9, d * 1.8, d * 1.8);
+        if (s.tier >= 2 || s.spiral) soft(dot(tone), s.x - d * 0.9, s.y - d * 0.9, d * 1.8, d * 1.8);
         ctx.globalCompositeOperation = 'source-over';
         turnTo(s.x, s.y, s.spin);
         ctx.drawImage(img, -d / 2, -d / 2, d, d);
@@ -10397,9 +10582,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         const a = Math.atan2(s.vy, s.vx);
         const tone = s.tone || COLOR.orange;
         const big = s.tier >= 2 ? 1.35 : 1;
-        turnTo(s.x, s.y, a);
-        ctx.drawImage(dot(tone), -19 * big, -7 * big, 14 * big, 14 * big);
-        unturn();
+        const gx = s.x - Math.cos(a) * 12 * big; // the round glow sits behind the nose: no need to turn the canvas for it
+        const gy = s.y - Math.sin(a) * 12 * big;
+        soft(dot(tone), gx - 7 * big, gy - 7 * big, 14 * big, 14 * big);
         turnTo(s.x, s.y, a + Math.PI / 2); // the flame trails behind
         blit(flameOf(tone), -3.5 * big, 5, 7 * big, (9 + Math.random() * 7) * big);
         unturn();
@@ -10412,24 +10597,24 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
       if (s.kind === 'orb' && s.tone === BEE_TONE) { // a bee: a gold body with beating wings
         ctx.globalAlpha = fxAlpha();
-        ctx.drawImage(dot(BEE_TONE), s.x - 9, s.y - 9, 18, 18);
+        soft(dot(BEE_TONE), s.x - 9, s.y - 9, 18, 18);
         const flap = 2.4 + 1.6 * Math.sin(clock * 70 + s.x);
         ctx.globalAlpha = 0.7 * fxAlpha();
-        ctx.drawImage(dot('#ffffff'), s.x - 6 - flap, s.y - 4, 6, 5);
-        ctx.drawImage(dot('#ffffff'), s.x + flap, s.y - 4, 6, 5);
+        soft(dot('#ffffff'), s.x - 6 - flap, s.y - 4, 6, 5);
+        soft(dot('#ffffff'), s.x + flap, s.y - 4, 6, 5);
         ctx.globalAlpha = fxAlpha();
-        ctx.drawImage(dot('#fff7d0'), s.x - 3, s.y - 3, 6, 6);
+        soft(dot('#fff7d0'), s.x - 3, s.y - 3, 6, 6);
         continue;
       }
       if (s.kind === 'orb') {
         const tone = s.tone || '#ff6f91';
         for (const [k, r, al] of ORB_TAIL) { // a short comet tail
           ctx.globalAlpha = al * fxAlpha();
-          ctx.drawImage(dot(tone), s.x - s.vx * k - r, s.y - s.vy * k - r, r * 2, r * 2);
+          soft(dot(tone), s.x - s.vx * k - r, s.y - s.vy * k - r, r * 2, r * 2);
         }
         ctx.globalAlpha = fxAlpha();
-        ctx.drawImage(dot(tone), s.x - 13, s.y - 13, 26, 26);
-        ctx.drawImage(dot('#ffffff'), s.x - 4, s.y - 4, 8, 8);
+        soft(dot(tone), s.x - 13, s.y - 13, 26, 26);
+        soft(dot('#ffffff'), s.x - 4, s.y - 4, 8, 8);
         continue;
       }
       if (s.kind === 'blade') { // a crescent of light, bright edge first
@@ -10461,24 +10646,16 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       const h = 24 * s.size;
       if (s.shell) { // the heavy shell glows hot
         const r = 10 * s.size;
-        ctx.drawImage(dot('#ff9b4a'), s.x - r, s.y - r, r * 2, r * 2);
+        soft(dot('#ff9b4a'), s.x - r, s.y - r, r * 2, r * 2);
       }
       if (s.trail && !busy) { // mastered guns leave two fading after-images
         for (const [k, al] of TRAIL_STEPS) {
           ctx.globalAlpha = al * fxAlpha();
-          turnTo(s.x - s.vx * k, s.y - s.vy * k, s.a || 0);
-          blit(img, -w, -h / 2, w * 2, h);
-          unturn();
+          boltAt(img, s.x - s.vx * k, s.y - s.vy * k, w, h, s.a || 0);
         }
         ctx.globalAlpha = fxAlpha();
       }
-      if (s.a) {
-        turnTo(s.x, s.y, s.a);
-        blit(img, -w, -h / 2, w * 2, h);
-        unturn();
-      } else {
-        blit(img, s.x - w, s.y - h / 2, w * 2, h);
-      }
+      boltAt(img, s.x, s.y, w, h, s.a || 0);
     }
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 1;
@@ -10532,7 +10709,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   function drawFx() {
     for (const m of smokes) { // smoke stays under the glow
       ctx.globalAlpha = Math.max(0, m.life / m.full) * 0.85;
-      ctx.drawImage(SMOKE, m.x - m.r, m.y - m.r, m.r * 2, m.r * 2);
+      soft(SMOKE, m.x - m.r, m.y - m.r, m.r * 2, m.r * 2);
     }
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'lighter';
@@ -10542,14 +10719,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       if (k * fx < 0.02) continue; // faded out: nothing to see
       const d = b.size * (1.25 - 0.45 * k);
       ctx.globalAlpha = k * fx;
-      ctx.drawImage(dot(b.color), b.x - d / 2, b.y - d / 2, d, d);
+      soft(dot(b.color), b.x - d / 2, b.y - d / 2, d, d);
     }
     for (const p of sparks) {
       const k = Math.max(0, p.life / p.max);
       if (k * fx < 0.02) continue;
       const d = p.w * 4.2 * (0.35 + 0.65 * k);
       ctx.globalAlpha = k * fx;
-      ctx.drawImage(dot(p.color), p.x - d / 2, p.y - d / 2, d, d);
+      soft(dot(p.color), p.x - d / 2, p.y - d / 2, d, d);
     }
     ctx.lineCap = 'round';
     for (const r of rings) {
@@ -10582,7 +10759,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       if (z.style === 'ult' || z.flare) { // a bright flash where the bolt lands
         const [ex, ey] = z.pts[z.pts.length - 1];
         ctx.globalAlpha = a * fx;
-        ctx.drawImage(dot(z.style === 'ult' ? '#bfefff' : tone), ex - 18, ey - 18, 36, 36);
+        soft(dot(z.style === 'ult' ? '#bfefff' : tone), ex - 18, ey - 18, 36, 36);
       }
     }
     ctx.globalCompositeOperation = 'source-over';
@@ -10613,40 +10790,69 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
 
   // ---------- instruments ----------
+  const hudSeen = { mins: -1, level: -1 };
   function renderClock() {
     shownSec = Math.floor(run.t);
     if (state === 'playing') {
-      mission('survive', Math.floor(run.t / 60));
-      mission('level', run.level);
+      const mins = Math.floor(run.t / 60);
+      if (mins !== hudSeen.mins || run.level !== hudSeen.level) { // these two missions only move when the numbers do
+        hudSeen.mins = mins;
+        hudSeen.level = run.level;
+        mission('survive', mins);
+        mission('level', run.level);
+      }
     }
     const final = director.final;
-    ui.clock.textContent = clockText(run.endless ? run.t : Math.min(run.t, STAGE_TIME));
+    setText(ui.clock, clockText(run.endless ? run.t : Math.min(run.t, STAGE_TIME)));
     ui.clock.classList.toggle('is-final', final);
-    ui.stageLabel.textContent = run.endless ? `${fmt(run.score)}점` : final ? '최종 보스' : stage.name;
+    setText(ui.stageLabel, run.endless ? `${fmt(run.score)}점` : final ? '최종 보스' : stage.name);
+  }
+  // In a fight the instruments change nearly every frame (a kill, a gem). Writing a text or a bar again, even unchanged,
+  // makes the browser lay the page out again, so only real changes are written; and the height of the instruments is
+  // read at the start of the next frame, when the layout is already done, never straight after writing.
+  function setText(el, text) {
+    if (el.textContent !== text) el.textContent = text;
+  }
+  function setBar(el, k) {
+    const v = `scaleX(${k.toFixed(3)})`;
+    if (el.$bar !== v) {
+      el.$bar = v;
+      el.style.transform = v;
+    }
+  }
+  function setHidden(el, hide) {
+    if (el.hidden !== hide) {
+      el.hidden = hide;
+      hudMeasure = true;
+    }
   }
   function renderHud() {
     hudDirty = false;
     if (!stats) return;
-    ui.xpFill.style.transform = `scaleX(${clamp(run.xp / run.need, 0, 1).toFixed(3)})`;
+    setBar(ui.xpFill, clamp(run.xp / run.need, 0, 1));
     const k = clamp(player.hp / stats.maxHp, 0, 1);
-    ui.hpFill.style.transform = `scaleX(${k.toFixed(3)})`;
+    setBar(ui.hpFill, k);
     ui.hpFill.classList.toggle('is-mid', k <= 0.5 && k > 0.25);
     ui.hpFill.classList.toggle('is-low', k <= 0.25);
-    ui.hpText.textContent = coop.on && !player.alive ? `격추 · ${Math.max(0, Math.ceil(player.downT || 0))}초 뒤 출격` : `${Math.ceil(player.hp)}/${stats.maxHp}`;
-    ui.hpTrack.setAttribute('aria-label', `체력 ${Math.ceil(player.hp)} / ${stats.maxHp}`);
-    ui.level.textContent = String(run.level);
+    setText(ui.hpText, coop.on && !player.alive ? `격추 · ${Math.max(0, Math.ceil(player.downT || 0))}초 뒤 출격` : `${Math.ceil(player.hp)}/${stats.maxHp}`);
+    const label = `체력 ${Math.ceil(player.hp)} / ${stats.maxHp}`;
+    if (ui.hpTrack.$label !== label) {
+      ui.hpTrack.$label = label;
+      ui.hpTrack.setAttribute('aria-label', label);
+    }
+    setText(ui.level, String(run.level));
     if (coop.on) renderCoopPanel();
-    else if (!run.vs) ui.vsPanel.hidden = true;
-    ui.kills.textContent = num(run.kills);
-    ui.coins.textContent = num(Math.floor(run.coins));
+    else if (!run.vs) setHidden(ui.vsPanel, true);
+    setText(ui.kills, num(run.kills));
+    setText(ui.coins, num(Math.floor(run.coins)));
     const b = boss && !boss.dead ? boss : null;
-    ui.bossbar.hidden = !b;
+    setHidden(ui.bossbar, !b);
     if (b) {
-      ui.bossName.textContent = b.kind === 'mother' ? '모선' : CRUISER_NAMES[b.variant || 0] || '순양함';
-      ui.bossfill.style.transform = `scaleX(${clamp(b.hp / b.maxHp, 0, 1).toFixed(3)})`;
+      setText(ui.bossName, b.kind === 'mother' ? '모선' : CRUISER_NAMES[b.variant || 0] || '순양함');
+      setBar(ui.bossfill, clamp(b.hp / b.maxHp, 0, 1));
     }
     renderClock();
-    if (!ui.hud.hidden) hudBottom = ui.hud.offsetHeight / scale;
+    hudMeasure = true;
   }
   function showBanner(title, sub, warn) {
     coopRec(['bn', title, sub, warn]);
@@ -11910,6 +12116,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     try {
       await board.put(`v1/accounts/${await inboxKey(pid)}`, { rev: 0, data: JSON.stringify(body), at: { '.sv': 'timestamp' } });
       tgNote(`${name}님에게 초대를 보냈어요. 들어오면 이 방에 나타나요.`);
+      vs.noteHold = Date.now() + 4000; // the room's status line waits, so the inviter can read it
     } catch (err) {
       invite.sent.delete(pid);
       if (refused(err)) invite.off = true; // the database doesn't take it: no 초대 buttons
@@ -12966,15 +13173,27 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (!c) return false;
     const p = c.player;
     const mx = (c.stats && c.stats.maxHp) || 100;
-    const row = document.createElement('div');
-    row.className = `vs-row${p.alive ? '' : ' is-out'}`;
-    row.innerHTML = '<em></em><span></span><i class="vs-hp"><i></i></i><b></b>';
-    row.querySelector('em').textContent = '';
-    row.querySelector('span').textContent = c.name;
-    row.querySelector('.vs-hp i').style.width = `${p.alive ? clamp((p.hp / mx) * 100, 0, 100) : 0}%`;
-    row.querySelector('b').textContent = p.alive ? `${Math.ceil(p.hp)}` : `${Math.max(0, Math.ceil(p.downT || 0))}초`;
-    ui.vsPanel.replaceChildren(row);
-    ui.vsPanel.hidden = false;
+    let row = ui.vsPanel.$coopRow;
+    if (!row || row.parentNode !== ui.vsPanel || ui.vsPanel.children.length !== 1) { // made once, then only its numbers change
+      row = document.createElement('div');
+      row.innerHTML = '<em></em><span></span><i class="vs-hp"><i></i></i><b></b>';
+      row.$name = row.querySelector('span');
+      row.$hp = row.querySelector('.vs-hp i');
+      row.$num = row.querySelector('b');
+      ui.vsPanel.replaceChildren(row);
+      ui.vsPanel.$coopRow = row;
+      hudMeasure = true;
+    }
+    const cls = `vs-row${p.alive ? '' : ' is-out'}`;
+    if (row.className !== cls) row.className = cls;
+    setText(row.$name, c.name);
+    const width = `${p.alive ? clamp((p.hp / mx) * 100, 0, 100).toFixed(1) : 0}%`;
+    if (row.$hp.$w !== width) {
+      row.$hp.$w = width;
+      row.$hp.style.width = width;
+    }
+    setText(row.$num, p.alive ? `${Math.ceil(p.hp)}` : `${Math.max(0, Math.ceil(p.downT || 0))}초`);
+    setHidden(ui.vsPanel, false);
     return true;
   }
   function renderVsPanel() {
@@ -12992,7 +13211,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       row.querySelector('b').textContent = r.alive ? fmt(r.sc) : `${fmt(r.sc)}`;
       return row;
     }));
-    if (!ui.hud.hidden) hudBottom = ui.hud.offsetHeight / scale;
+    hudMeasure = true;
   }
   function renderVsResult() {
     const show = run.vs && !!vs.code && state === 'result';
@@ -13109,6 +13328,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         return b;
       }));
     }
+    if (players.length >= 2) vs.noteHold = 0; // someone came in: the room's own status says more than "invitation sent"
     if (coopRoomOn) {
       const L = coop.link;
       const status = !L || players.length < 2 ? '친구가 들어오길 기다리는 중'
@@ -13116,14 +13336,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       ui.tgGo.hidden = !host;
       ui.tgGo.disabled = !room || players.length < 2 || !coopReady();
       ui.tgGo.textContent = !room ? '방을 여는 중…' : players.length < 2 ? '친구를 기다리는 중' : coopReady() ? '둘이 함께 출발' : '연결하는 중…';
-      if (!vs.noteErr) ui.tgNote.textContent = host ? status : `${status}. 방장이 출발을 누르면 시작해요.`;
+      if (!vs.noteErr && !(Date.now() < (vs.noteHold || 0))) ui.tgNote.textContent = host ? status : `${status}. 방장이 출발을 누르면 시작해요.`;
       return;
     }
     const busy = !!room && players.some(([id, p]) => p.m === room.go && room.go > 0 && fighting(p, id));
     ui.tgGo.hidden = !host;
     ui.tgGo.disabled = !room || players.length < 2 || busy;
     ui.tgGo.textContent = !room ? '방을 여는 중…' : busy ? '이번 판이 끝나길 기다리는 중' : players.length < 2 ? '친구를 기다리는 중' : `${players.length}명 출발`;
-    if (!host && !vs.noteErr) ui.tgNote.textContent = busy ? '친구들이 대결 중이에요. 이번 판이 끝나면 같이 출발해요.' : '방장이 출발을 누르면 바로 시작해요.';
+    if (!host && !vs.noteErr && !(Date.now() < (vs.noteHold || 0))) ui.tgNote.textContent = busy ? '친구들이 대결 중이에요. 이번 판이 끝나면 같이 출발해요.' : '방장이 출발을 누르면 바로 시작해요.';
   }
   async function vsInvite() {
     const url = `${location.href.split(/[?#]/)[0]}?room=${vs.code}`;
@@ -15637,6 +15857,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
   }
   function tick(now) {
+    if (hudMeasure && !ui.hud.hidden) { // before this frame writes anything, so the layout is already done
+      hudMeasure = false;
+      hudBottom = ui.hud.offsetHeight / scale;
+    }
     const ms = now - lastFrame;
     let dt = ms / 1000;
     lastFrame = now;
