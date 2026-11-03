@@ -1714,15 +1714,15 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   const EVENT_MODE = ENDLESS + 1;
   const EVENT_NO = 10;
   const EVENT_LIST = {
-    uheung: {
-      id: 'uheung', title: '우흥 대소동', color: '#ff5fb0',
-      about: '무한 모드에 이벤트가 더해져요. 1분 뒤부터 중간 보스 우흥이가 "우흥!!"을 외치며 나타나고, 세 번째마다 우흥 대왕이 와요.',
+    moonrabbit: {
+      id: 'moonrabbit', title: '달토끼 대소동', color: '#ff5fb0',
+      about: '무한 모드에 이벤트가 더해져요. 1분 뒤부터 중간 보스 달토끼가 "쿵덕!!"을 외치며 나타나고, 세 번째마다 달토끼 대왕이 와요. 대왕은 체력이 절반이 되면 분노해요!',
       sky: ['#2a0a2c', '#0a0510'], neb: ['#ff5fb0', '#ffd34d', '#9b5cff'], planet: '#ffc7e0',
-      mid: { name: '우흥이', cry: '우흥!!' },
-      boss: { name: '우흥 대왕', cry: '우흥!!!' },
+      mid: { name: '달토끼', cry: '쿵덕!!' },
+      boss: { name: '달토끼 대왕', cry: '쿵덕쿵덕!!!' },
     },
   };
-  const EVENT_NOW = EVENT_LIST.uheung;
+  const EVENT_NOW = EVENT_LIST.moonrabbit;
   const stageNoOf = (i) => (i === EVENT_MODE ? EVENT_NO : i === ENDLESS ? ENDLESS_NO : i < ENDLESS_NO - 1 ? i + 1 : i + 2);
   function stageIdxOf(no) {
     if (no === EVENT_NO) return EVENT_MODE;
@@ -3032,7 +3032,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   const sfx = (() => {
     const last = {};
-    const GAP = { coin: 0.05, shot: 0.075, hit: 0.045, boom: 0.06, gem: 0.035, zap: 0.08, missile: 0.15, laser: 0.3, nova: 0.2, hurt: 0.15, snipe: 0.1, charge: 0.3, beam: 0.2, uheung: 0.3, uheungBig: 0.45 };
+    const GAP = { coin: 0.05, shot: 0.075, hit: 0.045, boom: 0.06, gem: 0.035, zap: 0.08, missile: 0.15, laser: 0.3, nova: 0.2, hurt: 0.15, snipe: 0.1, charge: 0.3, beam: 0.2, kungduk: 0.3, kungdukBig: 0.5 };
     const b = () => audio.sfx;
     const sounds = {
       shot() { tone(b(), 1250, 0, 0.05, 'square', 0.016, 820); },
@@ -3065,17 +3065,18 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       snipe() { tone(b(), 1700, 0, 0.12, 'sawtooth', 0.03, 500); },
       charge() { tone(b(), 300, 0, 0.9, 'sawtooth', 0.02, 1200, 1800); },
       beam() { tone(b(), 120, 0, 0.8, 'sawtooth', 0.05, 90, 900); hiss(b(), 0, 0.6, 0.06, 3000, 1500, 'bandpass'); },
-      uheung() { // "우흥!!": a round low "우" that slides up into a nasal "흥"
-        tone(b(), 190, 0, 0.17, 'sawtooth', 0.045, 250, 650);
-        hiss(b(), 0.15, 0.05, 0.02, 2600, 1800, 'bandpass');
-        tone(b(), 330, 0.17, 0.22, 'sawtooth', 0.05, 260, 1500);
-        tone(b(), 660, 0.17, 0.2, 'triangle', 0.016, 520);
+      kungduk() { // "쿵덕!!": a soft thump and a wooden knock, like a pestle in a rice-cake mortar
+        tone(b(), 150, 0, 0.16, 'sine', 0.1, 55);
+        hiss(b(), 0, 0.05, 0.03, 900, 300);
+        tone(b(), 540, 0.14, 0.08, 'triangle', 0.05, 380);
+        tone(b(), 1080, 0.14, 0.05, 'square', 0.012, 720);
       },
-      uheungBig() { // the king's, deeper, with a rumble under it
-        tone(b(), 120, 0, 0.22, 'sawtooth', 0.06, 165, 520);
-        hiss(b(), 0.2, 0.06, 0.03, 2000, 1400, 'bandpass');
-        tone(b(), 215, 0.22, 0.34, 'sawtooth', 0.06, 165, 1100);
-        tone(b(), 62, 0, 0.55, 'sine', 0.08, 44);
+      kungdukBig() { // the king's "쿵덕쿵덕": heavier, twice
+        tone(b(), 100, 0, 0.24, 'sine', 0.12, 42);
+        hiss(b(), 0, 0.08, 0.04, 700, 200);
+        tone(b(), 400, 0.2, 0.1, 'triangle', 0.06, 270);
+        tone(b(), 100, 0.34, 0.22, 'sine', 0.1, 42);
+        tone(b(), 400, 0.52, 0.1, 'triangle', 0.05, 270);
       },
     };
     function play(name) {
@@ -3306,13 +3307,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   for (const [name, color] of Object.entries(ETONE)) EBULLET[name] = bulletSprite(color);
   // Each region's bullets have their own shape; every shape keeps the dark rim and the white-hot middle, so it reads
   // on any background. Shapes that point somewhere are painted pointing right and turned as they fly.
-  const SHOT_SHAPES = ['orb', 'shard', 'spore', 'needle', 'halo', 'crystal', 'bolt', 'void', 'uh', 'heung', 'uhbig'];
+  const SHOT_SHAPES = ['orb', 'shard', 'spore', 'needle', 'halo', 'crystal', 'bolt', 'void', 'kd', 'kong', 'kdbig', 'kdkd'];
   // Words shouted as bullets (the event's bosses). tw and th are the half-width and half-height of the oval that hurts:
   // a little inside the letters, so a near miss through the glow is still a miss.
   const TEXT_SHOTS = {
-    uh: { text: '우흥!!', px: 17, fill: '#ffffff', edge: '#ff2d8a', glow: '#ff5fb0', tw: 19, th: 7, r: 8 },
-    heung: { text: '흥!', px: 14, fill: '#fff6a8', edge: '#ff7a00', glow: '#ffb347', tw: 10, th: 6, r: 6 },
-    uhbig: { text: '우흥!!!', px: 28, fill: '#ffffff', edge: '#a020ff', glow: '#c77dff', tw: 33, th: 11, r: 12 },
+    kd: { text: '쿵덕!!', px: 17, fill: '#ffffff', edge: '#ff2d8a', glow: '#ff5fb0', tw: 19, th: 7, r: 8 },
+    kong: { text: '콩!', px: 14, fill: '#fff6a8', edge: '#ff7a00', glow: '#ffb347', tw: 10, th: 6, r: 6 },
+    kdbig: { text: '쿵덕!!!', px: 28, fill: '#ffffff', edge: '#a020ff', glow: '#c77dff', tw: 33, th: 11, r: 12 },
+    kdkd: { text: '쿵덕쿵덕', px: 17, fill: '#ffffff', edge: '#e0102a', glow: '#ff5a5a', tw: 30, th: 7, r: 9 },
   };
   const TEXT_OPT = {};
   for (const [id, d] of Object.entries(TEXT_SHOTS)) TEXT_OPT[id] = { shape: id, r: d.r, tw: d.tw, th: d.th };
@@ -3326,7 +3328,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     let t = wordPics.map[id];
     if (t) return t;
-    const d = TEXT_SHOTS[id] || TEXT_SHOTS.uh;
+    const d = TEXT_SHOTS[id] || TEXT_SHOTS.kd;
     const font = `${d.px}px ${WORD_FONT}`;
     const m = document.createElement('canvas').getContext('2d');
     m.font = font;
@@ -3357,7 +3359,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     // the display font may still be on its way: paint the words again once it is here (asked once)
     if (!wordPics.asked && document.fonts && document.fonts.load) {
       wordPics.asked = true;
-      document.fonts.load(`20px ${WORD_FONT}`, '우흥!').then(() => { wordPics.map = {}; }).catch(() => {});
+      document.fonts.load(`20px ${WORD_FONT}`, '쿵덕콩!').then(() => { wordPics.map = {}; }).catch(() => {});
     }
     return t;
   }
@@ -6531,12 +6533,12 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   const fmtMul = (v) => (Math.round(v * 100) / 100).toString();
   function spawnCruiser(tier) {
-    const hp = ENEMY.cruiser.hp * hpScale() * (0.7 + tier * 0.25) * (run.eventMode ? 0.5 : 1); // 우흥이 comes early: lighter
+    const hp = ENEMY.cruiser.hp * hpScale() * (0.7 + tier * 0.25) * (run.eventMode ? 0.5 : 1); // the event's mid-boss comes early: lighter
     const variant = clamp(run.endless ? skyIdx : stageIndex, 0, CRUISER_NAMES.length - 1);
     boss = addEnemy('cruiser', { move: 'cruiser', step: 'enter', tier, variant: run.eventMode ? 0 : variant, x: W / 2, y: -70, hp, maxHp: hp, xp: 90 + tier * 40 });
     if (run.eventMode) { // the event's own mid-boss instead of a cruiser
       showBanner('이벤트 중간 보스', `${EVENT_NOW.mid.name} 등장! "${EVENT_NOW.mid.cry}"`, 'event');
-      sfx.play('uheung');
+      sfx.play('kungduk');
       music.play('boss');
       announce(`이벤트 중간 보스 ${EVENT_NOW.mid.name}가 나타났어요.`);
       hudDirty = true;
@@ -6565,7 +6567,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     boss = addEnemy('mother', { move: 'mother', step: 'enter', x: W / 2, y: -100, hp, maxHp: hp });
     if (run.eventMode) {
       showBanner('이벤트 보스', `${EVENT_NOW.boss.name} 등장!`, 'event');
-      sfx.play('uheungBig');
+      sfx.play('kungdukBig');
       music.play('final');
       announce(`이벤트 보스 ${EVENT_NOW.boss.name}이 나타났어요. 격추하면 큰 점수를 받아요.`);
       hudDirty = true;
@@ -13111,13 +13113,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 
 
   // ---------- event mode: the event's own bosses ----------
-  // 우흥 대소동: 우흥이, a round space bunny that hops about yelling "우흥!!" (its yells fly at you as words), and the
-  // crowned 우흥 대왕 in place of the mothership. Both are painted here from scratch, still and yelling.
+  // 달토끼 대소동: 달토끼, a round moon rabbit that hops about yelling "쿵덕!!" (the sound of pounding rice cakes; its yells
+  // fly at you as words), and the crowned 달토끼 대왕 in place of the mothership, who flies into a rage at half health.
+  // Both are painted here from scratch: still, yelling, and (the king) furious.
   const EVENT_BOSS_EVERY = 120; // a boss every two minutes in event mode; the first one after a minute
   const EVENT_FIRST = 60;
-  const bossName = (b) => (run.eventMode ? (b.kind === 'mother' ? EVENT_NOW.boss.name : EVENT_NOW.mid.name) : b.kind === 'mother' ? '모선' : CRUISER_NAMES[b.variant || 0] || '순양함');
-  const UH = { skin: '#ffcfe1', skin2: '#ff9fc6', edge: '#e46a9e', line: '#4a1630', inner: '#ff6aa6', blush: 'rgba(255, 86, 146, 0.5)', nose: '#ff4f8f' };
-  function uhEar(g, x, y, a, len, wid) {
+  const bossName = (b) => (run.eventMode ? (b.kind === 'mother' ? `${EVENT_NOW.boss.name}${b.rage ? ' · 분노' : ''}` : EVENT_NOW.mid.name) : b.kind === 'mother' ? '모선' : CRUISER_NAMES[b.variant || 0] || '순양함');
+  const RABBIT = { skin: '#ffcfe1', skin2: '#ff9fc6', edge: '#e46a9e', line: '#4a1630', inner: '#ff6aa6', blush: 'rgba(255, 86, 146, 0.5)', nose: '#ff4f8f' };
+  function rabbitEar(g, x, y, a, len, wid) {
     g.save();
     g.translate(x, y);
     g.rotate(a);
@@ -13127,36 +13130,36 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     g.bezierCurveTo(wid * 1.1, -len * 0.95, wid * 1.5, -len * 0.45, wid, 6);
     g.closePath();
     const grd = g.createLinearGradient(0, -len, 0, 6);
-    grd.addColorStop(0, UH.skin2);
-    grd.addColorStop(1, UH.skin);
+    grd.addColorStop(0, RABBIT.skin2);
+    grd.addColorStop(1, RABBIT.skin);
     g.fillStyle = grd;
     g.fill();
     g.lineWidth = 2.6;
-    g.strokeStyle = UH.line;
+    g.strokeStyle = RABBIT.line;
     g.stroke();
     g.beginPath();
     g.moveTo(-wid * 0.5, 2);
     g.bezierCurveTo(-wid * 0.8, -len * 0.4, -wid * 0.55, -len * 0.8, 0, -len * 0.84);
     g.bezierCurveTo(wid * 0.55, -len * 0.8, wid * 0.8, -len * 0.4, wid * 0.5, 2);
     g.closePath();
-    g.fillStyle = UH.inner;
+    g.fillStyle = RABBIT.inner;
     g.fill();
     g.restore();
   }
-  function uhHead(g, hy, R, deep) {
+  function rabbitHead(g, hy, R, deep, rage) {
     const head = g.createRadialGradient(-R * 0.3, hy - R * 0.4, R * 0.15, 0, hy, R);
-    head.addColorStop(0, '#fff3f8');
-    head.addColorStop(0.55, deep ? '#ffbcd6' : UH.skin);
-    head.addColorStop(1, deep ? '#dd5590' : UH.edge);
+    head.addColorStop(0, rage ? '#ffe2e2' : '#fff3f8');
+    head.addColorStop(0.55, rage ? '#ff8f8f' : deep ? '#ffbcd6' : RABBIT.skin);
+    head.addColorStop(1, rage ? '#c02232' : deep ? '#dd5590' : RABBIT.edge);
     g.fillStyle = head;
     g.beginPath();
     g.arc(0, hy, R, 0, TAU);
     g.fill();
     g.lineWidth = 3;
-    g.strokeStyle = UH.line;
+    g.strokeStyle = RABBIT.line;
     g.stroke();
   }
-  function uhWhiskers(g, y, reach) {
+  function rabbitWhiskers(g, y, reach) {
     g.lineWidth = 1.5;
     g.strokeStyle = 'rgba(74, 22, 48, 0.85)';
     for (const s of [-1, 1]) {
@@ -13168,8 +13171,8 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       }
     }
   }
-  function uhNose(g, y, w) {
-    g.fillStyle = UH.nose;
+  function rabbitNose(g, y, w) {
+    g.fillStyle = RABBIT.nose;
     g.beginPath();
     g.moveTo(-w, y);
     g.quadraticCurveTo(0, y - w * 0.55, w, y);
@@ -13180,30 +13183,30 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     g.arc(-w * 0.3, y - w * 0.05, w * 0.22, 0, TAU);
     g.fill();
   }
-  // 우흥이, still (a ω mouth and goofy eyes) or yelling (eyes squeezed shut, mouth wide open)
-  function paintUheung(g, yell) {
+  // 달토끼, still (a ω mouth and goofy eyes) or yelling (eyes squeezed shut, mouth wide open)
+  function paintMoonRabbit(g, yell) {
     g.lineJoin = 'round';
     g.lineCap = 'round';
     const hy = 8;
-    uhEar(g, -16, hy - 30, -0.36, 46, 9);
-    uhEar(g, 17, hy - 30, 0.22, 44, 9);
+    rabbitEar(g, -16, hy - 30, -0.36, 46, 9);
+    rabbitEar(g, 17, hy - 30, 0.22, 44, 9);
     for (const s of [-1, 1]) { // two little thrusters under the chin
       g.fillStyle = '#9aa6c8';
-      g.strokeStyle = UH.line;
+      g.strokeStyle = RABBIT.line;
       g.lineWidth = 2;
       g.beginPath();
       g.rect(s * 14 - 6, hy + 32, 12, 12);
       g.fill();
       g.stroke();
     }
-    uhHead(g, hy, 40, false);
-    g.fillStyle = UH.blush;
+    rabbitHead(g, hy, 40, false);
+    g.fillStyle = RABBIT.blush;
     for (const s of [-1, 1]) {
       g.beginPath();
       g.ellipse(s * 25, hy + 11, 8.5, 5.5, 0, 0, TAU);
       g.fill();
     }
-    g.strokeStyle = UH.line;
+    g.strokeStyle = RABBIT.line;
     for (const s of [-1, 1]) {
       if (!yell) {
         g.fillStyle = '#ffffff';
@@ -13239,7 +13242,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         g.stroke();
       }
     }
-    uhNose(g, hy + 5, 4.5);
+    rabbitNose(g, hy + 5, 4.5);
     if (!yell) { // ω
       g.lineWidth = 2.4;
       g.beginPath();
@@ -13259,16 +13262,17 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       g.ellipse(0, hy + 29, 6.5, 4, 0, 0, TAU);
       g.fill();
     }
-    uhWhiskers(g, hy + 9, 46);
+    rabbitWhiskers(g, hy + 9, 46);
   }
-  // 우흥 대왕: a crown, a cape with an ermine collar, a curly moustache and very angry brows
-  function paintUheungKing(g, yell) {
+  // 달토끼 대왕: a crown, a cape with an ermine collar, a curly moustache and very angry brows; furious, he goes red,
+  // his eyes burn, a vein pops on his brow and the crown slips
+  function paintRabbitKing(g, yell, rage) {
     g.lineJoin = 'round';
     g.lineCap = 'round';
     const hy = 16;
     const R = 54;
     g.fillStyle = '#5b1fb8';
-    g.strokeStyle = UH.line;
+    g.strokeStyle = RABBIT.line;
     g.lineWidth = 2.6;
     g.beginPath(); // the cape behind
     g.moveTo(-58, hy + 28);
@@ -13278,9 +13282,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     g.closePath();
     g.fill();
     g.stroke();
-    uhEar(g, -26, hy - 40, -0.46, 58, 12);
-    uhEar(g, 26, hy - 40, 0.46, 58, 12);
-    uhHead(g, hy, R, true);
+    rabbitEar(g, -26, hy - 40, -0.46, 58, 12);
+    rabbitEar(g, 26, hy - 40, 0.46, 58, 12);
+    rabbitHead(g, hy, R, true, rage);
     g.fillStyle = '#fff8f0'; // the collar, with ermine tails
     g.beginPath();
     g.ellipse(0, hy + 55, 62, 14, 0, 0, TAU);
@@ -13292,7 +13296,13 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       g.ellipse(i * 13, hy + 55 + (i % 2 ? 4 : -3), 2, 3.6, 0, 0, TAU);
       g.fill();
     }
-    const cy = hy - R + 6; // the crown
+    const cy = hy - R + 6; // the crown (knocked askew in a rage)
+    g.save();
+    if (rage) {
+      g.translate(0, cy);
+      g.rotate(0.2);
+      g.translate(6, -cy - 3);
+    }
     const crown = g.createLinearGradient(0, cy - 36, 0, cy + 8);
     crown.addColorStop(0, '#fff2a8');
     crown.addColorStop(0.5, '#ffcf3a');
@@ -13324,13 +13334,26 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       g.lineWidth = 1.4;
       g.stroke();
     }
-    g.fillStyle = UH.blush;
+    g.restore();
+    if (rage) { // a popping vein on the brow
+      g.strokeStyle = '#ff1f3d';
+      g.lineWidth = 3.4;
+      const vx = R * 0.42;
+      const vy = hy - R * 0.5;
+      for (const [a, b] of [[[-6, -2], [-2, -6]], [[2, -6], [6, -2]], [[6, 2], [2, 6]], [[-2, 6], [-6, 2]]]) {
+        g.beginPath();
+        g.moveTo(vx + a[0], vy + a[1]);
+        g.quadraticCurveTo(vx, vy, vx + b[0], vy + b[1]);
+        g.stroke();
+      }
+    }
+    g.fillStyle = RABBIT.blush;
     for (const s of [-1, 1]) {
       g.beginPath();
       g.ellipse(s * 35, hy + 13, 10, 6, 0, 0, TAU);
       g.fill();
     }
-    g.strokeStyle = UH.line;
+    g.strokeStyle = RABBIT.line;
     for (const s of [-1, 1]) {
       if (!yell) { // stern, heavy lids
         g.fillStyle = '#ffffff';
@@ -13339,11 +13362,17 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         g.ellipse(s * 19, hy - 6, 11, 9.5, 0, 0, TAU);
         g.fill();
         g.stroke();
-        g.fillStyle = '#1b0b16';
+        g.fillStyle = rage ? '#e0102a' : '#1b0b16'; // a rage burns red in the eyes
         g.beginPath();
         g.arc(s * 18, hy - 2.5, 5.5, 0, TAU);
         g.fill();
-        g.fillStyle = '#f7a3c6';
+        if (rage) {
+          g.fillStyle = '#1b0b16';
+          g.beginPath();
+          g.arc(s * 18, hy - 2.5, 2.2, 0, TAU);
+          g.fill();
+        }
+        g.fillStyle = rage ? '#ff9a9a' : '#f7a3c6';
         g.beginPath();
         g.ellipse(s * 19, hy - 7, 12, 10.5, s * -0.3, Math.PI, TAU);
         g.closePath();
@@ -13356,20 +13385,38 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         g.arc(s * 19, hy - 8, 11.5, 0, TAU);
         g.fill();
         g.stroke();
-        g.fillStyle = '#1b0b16';
+        g.fillStyle = rage ? '#e0102a' : '#1b0b16';
         g.beginPath();
-        g.arc(s * 19, hy - 8, 3, 0, TAU);
+        g.arc(s * 19, hy - 8, rage ? 4.2 : 3, 0, TAU);
         g.fill();
       }
-      g.lineWidth = 6.5; // angry brows
+      g.lineWidth = rage ? 8 : 6.5; // angry brows
       g.strokeStyle = '#3b1022';
       g.beginPath();
       g.moveTo(s * 7, hy - (yell ? 24 : 19));
       g.lineTo(s * 33, hy - (yell ? 36 : 28));
       g.stroke();
-      g.strokeStyle = UH.line;
+      g.strokeStyle = RABBIT.line;
     }
-    if (!yell) { // a frown under the moustache
+    if (!yell && rage) { // gritted teeth
+      g.fillStyle = '#ffffff';
+      g.lineWidth = 2.4;
+      g.beginPath();
+      g.rect(-15, hy + 23, 30, 11);
+      g.fill();
+      g.stroke();
+      g.lineWidth = 1.4;
+      for (const x of [-7.5, 0, 7.5]) {
+        g.beginPath();
+        g.moveTo(x, hy + 23);
+        g.lineTo(x, hy + 34);
+        g.stroke();
+      }
+      g.beginPath();
+      g.moveTo(-15, hy + 28.5);
+      g.lineTo(15, hy + 28.5);
+      g.stroke();
+    } else if (!yell) { // a frown under the moustache
       g.lineWidth = 3;
       g.beginPath();
       g.moveTo(-13, hy + 32);
@@ -13389,7 +13436,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       g.ellipse(0, hy + 42, 9, 5, 0, 0, TAU);
       g.fill();
     }
-    uhNose(g, hy + 6, 7);
+    rabbitNose(g, hy + 6, 7);
     g.fillStyle = '#4a2416'; // the moustache, curled up at both ends
     for (const s of [-1, 1]) {
       g.beginPath();
@@ -13401,7 +13448,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       g.closePath();
       g.fill();
     }
-    uhWhiskers(g, hy + 14, 66);
+    rabbitWhiskers(g, hy + 14, 66);
   }
   const eventPics = { k: 0, set: null };
   function eventSprites() { // still and yelling, each with a white copy for the hit flash
@@ -13412,7 +13459,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         const yell = sprite(size, k, (g) => paint(g, true));
         return { size, idle, yell, idleFlash: whiteOf(idle), yellFlash: whiteOf(yell) };
       };
-      eventPics.set = { mid: make(120, paintUheung), boss: make(180, paintUheungKing) };
+      const boss = make(180, paintRabbitKing);
+      const rage = make(180, (g, yell) => paintRabbitKing(g, yell, true));
+      boss.rage = rage;
+      eventPics.set = { mid: make(120, paintMoonRabbit), boss };
       eventPics.k = k;
     }
     return eventPics.set;
@@ -13506,8 +13556,17 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (e.shoutT > 0) drawYell(e, false);
   }
   function drawEventBoss(e) {
-    const spr = eventSprites().boss;
-    glow(dot('#ffd34d'), e.x, e.y + 6, 240, 0.26);
+    const base = eventSprites().boss;
+    const spr = e.rage ? base.rage : base;
+    if (e.rage) { // a red glow that throbs, and steam from both sides of the head
+      glow(dot('#ff3b3b'), e.x, e.y + 6, 270, 0.32 + 0.12 * Math.sin(clock * 8));
+      for (const side of [-1, 1]) {
+        for (let k = 0; k < 3; k++) {
+          const u = (clock * 1.3 + k / 3 + (side > 0 ? 0.5 : 0)) % 1;
+          glow(dot('#ffe4e4'), e.x + side * (62 + u * 14), e.y - 22 - u * 46, 12 + u * 20, (1 - u) * 0.6);
+        }
+      }
+    } else glow(dot('#ffd34d'), e.x, e.y + 6, 240, 0.26);
     drawEventFace(e, spr);
     for (let i = 0; i < 3; i++) { // the crown glints
       const a = clock * 2.2 + i * 2.1;
@@ -13517,26 +13576,26 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   function shoutAt(b, big) {
     b.shoutT = 0.5;
-    sfx.play(big ? 'uheungBig' : 'uheung');
+    sfx.play(big ? 'kungdukBig' : 'kungduk');
   }
   // a row of words falling from the top, with one wide gap somewhere
-  function rainWords(sp) {
+  function rainWords(sp, word = 'kd') {
     const n = 6;
     const gap = Math.floor(rand(0, n));
     const y = Math.max(24, hudBottom + 8);
-    for (let k = 0; k < n; k++) if (k !== gap) addShot((k + 0.5) * (W / n), y, 0, sp, 'coral', TEXT_OPT.uh);
+    for (let k = 0; k < n; k++) if (k !== gap) addShot((k + 0.5) * (W / n), y, 0, sp, 'coral', TEXT_OPT[word] || TEXT_OPT.kd);
   }
-  // 흥! 흥! 흥!: a quick string of words at the ship, one at a time
+  // 콩! 콩! 콩!: a quick string of words at the ship, one at a time
   function wordStream(b, dt, speed) {
     if (!(b.burst > 0)) return;
     b.burstT -= dt;
     if (b.burstT > 0) return;
     b.burst -= 1;
     b.burstT = 0.13;
-    shootAt(b.x, b.y + 30, speed * 1.05, 1, 0, 'amber', TEXT_OPT.heung);
+    shootAt(b.x, b.y + 30, speed * 1.05, 1, 0, 'amber', TEXT_OPT.kong);
   }
-  // 우흥이 hops from side to side and yells: three words at the ship, a ring of words, a quick 흥! string, a big
-  // 우흥!!! that bursts into 흥!s, and (later ones) a rain of words from the top
+  // 달토끼 hops from side to side and yells: three words at the ship, a ring of words, a quick 콩! string, a big
+  // 쿵덕!!! that bursts into 콩!s, and (later ones) a rain of words from the top
   function updateEventMid(b, dt, speed) {
     const top = bossTop() + 4;
     if (b.shoutT > 0) b.shoutT -= dt;
@@ -13558,16 +13617,17 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const v = speed * 0.8;
     const m = b.mode % (b.tier === 0 ? 3 : b.tier === 1 ? 4 : 5);
     shoutAt(b, false);
-    if (m === 0) shootAt(b.x, b.y + 30, v, 3 + b.tier, 18, 'coral', TEXT_OPT.uh);
-    else if (m === 1) ringShot(b.x, b.y + 4, v * 0.62, 8 + b.tier * 2, b.st, 'violet', TEXT_OPT.uh);
+    if (m === 0) shootAt(b.x, b.y + 30, v, 3 + b.tier, 18, 'coral', TEXT_OPT.kd);
+    else if (m === 1) ringShot(b.x, b.y + 4, v * 0.62, 8 + b.tier * 2, b.st, 'violet', TEXT_OPT.kd);
     else if (m === 2) Object.assign(b, { burst: 5 + b.tier * 2, burstT: 0 });
-    else if (m === 3) shootAt(b.x, b.y + 34, v * 0.5, 1, 0, 'violet', { ...TEXT_OPT.uhbig, split: 1.3, n: 8 + b.tier * 2, kidSpeed: v * 0.75, kidTone: 'amber', kid: TEXT_OPT.heung });
+    else if (m === 3) shootAt(b.x, b.y + 34, v * 0.5, 1, 0, 'violet', { ...TEXT_OPT.kdbig, split: 1.3, n: 8 + b.tier * 2, kidSpeed: v * 0.75, kidTone: 'amber', kid: TEXT_OPT.kong });
     else rainWords(v * 0.55);
     b.mode += 1;
     b.cool = Math.max(0.9, 1.6 - b.tier * 0.2) + (m === 4 ? 0.8 : 0);
   }
-  // 우흥 대왕 wears down in three stages: fans and rings of words; a turning spiral of 흥!s with big 우흥!!! bombs;
-  // then rains of words, laser gates and aimed volleys all at once.
+  // 달토끼 대왕 wears down in three stages: fans and rings of words; a turning spiral of 콩!s with big 쿵덕!!! bombs;
+  // then rains of words, laser gates and aimed volleys all at once. At half health he flies into a rage (분노 모드):
+  // red all over, faster, and yelling 쿵덕쿵덕.
   function updateEventBoss(b, dt, speed) {
     const top = bossTop() + 16;
     if (b.shoutT > 0) b.shoutT -= dt;
@@ -13576,14 +13636,27 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     b.y += (top + Math.sin(b.st * 1.3) * 10 - b.y) * Math.min(1, dt * 4); // glides down from where its entrance ended
     const hull = b.hp / b.maxHp;
     const v = speed * 0.85 + 10 * stageIndex;
+    if (!b.rage && hull <= 0.5) { // 분노 모드: red all over, faster, and a ring of 쿵덕쿵덕 to announce it
+      b.rage = true;
+      b.cool = 1.2;
+      shoutAt(b, true);
+      showBanner('분노 모드!', `${EVENT_NOW.boss.name}이 화났어요`, true);
+      shakeBy(10);
+      flash = Math.max(flash, 0.3);
+      ringShot(b.x, b.y + 10, v * 0.55, 12, b.st, 'red', TEXT_OPT.kdkd);
+      sfx.play('alarm');
+      announce(`${EVENT_NOW.boss.name}이 분노 모드에 들어갔어요. 공격이 더 빨라져요.`);
+      hudDirty = true;
+    }
+    const q = b.rage ? 0.78 : 1; // a raging king attacks sooner
     wordStream(b, dt, speed);
     b.cool -= dt;
     if (hull > 0.66) {
       if (b.cool <= 0) {
         const m = b.mode % 3;
         shoutAt(b, true);
-        if (m === 0) shootAt(b.x, b.y + 56, v, 5, 14, 'coral', TEXT_OPT.uh);
-        else if (m === 1) ringShot(b.x, b.y + 10, v * 0.6, 12, b.st, 'violet', TEXT_OPT.uh);
+        if (m === 0) shootAt(b.x, b.y + 56, v, 5, 14, 'coral', TEXT_OPT.kd);
+        else if (m === 1) ringShot(b.x, b.y + 10, v * 0.6, 12, b.st, 'violet', TEXT_OPT.kd);
         else Object.assign(b, { burst: 8, burstT: 0 });
         b.mode += 1;
         b.cool = 1.5;
@@ -13594,31 +13667,35 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           b.spin = (b.spin || 0) + 0.32;
           for (let k = 0; k < 3; k++) {
             const a = b.spin + (k / 3) * TAU;
-            addShot(b.x, b.y + 16, Math.cos(a) * v * 0.6, Math.sin(a) * v * 0.6, 'violet', TEXT_OPT.heung);
+            addShot(b.x, b.y + 16, Math.cos(a) * v * 0.6, Math.sin(a) * v * 0.6, 'violet', TEXT_OPT.kong);
           }
-          b.cool = 0.16;
+          b.cool = 0.16 * q;
           if (!(b.shoutT > 0)) shoutAt(b, true);
         }
       } else if (b.cool <= 0) {
         shoutAt(b, true);
-        for (const dx of [-60, 0, 60]) addShot(b.x + dx, b.y + 44, dx * 0.4, v * 0.45, 'violet', { ...TEXT_OPT.uhbig, split: 1.2, n: 8, kidSpeed: v * 0.7, kidTone: 'amber', kid: TEXT_OPT.heung });
-        b.cool = 1.4;
+        if (b.rage && b.mode % 2) shootAt(b.x, b.y + 56, v, 3, 24, 'red', TEXT_OPT.kdkd); // furious: 쿵덕쿵덕 at the ship
+        else for (const dx of [-60, 0, 60]) addShot(b.x + dx, b.y + 44, dx * 0.4, v * 0.45, 'violet', { ...TEXT_OPT.kdbig, split: 1.2, n: 8, kidSpeed: v * 0.7, kidTone: 'amber', kid: TEXT_OPT.kong });
+        b.mode += 1;
+        b.cool = 1.4 * q;
       }
     } else {
       b.gateT = (b.gateT === undefined ? 3 : b.gateT) - dt;
       if (b.gateT <= 0) {
-        b.gateT = 5;
+        b.gateT = 5 * q;
         laserGate(b, 2);
       }
       b.rainT = (b.rainT === undefined ? 2 : b.rainT) - dt;
       if (b.rainT <= 0) {
-        b.rainT = 4.2;
+        b.rainT = 4.2 * q;
         rainWords(v * 0.5);
         shoutAt(b, true);
       }
       if (b.cool <= 0) {
-        shootAt(b.x, b.y + 56, v * 1.05, 5, 12, 'coral', TEXT_OPT.uh);
-        b.cool = 1;
+        b.mode += 1;
+        if (b.rage && b.mode % 2) shootAt(b.x, b.y + 56, v, 3, 22, 'red', TEXT_OPT.kdkd);
+        else shootAt(b.x, b.y + 56, v * 1.05, 5, 12, 'coral', TEXT_OPT.kd);
+        b.cool = 1 * q;
       }
     }
   }
@@ -13632,7 +13709,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     const g = c.getContext('2d');
     g.scale((px * k) / 120, (px * k) / 120);
     g.translate(60, 66);
-    paintUheung(g, false);
+    paintMoonRabbit(g, false);
     return c;
   }
 
@@ -14857,7 +14934,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       else if (e.kind === 'spinner') ang = e.spin || 0;
       const step = STEPS.indexOf(e.step);
       const flags = (e.flash > 0 ? 1 : 0) | (e.armed ? 2 : 0) | (e.vx > 0 ? 4 : 0) | (e.boss ? 8 : 0) | (e.linkT > 0 ? 16 : 0) | (e.ghost ? 32 : 0)
-        | (e.gold ? 64 : 0) | (e.elite ? 128 : 0) | (e.treasure ? 256 : 0) | (e.shoutT > 0 ? 512 : 0);
+        | (e.gold ? 64 : 0) | (e.elite ? 128 : 0) | (e.treasure ? 256 : 0) | (e.shoutT > 0 ? 512 : 0) | (e.rage ? 1024 : 0);
       body.push(e.id, ENEMY_KINDS.indexOf(e.kind), I16(e.x * 4), I16(e.y * 4), angle16(ang), angle16(e.aim || 0), Math.max(0, step),
         I16((e.st || 0) * 100), I16((e.kind === 'phantom' ? e.alpha : 1) * 1000), flags, I16((e.hp / e.maxHp) * 1000), I16((e.size || 1) * 100), I16(e.r * 10));
     }
@@ -14983,7 +15060,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       e.nx = x;
       e.ny = y;
       Object.assign(e, { angle: ang, rot: ang, spin: ang, aim, step, st, hover: 1, alpha, flash: flags & 1 ? 0.05 : 0, armed: !!(flags & 2), vx: flags & 4 ? 1 : -1,
-        boss: !!(flags & 8), linkT: 0, ghost: !!(flags & 32), gold: !!(flags & 64), elite: !!(flags & 128), treasure: !!(flags & 256), shoutT: flags & 512 ? 0.3 : 0, hp, size, r });
+        boss: !!(flags & 8), linkT: 0, ghost: !!(flags & 32), gold: !!(flags & 64), elite: !!(flags & 128), treasure: !!(flags & 256), shoutT: flags & 512 ? 0.3 : 0, rage: !!(flags & 1024), hp, size, r });
     }
     for (const id of coop.map.keys()) if (!seen.has(id)) coop.map.delete(id);
     enemies.length = 0;
