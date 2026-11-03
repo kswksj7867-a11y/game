@@ -360,6 +360,9 @@ button { font: inherit; color: inherit; }
 .stage-name { font-weight: 700; }
 .stage-about { font-size: 0.8125rem; color: var(--muted); }
 .stage-best { font-family: var(--font-data); font-size: 0.75rem; color: var(--muted); }
+.stage-need { font-family: var(--font-data); font-size: 0.75rem; color: #8ef0b0; }
+.stage-need.is-low { color: #ffb36b; }
+.tree-total { margin: -4px 0 10px; font-family: var(--font-data); font-size: 0.8125rem; color: var(--amber); }
 .stage-art { display: block; width: 96px; height: 34px; margin: 2px 0 1px -4px; }
 .stage-card:disabled .stage-art { filter: grayscale(0.5) brightness(0.8); }
 .stage-state { font-family: var(--font-data); font-size: 0.75rem; color: var(--stage-color, var(--amber)); white-space: nowrap; }
@@ -1290,6 +1293,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
           <p class="wallet" aria-label="보유 코인"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5v9M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4" /></svg><span id="tree-coins">0</span></p>
         </div>
         <p class="lede">코인으로 영구 강화를 사요. 아래 칸은 위 칸을 먼저 올려야 열려요.</p>
+        <p class="tree-total" id="tree-total"></p>
         <div class="tree-tabs" id="tree-tabs"></div>
         <div class="tree" id="tree">
           <svg class="tree-links" id="tree-links" aria-hidden="true"></svg>
@@ -1533,7 +1537,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     vsPanel: $('vs-panel'), vsResult: $('vs-result'), vsResultTitle: $('vs-result-title'), vsResultList: $('vs-result-list'),
     vsLobby: $('vs-lobby'), vsLeave: $('vs-leave'), resultRow: $('result-row'),
     coins: $('coins'), titleCoins: $('title-coins'), coinLine: $('coin-line'), reroll: $('reroll'),
-    openTree1: $('open-tree-1'), openTree2: $('open-tree-2'), treeCoins: $('tree-coins'), treeTabs: $('tree-tabs'),
+    openTree1: $('open-tree-1'), openTree2: $('open-tree-2'), treeCoins: $('tree-coins'), treeTotal: $('tree-total'), treeTabs: $('tree-tabs'),
     tree: $('tree'), treeLinks: $('tree-links'), treeGrid: $('tree-grid'), treeDetail: $('tree-detail'), treeBack: $('tree-back'),
     treeReset: $('tree-reset'), treeConfirm: $('tree-confirm'), treeRefund: $('tree-refund'),
     treeResetCancel: $('tree-reset-cancel'), treeResetOk: $('tree-reset-ok'),
@@ -1604,14 +1608,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 
   // `bias` makes some squads more common in a region so each one plays differently.
   const STAGES = [
-    { name: '달 궤도', style: 'pellet', about: '첫 출격 지역. 적이 천천히 늘어나요.', mul: 1, color: '#a88bff', sky: ['#0d1236', '#070918'], neb: ['#a88bff', '#7fe7ff', '#ff6f91'], planet: '#b9b5d8', bias: {} },
-    { name: '소행성대', style: 'shard', about: '바위와 혜성 사이로 폭격기가 지나가요.', mul: 1.2, color: '#ffa94d', sky: ['#1d1531', '#08070f'], neb: ['#ffa94d', '#ff6f91', '#a88bff'], rocks: true, planet: '#c98b5a', bias: { rocks: 2, comets: 2, bombers: 1.7, minefield: 1.4 } },
-    { name: '푸른 성운', style: 'spore', about: '벌떼와 유령기가 사방에서 몰려와요.', mul: 1.45, color: '#3fe0b2', sky: ['#072a35', '#04080f'], neb: ['#3fe0b2', '#7fe7ff', '#a88bff'], rocks: true, planet: '#3d9fae', bias: { seekers: 2, snake: 2, hsnake: 2, phantoms: 2, splitters: 1.5, ambush: 1.5 } },
-    { name: '사건의 지평선', style: 'needle', about: '광선함과 저격기가 길목을 막아요.', mul: 1.75, color: '#ff5a6e', sky: ['#2a0d1f', '#080409'], neb: ['#ff5a6e', '#a88bff', '#ffa94d'], rocks: true, early: 0.7, planet: '#ff7a45', bias: { lancers: 2, snipers: 2, spinner: 1.6, minefield: 1.5, wall: 1.4 } },
-    { name: '은하 중심', style: 'halo', about: '모함과 수리선을 앞세운 총공세예요.', mul: 2.1, color: '#ffc24b', sky: ['#2a2210', '#0a0805'], neb: ['#ffc24b', '#ff6f91', '#a88bff'], rocks: true, early: 0.55, planet: '#ffd27a', bias: { carrier: 1.7, healers: 1.7, shieldwall: 1.7, spinner: 1.3, lancers: 1.3 } },
-    { name: '얼음 고리', style: 'frost', about: '얼어붙은 고리 사이로 서리 함대가 몰려와요. 쪼개지는 적과 기뢰가 많아요.', mul: 2.35, color: '#9ad8ff', sky: ['#0b2440', '#040a14'], neb: ['#bfe6ff', '#7fe7ff', '#a88bff'], rocks: true, early: 0.55, planet: '#d6f1ff', bias: { splitters: 1.6, minefield: 1.4, rain: 1.25, wall: 1.2, rocks: 1.6, comets: 1.4 } },
-    { name: '기계 성단', style: 'bolt', about: '기계 군단의 포대와 저격기가 빈틈없이 지켜요.', mul: 2.65, color: '#39ff88', sky: ['#0a2a22', '#030a08'], neb: ['#39ff88', '#3fe0b2', '#7fe7ff'], rocks: true, early: 0.5, planet: '#6c7686', bias: { gunner: 1.9, snipers: 1.8, shieldwall: 1.7, lancers: 1.6, tank: 1.5, escort: 1.4 } },
-    { name: '공허의 끝', style: 'void', about: '빛이 사라지는 마지막 지역. 그림자 함대가 사방에서 덮쳐요.', mul: 3, color: '#ff4fd8', sky: ['#1a0826', '#040208'], neb: ['#ff4fd8', '#8a4fff', '#2a1638'], early: 0.45, planet: '#3a1d52', bias: { phantoms: 2.2, ambush: 2, seekers: 1.7, spinner: 1.6, carrier: 1.5, healers: 1.3 } },
+    { name: '달 궤도', style: 'pellet', about: '첫 출격 지역. 적이 천천히 늘어나요.', mul: 1, tough: 0.68, color: '#a88bff', sky: ['#0d1236', '#070918'], neb: ['#a88bff', '#7fe7ff', '#ff6f91'], planet: '#b9b5d8', bias: {} },
+    { name: '소행성대', style: 'shard', about: '바위와 혜성 사이로 폭격기가 지나가요.', mul: 1.2, tough: 0.75, color: '#ffa94d', sky: ['#1d1531', '#08070f'], neb: ['#ffa94d', '#ff6f91', '#a88bff'], rocks: true, planet: '#c98b5a', bias: { rocks: 2, comets: 2, bombers: 1.7, minefield: 1.4 } },
+    { name: '푸른 성운', style: 'spore', about: '벌떼와 유령기가 사방에서 몰려와요.', mul: 1.45, tough: 0.85, color: '#3fe0b2', sky: ['#072a35', '#04080f'], neb: ['#3fe0b2', '#7fe7ff', '#a88bff'], rocks: true, planet: '#3d9fae', bias: { seekers: 2, snake: 2, hsnake: 2, phantoms: 2, splitters: 1.5, ambush: 1.5 } },
+    { name: '사건의 지평선', style: 'needle', about: '광선함과 저격기가 길목을 막아요.', mul: 1.75, tough: 0.8, color: '#ff5a6e', sky: ['#2a0d1f', '#080409'], neb: ['#ff5a6e', '#a88bff', '#ffa94d'], rocks: true, early: 0.7, planet: '#ff7a45', bias: { lancers: 2, snipers: 2, spinner: 1.6, minefield: 1.5, wall: 1.4 } },
+    { name: '은하 중심', style: 'halo', about: '모함과 수리선을 앞세운 총공세예요.', mul: 2.1, tough: 0.78, color: '#ffc24b', sky: ['#2a2210', '#0a0805'], neb: ['#ffc24b', '#ff6f91', '#a88bff'], rocks: true, early: 0.55, planet: '#ffd27a', bias: { carrier: 1.7, healers: 1.7, shieldwall: 1.7, spinner: 1.3, lancers: 1.3 } },
+    { name: '얼음 고리', style: 'frost', about: '얼어붙은 고리 사이로 서리 함대가 몰려와요. 쪼개지는 적과 기뢰가 많아요.', mul: 2.35, tough: 0.85, color: '#9ad8ff', sky: ['#0b2440', '#040a14'], neb: ['#bfe6ff', '#7fe7ff', '#a88bff'], rocks: true, early: 0.55, planet: '#d6f1ff', bias: { splitters: 1.6, minefield: 1.4, rain: 1.25, wall: 1.2, rocks: 1.6, comets: 1.4 } },
+    { name: '기계 성단', style: 'bolt', about: '기계 군단의 포대와 저격기가 빈틈없이 지켜요.', mul: 2.65, tough: 1, color: '#39ff88', sky: ['#0a2a22', '#030a08'], neb: ['#39ff88', '#3fe0b2', '#7fe7ff'], rocks: true, early: 0.5, planet: '#6c7686', bias: { gunner: 1.9, snipers: 1.8, shieldwall: 1.7, lancers: 1.6, tank: 1.5, escort: 1.4 } },
+    { name: '공허의 끝', style: 'void', about: '빛이 사라지는 마지막 지역. 그림자 함대가 사방에서 덮쳐요.', mul: 3, tough: 1.55, color: '#ff4fd8', sky: ['#1a0826', '#040208'], neb: ['#ff4fd8', '#8a4fff', '#2a1638'], early: 0.45, planet: '#3a1d52', bias: { phantoms: 2.2, ambush: 2, seekers: 1.7, spinner: 1.6, carrier: 1.5, healers: 1.3 } },
   ];
   const ENDLESS = STAGES.length; // in the list of places to fight, endless mode comes after every region
   // Stage numbers in records, boards and rooms: regions 1-5 kept theirs, endless mode is 6 (it came right after the
@@ -5957,9 +5961,24 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   const stageRamp = () => (run.endless ? 1 : Math.min(1, 0.25 + run.t / 400));
   // Past six minutes, endless ships also toughen by about a quarter every three minutes, so even a maxed ship meets its end.
   const endlessHp = () => (run.endless ? 1.28 ** Math.max(0, (run.t - 360) / SECTOR_TIME) : 1);
-  const hpScale = () => (1 + dT() / 200 + (dT() / 190) ** 2) * (1 + (stage.mul - 1) * stageRamp()) * endlessHp() * (coop.ally ? 1.5 : 1) * run.risk.enemyHp;
+  // A region's toughness: tuned so that each region asks for about its recommended skill-tree level (endless mode: 1).
+  const tough = () => (run.endless ? 1 : stage.tough || 1);
+  // The skill-tree level (upgrades bought, counted in levels) each region is tuned for: about where a steady pilot on the
+  // starting fighter wins it more often than not. Region 1 needs none.
+  const REC_TREE = [0, 20, 45, 75, 110, 150, 190, 235];
+  const treeLevels = () => {
+    let n = 0;
+    for (const node of NODES.values()) n += Math.min(node.max, (saved.tree[node.id] || 0));
+    return n;
+  };
+  const treeLevelsMax = () => {
+    let n = 0;
+    for (const node of NODES.values()) n += node.max;
+    return n;
+  };
+  const hpScale = () => (1 + dT() / 200 + (dT() / 190) ** 2) * (1 + (stage.mul - 1) * stageRamp()) * endlessHp() * (coop.ally ? 1.5 : 1) * run.risk.enemyHp * tough();
   const bulletSpeed = () => Math.min(270, 125 + dT() * 0.14) * (1 + 0.05 * stageIndex * stageRamp()) * run.risk.bullet;
-  const hitScale = () => (1 + 0.15 * stageIndex * stageRamp()) * (1 + dT() / 600);
+  const hitScale = () => (1 + 0.15 * stageIndex * stageRamp()) * (1 + dT() / 600) * Math.sqrt(tough());
   const fireChance = () => (dT() < 30 ? 0 : Math.min(0.9, 0.1 + dT() / 650) + 0.05 * stageIndex * stageRamp());
   function addEnemy(kind, props) {
     const def = ENEMY[kind];
@@ -6304,7 +6323,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     }
     eShots.length = 0;
     // in endless mode the mothership grows with the clock instead of the region
-    const hp = ENEMY.mother.hp * (run.endless ? Math.max(0.8, hpScale() / 26) : stage.mul);
+    const hp = ENEMY.mother.hp * (run.endless ? Math.max(0.8, hpScale() / 26) : stage.mul * tough());
     boss = addEnemy('mother', { move: 'mother', step: 'enter', x: W / 2, y: -90, hp, maxHp: hp });
     showBanner(run.endless ? '모선 출현' : '최종 보스', '모선 접근', true);
     sfx.play('alarm');
@@ -11149,6 +11168,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     state = 'stages';
     clearField();
     music.stop();
+    const have = treeLevels();
     ui.stageList.replaceChildren(...STAGES.map((s, i) => {
       const open = i < saved.unlocked;
       const b = document.createElement('button');
@@ -11157,11 +11177,17 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       b.disabled = !open;
       b.dataset.stage = String(i);
       b.style.setProperty('--stage-color', s.color);
-      b.innerHTML = '<span class="stage-no"></span><span class="stage-body"><span class="stage-name"></span><span class="stage-about"></span><span class="stage-best"></span></span><span class="stage-state"></span>';
+      b.innerHTML = '<span class="stage-no"></span><span class="stage-body"><span class="stage-name"></span><span class="stage-about"></span><span class="stage-need"></span><span class="stage-best"></span></span><span class="stage-state"></span>';
       b.querySelector('.stage-no').textContent = String(i + 1);
       b.querySelector('.stage-name').textContent = s.name;
       b.querySelector('.stage-name').after(regionPreview(i));
       b.querySelector('.stage-about').textContent = open ? s.about : '앞 지역을 클리어하면 열려요';
+      const need = REC_TREE[i] || 0;
+      const needEl = b.querySelector('.stage-need');
+      if (need) {
+        needEl.textContent = `권장 스킬 트리 ${need}단계 · 지금 ${have}단계`;
+        needEl.classList.toggle('is-low', have < need);
+      } else needEl.remove();
       const best = open ? stageBest(i) : null;
       b.querySelector('.stage-best').textContent = best ? `최고 ${clockText(best.timeMs / 1000)} 버팀 · Lv ${best.level}` : '';
       const st = b.querySelector('.stage-state');
@@ -11585,6 +11611,10 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     else if (isBest && prev) note = `이전 최고 ${fmt(prev.score)}점을 넘었어요.`;
     else if (prev) note = `최고 기록은 ${fmt(prev.score)}점이에요.`;
     else note = '첫 비행 기록이에요.';
+    const need = REC_TREE[stageIndex] || 0;
+    if (!endless && !cleared && !run.coop && !run.vs && treeLevels() < need) { // short of the region's level: say what helps
+      note = `${note} 이 지역은 스킬 트리 ${need}단계쯤이면 깨기 쉬워요 (지금 ${treeLevels()}단계).`;
+    }
     ui.finalNote.textContent = note;
     ui.stTime.textContent = clockText(timeMs / 1000);
     ui.stLevel.textContent = `Lv ${record.level}`;
@@ -14658,6 +14688,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   }
   function renderTree() {
     ui.treeCoins.textContent = fmt(saved.coins);
+    const lv = treeLevels();
+    const nextNeed = REC_TREE.find((n, i) => n > lv && i < saved.unlocked + 1);
+    ui.treeTotal.textContent = `지금 스킬 트리 ${lv}/${treeLevelsMax()}단계${nextNeed ? ` · 다음 지역 권장 ${nextNeed}단계` : ''}`;
     ui.treeTabs.replaceChildren(...TREE.map((br) => {
       const b = document.createElement('button');
       b.type = 'button';
