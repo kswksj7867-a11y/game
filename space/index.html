@@ -794,6 +794,46 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .goal-tier.tf-3 { color: #ff8ae4; }
 .pilot .tt { font-size: 0.875em; }
 
+/* ---------- update news ---------- */
+.title-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.title-top .eyebrow { margin: 0; }
+.patch-btn {
+  appearance: none; position: relative; flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px 0 10px;
+  border: 1px solid rgba(127, 231, 255, 0.45); border-radius: 999px; background: rgba(127, 231, 255, 0.08);
+  color: var(--cyan); font-family: var(--font-ui); font-size: 0.8125rem; font-weight: 700; line-height: 1; cursor: pointer;
+}
+.patch-btn::after { content: ""; position: absolute; inset: -6px -4px; } /* a bigger target for thumbs */
+.patch-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.patch-dot { position: absolute; top: -3px; right: -2px; width: 10px; height: 10px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 0 2px var(--void), 0 0 10px rgba(255, 90, 110, 0.8); }
+.patch-dot[hidden] { display: none; }
+.patch-sheet { display: flex; flex-direction: column; overflow: hidden; }
+.patch-sheet:focus { outline: none; } /* it takes the focus when it opens, so phones show no ring on a button */
+.patch-sheet .sheet-head { flex: none; align-items: flex-start; }
+.patch-head { display: grid; gap: 2px; min-width: 0; }
+.patch-head .eyebrow, .patch-head .panel-title { margin: 0; }
+.patch-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: grid; align-content: start; gap: 10px; }
+.patch-day { border: 1px solid var(--line); border-radius: 16px; background: rgba(255, 255, 255, 0.03); }
+.patch-day.is-new { border-color: rgba(255, 194, 75, 0.55); background: rgba(255, 194, 75, 0.06); }
+.patch-date { display: flex; align-items: center; gap: 8px; margin: 0; padding: 12px 14px; font-family: var(--font-ui); font-size: 1rem; font-weight: 700; }
+summary.patch-date { list-style: none; cursor: pointer; }
+summary.patch-date::-webkit-details-marker { display: none; }
+summary.patch-date::after {
+  content: ""; flex: none; width: 8px; height: 8px; margin: 0 4px 0 auto; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted);
+  rotate: 45deg; translate: 0 -2px; transition: rotate 0.2s, translate 0.2s;
+}
+details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
+.patch-date small { font-family: var(--font-data); font-size: 0.75rem; font-weight: 600; color: var(--muted); }
+.patch-new { padding: 3px 7px 2px; border-radius: 6px; background: var(--amber); color: var(--on-amber); font-family: var(--font-data); font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.08em; line-height: 1; }
+.patch-items { list-style: none; margin: 0; padding: 0 14px 14px; display: grid; gap: 12px; }
+.patch-items li { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; row-gap: 3px; align-items: start; }
+.patch-kind { grid-row: span 2; margin-top: 1px; padding: 3px 6px 2px; border-radius: 6px; font-size: 0.6875rem; font-weight: 700; line-height: 1.2; white-space: nowrap; }
+.patch-kind.is-new { background: rgba(127, 231, 255, 0.14); color: var(--cyan); }
+.patch-kind.is-up { background: rgba(255, 194, 75, 0.16); color: var(--amber); }
+.patch-kind.is-fix { background: rgba(63, 224, 178, 0.16); color: var(--teal); }
+.patch-items b { font-size: 0.9375rem; font-weight: 700; line-height: 1.3; }
+.patch-text { font-size: 0.8125rem; line-height: 1.5; color: var(--muted); }
+.patch-ok { flex: none; margin-top: 14px; }
+
 /* ---------- missions and achievements ---------- */
 .row-goals { grid-template-columns: 1fr 1fr; }
 .row-goals:has(#open-together[hidden]) #open-goals { grid-column: 1 / -1; }
@@ -1135,7 +1175,14 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
       </div>
 
       <section class="overlay" id="screen-title" aria-labelledby="game-title">
-        <p class="eyebrow">작전명</p>
+        <div class="title-top">
+          <p class="eyebrow">작전명</p>
+          <button type="button" class="patch-btn" id="open-patch">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4a1 1 0 0 0 1 1h2l5 4V5L7 9H5a1 1 0 0 0-1 1z" /><path d="M16 9.5a3.5 3.5 0 0 1 0 5M18.5 7a7 7 0 0 1 0 10" /></svg>
+            업데이트 소식
+            <span class="patch-dot" id="patch-dot" hidden></span>
+          </button>
+        </div>
         <h1 class="title" id="game-title">전투의 <span class="title-big">미</span></h1>
         <p class="lede">13분을 버티면 마지막에 모선이 나타나요. 모선을 격추하면 다음 지역이 열려요.</p>
         <div class="kept" id="kept-box" hidden>
@@ -1508,6 +1555,22 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
   </div>
 </dialog>
 
+<dialog id="dlg-patch" aria-labelledby="patch-title">
+  <div class="sheet patch-sheet" tabindex="-1" autofocus>
+    <div class="sheet-head">
+      <div class="patch-head">
+        <p class="eyebrow">패치 노트</p>
+        <h2 class="panel-title" id="patch-title">업데이트 소식</h2>
+      </div>
+      <button type="button" class="icon-btn" id="patch-close" aria-label="닫기">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+      </button>
+    </div>
+    <div class="patch-list" id="patch-list"></div>
+    <button type="button" class="btn btn-primary patch-ok" id="patch-ok">확인</button>
+  </div>
+</dialog>
+
 <script>
 (() => {
   'use strict';
@@ -1566,6 +1629,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     keptBox: $('kept-box'), keptInfo: $('kept-info'), keptGo: $('kept-go'), keptDrop: $('kept-drop'), boardModes: $('board-modes'), boardFoot: $('board-foot'),
     onlineBox: $('online-box'), onlineCount: $('online-count'), onlineList: $('online-list'), onlineNote: $('online-note'), friendsOn: $('friends-on'), tgOnlineJump: $('tg-online-jump'),
     invite: $('invite'), inviteText: $('invite-text'), inviteGo: $('invite-go'), inviteNo: $('invite-no'),
+    patch: $('dlg-patch'), patchList: $('patch-list'), patchOk: $('patch-ok'), patchClose: $('patch-close'), openPatch: $('open-patch'), patchDot: $('patch-dot'),
   };
   const ctx = ui.canvas.getContext('2d');
 
@@ -15157,7 +15221,7 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 
   const MOVE_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyA', 'KeyD', 'KeyW', 'KeyS', 'ShiftLeft', 'ShiftRight']);
   window.addEventListener('keydown', (e) => {
-    if (ui.records.open || ui.nameDialog.open || (e.target && e.target.tagName === 'INPUT')) return;
+    if (ui.records.open || ui.nameDialog.open || ui.patch.open || (e.target && e.target.tagName === 'INPUT')) return;
     if (state === 'choice' && /^Digit[1-9]$/.test(e.code)) {
       choose(Number(e.code.slice(5)) - 1);
       e.preventDefault();
@@ -15924,6 +15988,108 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     window.requestAnimationFrame(tick);
   }
 
+  // ---------- update news ----------
+  // What changed, newest first. For every update, add an entry at the top with a new id: everyone who opens the
+  // game sees the window once (until the next entry), and the button on the title screen opens it any time.
+  // Kinds: new = 신규, up = 개선, fix = 수정.
+  const PATCH_NOTES = [
+    {
+      id: '2026-11-03', date: '11월 3일',
+      items: [
+        ['new', '업데이트 소식', '게임에 들어오면 새로 바뀐 점을 이 창으로 알려 드려요. 처음 화면 위쪽의 업데이트 소식 버튼으로 언제든 다시 볼 수 있어요.'],
+        ['up', '지역마다 권장 스킬 트리', "지역 카드에 '권장 스킬 트리 N단계'가 보여요. 달 궤도부터 얼음 고리까지는 쉬워지고, 공허의 끝은 더 어려워졌어요. 지고 나면 스킬 트리를 몇 단계쯤 찍으면 좋을지도 알려 줘요."],
+        ['up', '렉 줄이기', '그림은 그대로 두고 폰이 화면을 그리는 일을 30~40% 줄였어요. 적과 총알이 많아도 덜 끊겨요.'],
+        ['new', '특별 궁극기 3종', '오로라 장막, 은하 함대, 시간 정지가 생겼어요. 조합은 일시정지 화면의 합체 레시피에서 볼 수 있어요.'],
+        ['fix', '초대 안내 문구', '방에 친구를 초대한 뒤 안내 문구가 바로 사라지던 문제를 고쳤어요.'],
+      ],
+    },
+    {
+      id: '2026-11-02', date: '11월 2일',
+      items: [
+        ['new', '새 지역 3곳', '얼음 고리, 기계 성단, 공허의 끝이 생겼어요. 지역마다 적의 모양과 공격이 달라요.'],
+        ['new', '새 전투기 9종', '하이브, 오로라, 템페스트, 팔콘, 퀘이사, 루멘, 벌컨, 리코셰, 히드라가 격납고에 들어왔어요. 비싼 전투기일수록 세고, 격납고에서 전투력을 볼 수 있어요.'],
+        ['up', '궁극 합체 두 번', '한 판에 궁극 합체를 두 번까지 할 수 있고, 스킬 트리에 궁극 강화 7종이 생겼어요. 무한 모드는 합체와 궁극 합체에 제한이 없어요.'],
+        ['new', '멈춘 판 이어하기', '판 도중에 게임을 닫아도 다음에 처음 화면에서 이어서 할 수 있어요.'],
+        ['new', '순위표 칭호, 협동·대결 순위', '순위표에 조종사 칭호가 함께 보이고, 협동과 대결 순위가 따로 생겼어요.'],
+        ['new', '접속 중인 조종사', '누가 접속 중인지 보이고, 접속 중인 친구를 내 방으로 초대할 수 있어요.'],
+        ['up', '협동 이어가기', '협동 중에 잠깐 다른 앱에 다녀와도 판이 그대로 이어져요.'],
+        ['up', '새 그림', '비상 보호막은 비눗방울처럼, 보물선은 진짜 보물선처럼 보여요.'],
+        ['fix', '자잘한 고침', '사라졌던 전투기를 되찾아 드리고, 다른 앱에 다녀온 뒤 소리가 안 나던 문제를 고쳤어요. 코인 버는 양도 조정했어요.'],
+      ],
+    },
+    {
+      id: '2026-11-01', date: '11월 1일',
+      items: [
+        ['new', '새 이름, 전투의 미', "게임 이름이 '전투의 미'로 바뀌었어요."],
+        ['new', '친구와 대결', '방 번호나 초대 링크로 4명까지 같이 겨뤄요. 실시간 순위를 보며 상대에게 적을 보낼 수 있어요.'],
+        ['new', '협동 모드', '친구와 둘이 한 전장에서 함께 싸워요.'],
+        ['new', '미션·업적·칭호', '매일 바뀌는 미션과 업적이 생겼어요. 업적을 깨면 칭호를 얻어요.'],
+        ['new', '주간 순위', '순위표에서 이번 주 순위와 역대 순위를 따로 볼 수 있어요.'],
+        ['new', '판마다 다른 전투', '랜덤 이벤트, 위험 카드, 지역마다 다른 순양함이 나와요.'],
+        ['new', '빠른 채팅', '방, 대결, 협동 중에 짧은 말을 바로 보낼 수 있어요.'],
+        ['new', '격납고, 무한 모드, 궁극 합체', '코인으로 새 전투기를 사고, 끝없이 이어지는 무한 모드에서 기록을 겨뤄요. 합체 스킬 두 개로 궁극 합체도 할 수 있어요.'],
+      ],
+    },
+  ];
+  const PATCH_KEY = 'galaxy-defense:patch-seen';
+  const PATCH_KINDS = { new: '신규', up: '개선', fix: '수정' };
+  const patchSeen = () => {
+    try {
+      return window.localStorage.getItem(PATCH_KEY) === PATCH_NOTES[0].id;
+    } catch {
+      return true; // no storage: don't open the window on every visit
+    }
+  };
+  function renderPatch() {
+    ui.patchList.replaceChildren(...PATCH_NOTES.map((note, i) => {
+      const box = document.createElement(i ? 'details' : 'section'); // the newest is open, older ones fold
+      box.className = i ? 'patch-day' : 'patch-day is-new';
+      const head = document.createElement(i ? 'summary' : 'h3');
+      head.className = 'patch-date';
+      const tag = document.createElement(i ? 'small' : 'span');
+      if (!i) tag.className = 'patch-new';
+      tag.textContent = i ? `${note.items.length}가지` : 'NEW';
+      head.append(note.date, tag);
+      const list = document.createElement('ul');
+      list.className = 'patch-items';
+      for (const [kind, title, text] of note.items) {
+        const li = document.createElement('li');
+        const k = document.createElement('span');
+        k.className = `patch-kind is-${kind}`;
+        k.textContent = PATCH_KINDS[kind];
+        const b = document.createElement('b');
+        b.textContent = title;
+        const p = document.createElement('span');
+        p.className = 'patch-text';
+        p.textContent = text;
+        li.append(k, b, p);
+        list.append(li);
+      }
+      box.append(head, list);
+      return box;
+    }));
+  }
+  function openPatch() {
+    if (!ui.patchList.firstChild) renderPatch();
+    for (const d of ui.patchList.querySelectorAll('details')) d.open = false;
+    if (!ui.patch.open) ui.patch.showModal();
+    ui.patchList.scrollTop = 0;
+    if (window.matchMedia('(pointer: fine)').matches) ui.patchOk.focus(); // with a keyboard, Enter closes it
+  }
+  ui.openPatch.addEventListener('click', openPatch);
+  ui.patchOk.addEventListener('click', () => ui.patch.close());
+  ui.patchClose.addEventListener('click', () => ui.patch.close());
+  ui.patch.addEventListener('click', (e) => {
+    if (e.target === ui.patch) ui.patch.close(); // a tap outside the sheet
+  });
+  ui.patch.addEventListener('close', () => {
+    try {
+      window.localStorage.setItem(PATCH_KEY, PATCH_NOTES[0].id);
+    } catch {}
+    ui.patchDot.hidden = true;
+    if (state === 'title' && !touchInput()) ui.start.focus({ preventScroll: true });
+  });
+
   // ---------- start ----------
   makeStars();
   renderToggles();
@@ -15938,8 +16104,9 @@ dialog[open] .sheet { animation: rise 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
     if (board.on && code && /^[0-9]{4}$/.test(code)) {
       showTogether();
       vsJoin(code);
-    }
+    } else if (!patchSeen()) openPatch(); // once per update: what changed since the last visit
   }
+  ui.patchDot.hidden = patchSeen();
   window.requestAnimationFrame(tick);
 })();
 </script>
