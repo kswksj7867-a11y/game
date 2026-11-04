@@ -1348,7 +1348,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
           </div>
           <p class="wallet" aria-label="보유 코인"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5v9M9.5 9.5h4a1.5 1.5 0 0 1 0 3h-3a1.5 1.5 0 0 0 0 3h4" /></svg><span id="tree-coins">0</span></p>
         </div>
-        <p class="lede">코인으로 영구 강화를 사요. 아래 칸은 위 칸을 먼저 올려야 열려요.</p>
+        <p class="lede">코인으로 영구 강화를 사요. 아래 칸은 위 칸을 먼저 올려야 열리고, 지역을 하나 깰 때마다 아래로 한 줄씩 더 열려요.</p>
         <p class="tree-total" id="tree-total"></p>
         <div class="tree-tabs" id="tree-tabs"></div>
         <div class="tree" id="tree">
@@ -1362,6 +1362,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
         </div>
         <div class="confirm" id="tree-confirm" hidden>
           <p>스킬 트리를 처음으로 되돌리고 쓴 코인 <b id="tree-refund">0</b>개를 모두 돌려받을까요?</p>
+          <p class="note" id="tree-refund-note" hidden>아직 안 열린 줄의 강화는 그 지역을 깰 때까지 다시 살 수 없어요.</p>
           <div class="row">
             <button type="button" class="btn" id="tree-reset-cancel">취소</button>
             <button type="button" class="btn btn-danger" id="tree-reset-ok">되돌리기</button>
@@ -1613,7 +1614,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     openTree1: $('open-tree-1'), openTree2: $('open-tree-2'), treeCoins: $('tree-coins'), treeTotal: $('tree-total'), treeTabs: $('tree-tabs'),
     tree: $('tree'), treeLinks: $('tree-links'), treeGrid: $('tree-grid'), treeDetail: $('tree-detail'), treeBack: $('tree-back'),
     treeReset: $('tree-reset'), treeConfirm: $('tree-confirm'), treeRefund: $('tree-refund'),
-    treeResetCancel: $('tree-reset-cancel'), treeResetOk: $('tree-reset-ok'),
+    treeResetCancel: $('tree-reset-cancel'), treeResetOk: $('tree-reset-ok'), treeRefundNote: $('tree-refund-note'),
     titleBest: $('title-best'), start: $('start'), stageList: $('stage-list'), stagesBack: $('stages-back'),
     choiceEyebrow: $('choice-eyebrow'), choiceTitle: $('choice-title'), cards: $('cards'), choiceSlots: $('choice-slots'), choiceRecipes: $('choice-recipes'), choiceUlts: $('choice-ults'), choiceUltHead: $('choice-ult-head'), ultFamily: $('ult-family'), recipesMore: $('recipes-more'),
     ultGuide: $('ult-guide'), pauseInfo: $('pause-info'), pauseWait: $('pause-wait'), pauseWaitText: $('pause-wait-text'), pauseAlone: $('pause-alone'), pauseSlots: $('pause-slots'), recipes: $('recipes'), resume: $('resume'), quit: $('quit'),
@@ -1887,7 +1888,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     phoenix: { name: '불사조', pair: ['fire', 'guard'], color: '#ff9b4a', icon: 'phoenix', about: '불꽃 새가 날아들며 적을 태우고 체력을 채워 줘요' },
     hole: { name: '블랙홀', pair: ['energy', 'guard'], color: '#b48cff', icon: 'hole', about: '적이 몰린 곳에 블랙홀을 열어 빨아들이고 터뜨려요' },
     // special ultimates: one particular pair of combined skills makes them (in place of what their families would make)
-    aurora: { name: '오로라 장막', sig: ['laser', 'nova'], color: '#7dffc8', icon: 'aurora', about: '빛의 장막이 화면 아래에서 위로 휩쓸며 모든 적을 태우고 적 총알을 지워요' },
+    aurora: { name: '오로라 장막', sig: ['laser', 'nova'], color: '#7dffc8', icon: 'aurora', about: '8초마다 빛의 장막이 화면 아래에서 위로 휩쓸며 모든 적을 태우고 적 총알을 지워요' },
     armada: { name: '은하 함대', sig: ['missile', 'drones'], color: '#9ad8ff', icon: 'fleet', about: '아군 전투기 편대가 날아올라 앞의 적에게 탄막을 퍼부어요' },
     chrono: { name: '시간 정지', sig: ['lightning', 'aura'], color: '#c9b6ff', icon: 'clock', about: '시간을 멈춰 적과 적 총알이 얼어붙고, 다시 흐를 때 멈췄던 적이 한꺼번에 피해를 받아요' },
     // region rewards (see REWARDS): until their region is cleared, the same pair makes its families' ultimate as before
@@ -2396,7 +2397,13 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     const g = n.max >= 10 ? 1.28 : n.max >= 8 ? 1.33 : n.max >= 6 ? 1.4 : n.max >= 5 ? 1.45 : 1.55;
     return Math.round((n.cost * g ** r) / 5) * 5;
   }
-  const nodeOpen = (n) => !n.req || rank(n.req[0]) >= n.req[1];
+  // The tree opens a row at a time: the top row from the start, one more row for each region cleared (the ninth row,
+  // at the bottom of the ultimate branch, once all eight are). Levels bought before this rule keep working; they
+  // just can't go higher until their row is open.
+  const clearsNow = () => saved.cleared.slice(0, STAGES.length).filter(Boolean).length;
+  const rowOpen = (n) => n.row <= clearsNow();
+  const rowNodes = (row) => [...NODES.values()].filter((n) => n.row === row).length;
+  const nodeOpen = (n) => rowOpen(n) && (!n.req || rank(n.req[0]) >= n.req[1]);
   function spentCoins() {
     let total = 0;
     for (const n of NODES.values()) for (let r = 0; r < rank(n.id); r++) total += nodeCost(n, r);
@@ -7969,8 +7976,8 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     } else if (w.ult === 'aurora') { // a curtain of light sweeps up the whole screen
       w.cd -= dt;
       if (w.cd <= 0) {
-        w.cd += 3.2 * cdMul;
-        ufx.push({ type: 'wave', y0: H + 30, y: H + 30, t: 0, T: 1.5, w: 64 * A, dmg: 150 * K, hit: new Set() });
+        w.cd += 8 * cdMul; // it wiped the whole screen every 3.2 seconds before: far too often
+        ufx.push({ type: 'wave', y0: H + 30, y: H + 30, t: 0, T: 1.5, w: 64 * A, dmg: 180 * K, hit: new Set() });
         sfx.play('nova');
       }
     } else if (w.ult === 'armada') { // a flight of friendly fighters climbs past the ship, firing ahead
@@ -12066,7 +12073,8 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
       if (rw) {
         const got = !!saved.cleared[i];
         rwEl.innerHTML = svgIcon(got ? 'check' : rw.kind === 'evo' ? 'merge' : 'ult');
-        rwEl.append(`${got ? '받은 보상' : '클리어 보상'}: ${rewardKind(rw)} '${rewardName(rw)}'`);
+        const cells = rowNodes(i + 1);
+        rwEl.append(`${got ? '받은 보상' : '클리어 보상'}: ${rewardKind(rw)} '${rewardName(rw)}'${cells ? ` · 스킬 트리 ${cells}칸` : ''}`);
         rwEl.classList.toggle('is-got', got);
       } else rwEl.remove();
       const best = open ? stageBest(i) : null;
@@ -12515,7 +12523,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     const reward = firstClear ? REWARDS[stageIndex] : null;
     ui.rewardLine.hidden = !reward;
     if (reward) {
-      ui.rewardLine.textContent = `${rewardKind(reward)} '${rewardName(reward)}'${particle(rewardName(reward), '이', '가')} 열렸어요! ${rewardRecipe(reward)} 조합으로 ${reward.kind === 'evo' ? '보급 상자에서 합체해요' : '궁극 합체를 하면 나와요'}. 무한 모드에서도 써요.`;
+      ui.rewardLine.textContent = `${rewardKind(reward)} '${rewardName(reward)}'${particle(rewardName(reward), '이', '가')} 열렸어요! ${rewardRecipe(reward)} 조합으로 ${reward.kind === 'evo' ? '보급 상자에서 합체해요' : '궁극 합체를 하면 나와요'}. 무한 모드에서도 써요.${rowNodes(stageIndex + 1) ? ` 스킬 트리도 ${rowNodes(stageIndex + 1)}칸 더 열렸어요.` : ''}`;
       if (!fresh.length) sfx.play('evolve');
     }
     ui.resultWarn.hidden = stored;
@@ -15580,7 +15588,8 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     ui.treeCoins.textContent = fmt(saved.coins);
     const lv = treeLevels();
     const nextNeed = REC_TREE.find((n, i) => n > lv && i < saved.unlocked + 1);
-    ui.treeTotal.textContent = `지금 스킬 트리 ${lv}/${treeLevelsMax()}단계${nextNeed ? ` · 다음 지역 권장 ${nextNeed}단계` : ''}`;
+    const more = rowNodes(clearsNow() + 1);
+    ui.treeTotal.textContent = `지금 스킬 트리 ${lv}/${treeLevelsMax()}단계${nextNeed ? ` · 다음 지역 권장 ${nextNeed}단계` : ''}${more ? ` · 지역을 하나 더 깨면 ${more}칸이 더 열려요` : ''}`;
     ui.treeTabs.replaceChildren(...TREE.map((br) => {
       const b = document.createElement('button');
       b.type = 'button';
@@ -15620,11 +15629,14 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     b.querySelector('.tn-pips').innerHTML = Array.from({ length: n.max }, (_, i) => `<i${i < r ? ' class="on"' : ''}></i>`).join('');
     const costEl = b.querySelector('.tn-cost');
     if (max) costEl.textContent = '최대';
-    else {
+    else if (!rowOpen(n)) { // this row waits for a region to be cleared
+      costEl.innerHTML = svgIcon('lock');
+      costEl.append(`${n.row}지역 클리어`);
+    } else {
       costEl.innerHTML = svgIcon('coin');
       costEl.append(fmt(cost));
     }
-    b.setAttribute('aria-label', `${n.name}, Lv ${r}/${n.max}${!open ? ', 잠김' : max ? ', 최대' : `, ${cost}코인`}`);
+    b.setAttribute('aria-label', `${n.name}, Lv ${r}/${n.max}${!rowOpen(n) ? `, 잠김, ${n.row}지역을 클리어하면 열려요` : !open ? ', 잠김' : max ? ', 최대' : `, ${cost}코인`}`);
     b.setAttribute('aria-pressed', String(treeSel === n.id));
     return b;
   }
@@ -15654,10 +15666,12 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     const parts = [head];
     parts.push(line('지금', r ? n.about(r) : '아직 배우지 않았어요'));
     if (!max) parts.push(line('다음', n.about(r + 1)));
-    if (!open) {
+    if (!rowOpen(n)) parts.push(line('필요', `${n.row}지역 ${STAGES[n.row - 1].name}까지 클리어`, 'is-req'));
+    if (n.req && rank(n.req[0]) < n.req[1]) {
       const parent = NODES.get(n.req[0]);
       parts.push(line('필요', `${parent.name} Lv ${n.req[1]} 이상`, 'is-req'));
     }
+    if (r && !rowOpen(n)) parts.push(line('참고', '이미 배운 단계는 그대로 효과가 있어요. 더 올리려면 지역을 깨야 해요.'));
     const buy = document.createElement('button');
     buy.type = 'button';
     buy.className = 'btn btn-primary td-buy';
@@ -16509,6 +16523,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
   });
   ui.treeReset.addEventListener('click', () => {
     ui.treeRefund.textContent = fmt(saved.spent);
+    ui.treeRefundNote.hidden = ![...NODES.values()].some((n) => rank(n.id) > 0 && !rowOpen(n)); // levels held in rows not open yet
     ui.treeConfirm.hidden = false;
     ui.treeResetCancel.focus();
   });
@@ -16820,8 +16835,10 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
   // Kinds: new = 신규, up = 개선, fix = 수정.
   const PATCH_NOTES = [
     {
-      id: '2026-11-04', date: '11월 4일',
+      id: '2026-11-04b', date: '11월 4일',
       items: [
+        ['up', '스킬 트리가 지역마다 열려요', '처음에는 스킬 트리 맨 윗줄만 열려 있고, 지역을 처음 깰 때마다 아래로 한 줄씩 더 열려요(맨 아랫줄은 8지역까지 깨면). 잠긴 칸에는 몇 지역을 깨야 하는지 보여요. 이미 배운 강화는 그대로 효과가 있어요.'],
+        ['up', '오로라 장막 조정', '너무 자주 나와서 재사용 시간을 3.2초에서 8초로 늘렸어요. 대신 한 번 휩쓸 때의 피해는 조금 올렸어요(150 → 180).'],
         ['new', '지역 클리어 보상', '지역을 처음 깰 때마다 새 스킬이 하나씩 열려요. 지역 카드에 어떤 보상인지 보여요. 열지 못한 스킬은 무한 모드에서도 쓸 수 없어요. 이미 깬 지역의 보상은 바로 열려 있어요.'],
         ['new', '새 합체 스킬 4종', '같은 무기라도 다른 장비와 합체하면 새 스킬이 돼요. 반사 역장(역장 + 강화 장갑), 집속 미사일(유도 미사일 + 확산기), 사냥꾼 드론(궤도 드론 + 증폭기), 프리즘 광선(레이저 + 행운 부적).'],
         ['new', '새 궁극기 4종', '작은 태양(화염 방사기 + 역장), 궤도 폭격(유도 미사일 + 레이저), 칼날 폭풍(회전 톱날 + 궤도 드론), 번개 용(번개 + 주포). 두 무기의 합체 스킬로 궁극 합체를 하면 나와요.'],
