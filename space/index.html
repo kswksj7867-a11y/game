@@ -362,6 +362,9 @@ button { font: inherit; color: inherit; }
 .stage-best { font-family: var(--font-data); font-size: 0.75rem; color: var(--muted); }
 .stage-need { font-family: var(--font-data); font-size: 0.75rem; color: #8ef0b0; }
 .stage-need.is-low { color: #ffb36b; }
+.stage-reward { display: flex; align-items: center; gap: 5px; font-size: 0.75rem; font-weight: 600; color: #ffd27a; }
+.stage-reward svg { flex: none; width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.stage-reward.is-got { color: #c9b6ff; }
 .tree-total { margin: -4px 0 10px; font-family: var(--font-data); font-size: 0.8125rem; color: var(--amber); }
 .stage-art { display: block; width: 96px; height: 34px; margin: 2px 0 1px -4px; }
 .stage-card:disabled .stage-art { filter: grayscale(0.5) brightness(0.8); }
@@ -502,6 +505,10 @@ button { font: inherit; color: inherit; }
 .recipe.is-hot { border-color: rgba(127, 231, 255, 0.55); color: var(--ink); }
 .recipe.is-hot.is-ready { border-color: var(--amber); }
 .recipe.is-special b { color: #c9b6ff; }
+.recipe.is-alt b { color: #ffb3f0; }
+.recipe.is-locked { opacity: 0.6; border-style: dashed; }
+.recipe.is-locked b { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); white-space: normal; text-align: right; }
+.recipe b svg { flex: none; width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .recipes.is-compact { gap: 4px; }
 .recipes-sub { margin: 12px 0 0; font-size: 0.8125rem; font-weight: 700; color: var(--amber); }
 .recipes-sub[hidden] { display: none; }
@@ -865,6 +872,8 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
 .goal-btn.is-on { border-color: var(--cyan); color: var(--cyan); }
 .goal-bonus { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px dashed rgba(255, 194, 75, 0.5); border-radius: 14px; font-size: 0.8125rem; color: var(--amber); }
 .achv-line { font-size: 0.875rem; font-weight: 700; color: var(--amber); }
+.reward-line { padding: 10px 12px; border: 1px solid rgba(255, 179, 240, 0.6); border-radius: 14px; background: rgba(255, 179, 240, 0.1); font-size: 0.875rem; font-weight: 700; color: #ffb3f0; }
+.reward-line[hidden] { display: none; }
 .toast {
   position: absolute; z-index: 6; left: 50%; top: 64px; max-width: calc(100% - 32px); transform: translateX(-50%);
   padding: 10px 16px; border: 1px solid rgba(255, 194, 75, 0.6); border-radius: 14px; background: rgba(13, 18, 54, 0.95);
@@ -1427,6 +1436,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
         </dl>
         <p class="coin-line" id="coin-line"></p>
         <p class="achv-line" id="achv-line" hidden></p>
+        <p class="reward-line" id="reward-line" hidden></p>
         <div class="board-box" id="board-box">
           <p class="board-status" id="board-status" hidden></p>
           <form class="name-form" id="result-name-form" hidden>
@@ -1589,7 +1599,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     },
     openHangar: $('open-hangar'), titleShip: $('title-ship'), hangarCoins: $('hangar-coins'), shipGrid: $('ship-grid'),
     shipDetail: $('ship-detail'), hangarBack: $('hangar-back'),
-    quitNote: $('quit-note'), ultNote: $('ult-note'), toast: $('toast'), achvLine: $('achv-line'),
+    quitNote: $('quit-note'), ultNote: $('ult-note'), toast: $('toast'), achvLine: $('achv-line'), rewardLine: $('reward-line'),
     openGoals: $('open-goals'), goalsBadge: $('goals-badge'), goalsPill: $('goals-pill'), goalsTabs: document.querySelectorAll('[data-goals]'),
     goalsDaily: $('goals-daily'), goalsAchv: $('goals-achv'), missionList: $('mission-list'), missionBonus: $('mission-bonus'),
     missionReset: $('mission-reset'), achvSum: $('achv-sum'), achvList: $('achv-list'), goalsBack: $('goals-back'), achvFilter: $('achv-filter'),
@@ -1880,10 +1890,15 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     aurora: { name: '오로라 장막', sig: ['laser', 'nova'], color: '#7dffc8', icon: 'aurora', about: '빛의 장막이 화면 아래에서 위로 휩쓸며 모든 적을 태우고 적 총알을 지워요' },
     armada: { name: '은하 함대', sig: ['missile', 'drones'], color: '#9ad8ff', icon: 'fleet', about: '아군 전투기 편대가 날아올라 앞의 적에게 탄막을 퍼부어요' },
     chrono: { name: '시간 정지', sig: ['lightning', 'aura'], color: '#c9b6ff', icon: 'clock', about: '시간을 멈춰 적과 적 총알이 얼어붙고, 다시 흐를 때 멈췄던 적이 한꺼번에 피해를 받아요' },
+    // region rewards (see REWARDS): until their region is cleared, the same pair makes its families' ultimate as before
+    sun: { name: '작은 태양', sig: ['flame', 'aura'], color: '#ffb347', icon: 'sun', about: '작은 태양이 우주선 위에 떠서 가까이 온 적을 태우고, 때마다 불꽃 고리를 내뿜어 적 총알을 지워요' },
+    orbital: { name: '궤도 폭격', sig: ['missile', 'laser'], color: '#ff6f91', icon: 'strike', about: '강한 적 4대를 조준한 뒤 하늘에서 거대한 광선이 내리꽂혀요' },
+    blades: { name: '칼날 폭풍', sig: ['saw', 'drones'], color: '#bfefff', icon: 'blades', about: '칼날 10개가 고리를 이뤄 크게 퍼졌다 돌아오며 적과 적 총알을 베어요' },
+    dragon: { name: '번개 용', sig: ['lightning', 'cannon'], color: '#9ad8ff', icon: 'dragon', about: '번개로 된 용이 적이 몰린 곳을 휘젓고 다니며 물어뜯고, 번개 숨결을 뿜어요' },
   };
   const RAINBOW = ['#ff5a6e', '#ffa94d', '#ffe08a', '#b8f36b', '#7fe7ff', '#a88bff'];
   function ultFor(a, b) {
-    const special = Object.keys(ULTS).find((id) => ULTS[id].sig && a !== b && ULTS[id].sig.includes(a) && ULTS[id].sig.includes(b));
+    const special = Object.keys(ULTS).find((id) => ULTS[id].sig && a !== b && ULTS[id].sig.includes(a) && ULTS[id].sig.includes(b) && ultOpen(id));
     if (special) return special;
     const key = [FAMILY[a], FAMILY[b]].sort().join('+');
     return Object.keys(ULTS).find((id) => ULTS[id].pair && ULTS[id].pair.slice().sort().join('+') === key);
@@ -1912,6 +1927,51 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     saw: { partner: 'gyro', about: '커다란 원반 6개가 나선을 그리며 휩쓸어요' },
     flame: { partner: 'fuel', about: '거대한 불꽃을 뿜고, 2초마다 사방으로 불꽃이 터져요' },
   };
+  // Second combinations: the same weapon at Lv 5 with a different piece of gear becomes a different skill. Each is a
+  // region's clear reward (REWARDS below) and can't be made anywhere until that region has been cleared once.
+  const ALT_EVOLVE = {
+    aura: { partner: 'armor', about: '역장에 들어온 적 총알을 튕겨 내서 가까운 적에게 되돌려 보내요', evo: { name: '반사 역장', dmg: 16, tick: 0.24, radius: 82, push: 30, reflect: 34 } },
+    missile: { partner: 'spread', about: '큰 미사일이 터지면서 작은 폭탄 7개가 사방으로 흩어져 한 번 더 터져요', evo: { name: '집속 미사일', dmg: 40, cd: 1.0, count: 3, blast: 30, burst: 7, frag: 12, fragR: 22 } },
+    drones: { partner: 'amp', about: '드론 4개가 돌다가 차례로 적에게 날아가 들이받고 돌아와요', evo: { name: '사냥꾼 드론', dmg: 20, n: 4, radius: 56, spin: 3.4, size: 10, hunt: 66, every: 0.5, speed: 640 } },
+    laser: { partner: 'luck', about: '광선이 무지갯빛 세 갈래로 갈라져 부채꼴로 넓게 훑어요', evo: { name: '프리즘 광선', dps: 72, cd: 2.0, width: 20, dur: 1.5, sweep: 0.3, beams: 3, fan: 0.36 } },
+  };
+  const ALT_TONES = { aura: '#bfefff', missile: '#ff9a3d', drones: '#ff6f91', laser: '#ffffff' };
+  const PRISM_TONES = ['#ff6f91', '#7dffc8', '#a88bff'];
+  const evoDef = (id, alt) => (alt && ALT_EVOLVE[id] ? ALT_EVOLVE[id].evo : WEAPONS[id].evo);
+  const evoName = (id, alt) => evoDef(id, alt).name;
+  // ---------- region rewards ----------
+  // Clearing region i for the first time opens REWARDS[i]. Until then it shows up nowhere: not in a region, not in
+  // endless mode, and not for a friend in co-op who hasn't cleared it (the host works out their picks with their own).
+  const REWARDS = [
+    { kind: 'evo', id: 'aura' },
+    { kind: 'ult', id: 'sun' },
+    { kind: 'evo', id: 'missile' },
+    { kind: 'ult', id: 'orbital' },
+    { kind: 'evo', id: 'drones' },
+    { kind: 'ult', id: 'blades' },
+    { kind: 'evo', id: 'laser' },
+    { kind: 'ult', id: 'dragon' },
+  ];
+  const rewardName = (r) => (r.kind === 'evo' ? ALT_EVOLVE[r.id].evo.name : ULTS[r.id].name);
+  const rewardKind = (r) => (r.kind === 'evo' ? '새 합체 스킬' : '새 궁극기');
+  const rewardOf = (kind, id) => REWARDS.findIndex((r) => r.kind === kind && r.id === id);
+  const myRewards = () => saved.cleared.reduce((m, c, i) => (c && i < REWARDS.length ? m | (1 << i) : m), 0);
+  // whose rewards count right now: the friend's while the host works out their picks in co-op, otherwise our own
+  const rewardsNow = () => (ctxNow && typeof ctxNow.un === 'number' ? ctxNow.un : myRewards());
+  const altOpen = (id) => {
+    const i = rewardOf('evo', id);
+    return i >= 0 && ((rewardsNow() >> i) & 1) === 1;
+  };
+  const ultOpen = (id) => {
+    const i = rewardOf('ult', id);
+    return i < 0 || ((rewardsNow() >> i) & 1) === 1;
+  };
+  const ultKinds = () => Object.keys(ULTS).filter(ultOpen).length;
+  // how a reward is made, in words
+  function rewardRecipe(r) {
+    if (r.kind === 'evo') return `${WEAPONS[r.id].name} Lv 5 + ${PASSIVES[ALT_EVOLVE[r.id].partner].name}`;
+    return ULTS[r.id].sig.map((wid) => `${WEAPONS[wid].name} 합체`).join(' + ');
+  }
   // Chance per kill before luck; gunners and tanks triple it.
   const DROPS = [['heal', 0.012], ['magnet', 0.006], ['bomb', 0.004], ['mystery', 0.014], ['chest', 0.0025]];
   // Permanent upgrades bought with coins between runs. A node opens once its parent reaches the given level.
@@ -2140,6 +2200,10 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     check: '<path d="M5 12.5l4.5 4.5L19 7" />',
     tree: '<circle cx="12" cy="4.5" r="2.5" /><circle cx="6" cy="18.5" r="2.5" /><circle cx="18" cy="18.5" r="2.5" /><path d="M12 7v4M12 11l-6 5M12 11l6 5" />',
     lock: '<rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" />',
+    sun: '<circle cx="12" cy="12" r="4.5" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9L7 7M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" />',
+    strike: '<path d="M12 2v12" /><circle cx="12" cy="18" r="3.5" /><path d="M5.5 18h2M16.5 18h2M8.5 5.5L12 2l3.5 3.5" />',
+    blades: '<circle cx="12" cy="12" r="2.2" /><path d="M12 2.5l2.4 4.3-2.4 1.4-2.4-1.4zM21.5 12l-4.3 2.4-1.4-2.4 1.4-2.4zM12 21.5l-2.4-4.3 2.4-1.4 2.4 1.4zM2.5 12l4.3-2.4 1.4 2.4-1.4 2.4z" />',
+    dragon: '<path d="M3 19c4 0 5-4 7-7s4-5 8-5" /><path d="M18 7l3.5-1.5-2 3.5M18 7l-.5-3.5" /><path d="M7 21c1.5-1 2.5-2.5 2.5-4.5" /><circle cx="17.5" cy="7.8" r=".6" />',
   };
   const svgIcon = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] || ''}</svg>`;
 
@@ -5870,7 +5934,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
   function weaponStats(w) {
     if (w.id === 'ult') return ULTS[w.ult];
     const def = WEAPONS[w.id];
-    const base = w.evolved ? def.evo : def.levels[w.lv - 1];
+    const base = w.evolved ? evoDef(w.id, w.alt) : def.levels[w.lv - 1];
     const m = rank(MASTERY[w.id]);
     const evo = w.evolved ? rank('evoM') : 0;
     const extra = rank('extra');
@@ -5892,11 +5956,34 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     }
     return out;
   }
+  const formName = (id) => {
+    const w = owned('weapon', id);
+    return evoName(id, !!(w && w.alt));
+  };
+  // the gear that combines with a weapon: its own partner, and its second one once that reward is open
+  const partnersOf = (id) => [EVOLVE[id].partner, ...(ALT_EVOLVE[id] && altOpen(id) ? [ALT_EVOLVE[id].partner] : [])];
   function newWeapon(id) {
     return { id, lv: 1, evolved: false, cd: 0.3, angle: 0, active: 0, tick: 0, sweepT: 0 };
   }
+  // The forms a weapon could combine into right now: false for its own combination, true for its second one (a region
+  // reward, once that region is cleared). A weapon combines once, into one of them.
+  function evoForms(w) {
+    if (!w || w.id === 'ult' || w.evolved || w.lv < (rank('evoFast') ? MAX_LEVEL - 1 : MAX_LEVEL)) return [];
+    const out = [];
+    if (passiveLv(EVOLVE[w.id].partner) > 0) out.push(false);
+    const alt = ALT_EVOLVE[w.id];
+    if (alt && passiveLv(alt.partner) > 0 && altOpen(w.id)) out.push(true);
+    return out;
+  }
   function canEvolve(w) {
-    return !w.evolved && w.lv >= (rank('evoFast') ? MAX_LEVEL - 1 : MAX_LEVEL) && passiveLv(EVOLVE[w.id].partner) > 0;
+    return evoForms(w).length > 0;
+  }
+  // a crate's combination offer: one ready weapon, in each form it can take (two cards when both are ready)
+  function evolveOffers() {
+    const ready = build.weapons.filter(canEvolve);
+    if (!ready.length) return [];
+    const w = pick(ready);
+    return evoForms(w).map((alt) => (alt ? { kind: 'evolve', id: w.id, alt: true } : { kind: 'evolve', id: w.id }));
   }
   // Level-ups offer upgrades only; combinations come out of supply crates.
   function rollOptions(n) {
@@ -5924,6 +6011,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     } else if (o.kind === 'evolve') {
       const w = owned('weapon', o.id);
       w.evolved = true;
+      w.alt = !!o.alt;
       w.cd = 0;
       sfx.play('evolve');
       vsSend(1);
@@ -5932,12 +6020,12 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
         run.stat.evoIds.push(o.id);
         mission('evolve');
       }
-      const tone = toneOf(o.id, true);
+      const tone = o.alt ? ALT_TONES[o.id] : toneOf(o.id, true);
       for (let k = 0; k < 3; k++) rings.push({ x: player.x, y: player.y, r: 6 + k * 8, max: 110 + k * 40, life: 0.7 + k * 0.1, full: 0.7 + k * 0.1, color: k === 1 ? '#ffffff' : tone, wide: true });
       blooms.push({ x: player.x, y: player.y, size: 180, life: 0.5, full: 0.5, color: tone });
       flash = Math.max(flash, motionOK() ? 0.35 : 0.1);
-      addText(player.x, player.y - 34, `합체! ${WEAPONS[o.id].evo.name}`, COLOR.amber, 1.6, 15);
-      announce(`합체! ${WEAPONS[o.id].evo.name}`);
+      addText(player.x, player.y - 34, `합체! ${evoName(o.id, o.alt)}`, COLOR.amber, 1.6, 15);
+      announce(`합체! ${evoName(o.id, o.alt)}`);
     } else if (o.kind === 'weapon') {
       const w = owned('weapon', o.id);
       if (w) w.lv = o.lv;
@@ -5957,8 +6045,9 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     for (const w of build.weapons) {
       if (w.readyNoted || !canEvolve(w)) continue;
       w.readyNoted = true;
-      addText(player.x, player.y - 50, `합체 준비! ${WEAPONS[w.id].evo.name}`, COLOR.amber, 2.2, 13);
-      announce(`${WEAPONS[w.id].evo.name} 합체 준비 완료. 보급 상자를 열면 합체돼요.`);
+      const names = evoForms(w).map((alt) => evoName(w.id, alt)).join(' 또는 ');
+      addText(player.x, player.y - 50, `합체 준비! ${names}`, COLOR.amber, 2.2, 13);
+      announce(`${names} 합체 준비 완료. 보급 상자를 열면 합체돼요.`);
     }
     hudDirty = true;
   }
@@ -5969,26 +6058,28 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     }
     if (o.kind === 'ult') {
       const u = ULTS[o.ult];
-      return { icon: u.icon, name: u.name, tag: '궁극 합체!', desc: `${WEAPONS[o.a].evo.name} + ${WEAPONS[o.b].evo.name}: ${u.about}. 두 합체 스킬도 그대로 계속 나가요!${run.endless ? ` 무한 모드는 제한 없이 모든 궁극기를 모을 수 있어요 (${run.ults + 1}/${Object.keys(ULTS).length}종째).` : ` 한 판에 두 번까지 (${run.ults + 1}/${ULT_PER_RUN}번째).`}`, cls: 'is-ult' };
+      return { icon: u.icon, name: u.name, tag: '궁극 합체!', desc: `${formName(o.a)} + ${formName(o.b)}: ${u.about}. 두 합체 스킬도 그대로 계속 나가요!${run.endless ? ` 무한 모드는 제한 없이 모든 궁극기를 모을 수 있어요 (${run.ults + 1}/${ultKinds()}종째).` : ` 한 판에 두 번까지 (${run.ults + 1}/${ULT_PER_RUN}번째).`}`, cls: 'is-ult' };
     }
     if (o.kind === 'skip') {
       return { icon: 'skip', name: '건너뛰기', tag: '', desc: '지금은 합체하지 않아요. 대신 이번 상자에서 스킬 하나를 골라요.', cls: 'is-skip' };
     }
     if (o.kind === 'evolve') {
       const def = WEAPONS[o.id];
-      const partner = PASSIVES[EVOLVE[o.id].partner].name;
-      return { icon: def.icon, name: def.evo.name, tag: '합체!', desc: `${def.name} + ${partner}: ${EVOLVE[o.id].about}`, cls: 'is-evolve' };
+      const form = o.alt ? ALT_EVOLVE[o.id] : EVOLVE[o.id];
+      const partner = PASSIVES[form.partner].name;
+      return { icon: def.icon, name: evoName(o.id, o.alt), tag: o.alt ? '새 합체!' : '합체!', desc: `${def.name} + ${partner}: ${form.about}`, cls: 'is-evolve' };
     }
     if (o.kind === 'weapon') {
       const def = WEAPONS[o.id];
-      const partner = PASSIVES[EVOLVE[o.id].partner].name;
-      const hint = o.lv === MAX_LEVEL ? ` · ${partner}${particle(partner, '이', '가')} 있으면 보급 상자에서 합체` : '';
+      const [p1, p2] = partnersOf(o.id).map((pid) => PASSIVES[pid].name);
+      const gear = p2 ? `${p1}${particle(p1, '이나', '나')} ${p2}${particle(p2, '이', '가')}` : `${p1}${particle(p1, '이', '가')}`;
+      const hint = o.lv === MAX_LEVEL ? ` · ${gear} 있으면 보급 상자에서 합체` : '';
       return { icon: def.icon, name: def.name, tag: o.lv === 1 ? '새 무기' : `Lv ${o.lv - 1} → ${o.lv}`, desc: def.notes[o.lv - 1] + hint, cls: 'is-weapon' };
     }
     if (o.kind === 'passive') {
       const def = PASSIVES[o.id];
-      const partnerOf = Object.keys(EVOLVE).find((k) => EVOLVE[k].partner === o.id);
-      const hint = partnerOf ? ` · ${WEAPONS[partnerOf].name} 합체 재료` : '';
+      const users = Object.keys(EVOLVE).filter((k) => partnersOf(k).includes(o.id));
+      const hint = users.length ? ` · ${users.map((k) => WEAPONS[k].name).join('·')} 합체 재료` : '';
       return { icon: def.icon, name: def.name, tag: o.lv === 1 ? '새 장비' : `Lv ${o.lv - 1} → ${o.lv}`, desc: def.per + hint, cls: 'is-passive' };
     }
     if (o.kind === 'heal') return { icon: 'heal', name: '응급 수리', tag: '회복', desc: '체력 40 회복', cls: 'is-passive' };
@@ -7243,7 +7334,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
         }
       } else if (w.id === 'drones') {
         w.angle += s.spin * dt;
-        updateDrones(w, s);
+        updateDrones(w, s, dt);
       } else if (w.id === 'laser') {
         if (w.active > 0) {
           w.active -= dt;
@@ -7281,6 +7372,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
           auraPulse(s);
           w.cd = Math.max(0.05, w.cd + s.tick * cdMul);
         }
+        if (s.reflect) reflectShots(s);
       } else if (w.id === 'saw') {
         w.cd -= dt;
         if (w.cd <= 0) {
@@ -7902,6 +7994,60 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
         ufx.push({ type: 'chrono', x: player.x, y: player.y, t: 0, T: 2.2, r: 170 * A });
         sfx.play('charge');
       }
+    } else if (w.ult === 'sun') { // a little sun rides above the ship: it burns what comes near and now and then flares
+      const [sx, sy] = sunAt(A);
+      w.cd -= dt;
+      if (w.cd <= 0) {
+        w.cd += 0.2;
+        hitArea(sx, sy, 62 * A, 24 * K);
+      }
+      w.cd2 -= dt;
+      if (w.cd2 <= 0) {
+        w.cd2 = 2.8 * cdMul;
+        ufx.push({ type: 'solar', x: sx, y: sy, t: 0, T: 0.7, r: 230 * A, dmg: 110 * K, hit: new Set() });
+        sfx.play('nova');
+      }
+    } else if (w.ult === 'orbital') { // four ships are marked, then beams come down on them from orbit
+      w.cd -= dt;
+      if (w.cd <= 0) {
+        w.cd += 2.4 * cdMul;
+        orbitalTargets(4).forEach((p, k) => ufx.push({ type: 'mark', x: p.x, y: p.y, tg: p.e, t: -k * 0.12, T: 0.75, r: 44 * A, dmg: 230 * K }));
+        sfx.play('charge');
+      }
+    } else if (w.ult === 'blades') { // a ring of blades breathes out across the screen and back
+      w.cd -= dt;
+      const nodes = bladeNodes(w, A);
+      if (w.cd <= 0) {
+        w.cd += 0.1;
+        const b = liveBoss();
+        for (const [x, y] of nodes) {
+          for (const e of gather(x, y, 16 * A + 30)) {
+            if (e.bladeT > clock) continue;
+            const rr = e.r + 16 * A;
+            if ((e.x - x) ** 2 + (e.y - y) ** 2 < rr * rr) {
+              e.bladeT = clock + 0.12;
+              damage(e, 44 * K, e.x, e.y);
+            }
+          }
+          if (b && !(b.bladeT > clock) && inBoss(b, x, y, 16 * A)) {
+            b.bladeT = clock + 0.15;
+            damage(b, 44 * K, x, y);
+          }
+        }
+      }
+      const r2 = (13 * A) ** 2;
+      for (let i = eShots.length - 1; i >= 0; i--) {
+        const sh = eShots[i];
+        for (const [x, y] of nodes) {
+          if ((sh.x - x) ** 2 + (sh.y - y) ** 2 < r2) {
+            if (sparks.length < fxCap(420)) spark(sh.x, sh.y, '#bfefff', 2);
+            removeAt(eShots, i);
+            break;
+          }
+        }
+      }
+    } else if (w.ult === 'dragon') {
+      updateDragon(w, dt, K, A, cdMul);
     } else if (w.ult === 'phoenix') {
       updatePhoenix(w, dt, K, A);
     } else if (w.ult === 'hole') {
@@ -7913,6 +8059,137 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
         sfx.play('charge');
       }
     }
+  }
+  // The little sun floats a little above the ship (lower when the ship is near the top).
+  function sunAt(A) {
+    return [player.x, Math.max(hudBottom + 30, player.y - 96 * Math.min(1.3, A))];
+  }
+  // Orbital strike: the boss first, then the toughest ships on screen, not too close to one another.
+  function orbitalTargets(n) {
+    const out = [];
+    const b = liveBoss();
+    if (b && b.step === 'fight') out.push({ x: b.x, y: b.y + 20, e: b });
+    const list = enemies.filter((e) => !e.dead && e.t >= 0 && !e.ghost && !e.boss && e.y > hudBottom + 10 && e.y < H - 60);
+    list.sort((p, q) => q.hp - p.hp);
+    for (const e of list) {
+      if (out.length >= n) break;
+      if (out.some((p) => (p.x - e.x) ** 2 + (p.y - e.y) ** 2 < 2500)) continue;
+      out.push({ x: e.x, y: e.y, e });
+    }
+    if (!out.length) {
+      const p = densestPoint();
+      out.push({ x: p.x, y: p.y, e: null });
+    }
+    return out;
+  }
+  // Ten blades on a ring that opens from the ship to most of the screen and closes again, turning all the while.
+  function bladeNodes(w, A) {
+    const u = 0.5 - 0.5 * Math.cos((w.t / 2.6) * TAU);
+    const R = (46 + 190 * u) * A;
+    const rot = w.t * 2.6;
+    const out = [];
+    for (let i = 0; i < 10; i++) {
+      const a = rot + (i / 10) * TAU;
+      out.push([player.x + Math.cos(a) * R, player.y + Math.sin(a) * R]);
+    }
+    return out;
+  }
+  // The thunder dragon: its head steers, weaving, toward where ships crowd; the body follows the path it took.
+  function updateDragon(w, dt, K, A, cdMul) {
+    const D = w.ph || (w.ph = { x: player.x, y: player.y - 60, ang: -Math.PI / 2, goal: null, goalT: 0, breath: 1.2, wig: 0 });
+    if (D.goalT === undefined) Object.assign(D, { goal: null, goalT: 0, breath: 1.2, wig: 0 });
+    D.goalT -= dt;
+    if (D.goalT <= 0 || !D.goal) {
+      D.goalT = 1.4;
+      const p = densestPoint();
+      D.goal = { x: clamp(p.x, 30, W - 30), y: clamp(p.y, hudBottom + 30, H - 120) };
+    }
+    D.wig += dt;
+    const want = Math.atan2(D.goal.y - D.y, D.goal.x - D.x) + Math.sin(D.wig * 3.2) * 0.9;
+    let turn = want - D.ang;
+    while (turn > Math.PI) turn -= TAU;
+    while (turn < -Math.PI) turn += TAU;
+    D.ang += clamp(turn, -4.2 * dt, 4.2 * dt);
+    const sp = 250 * stats.speedMul;
+    D.x = clamp(D.x + Math.cos(D.ang) * sp * dt, 10, W - 10);
+    D.y = clamp(D.y + Math.sin(D.ang) * sp * dt, hudBottom + 10, H - 30);
+    dragonTrail(w);
+    w.cd -= dt;
+    if (w.cd <= 0) { // the jaws and the coils
+      w.cd += 0.12;
+      const b = liveBoss();
+      dragonBody(w, A).forEach(([x, y], k) => {
+        const r = (k === 0 ? 20 : 13) * A;
+        const dmg = (k === 0 ? 70 : 30) * K;
+        for (const e of gather(x, y, r + 30)) {
+          if (e.dragonT > clock) continue;
+          const rr = e.r + r;
+          if ((e.x - x) ** 2 + (e.y - y) ** 2 < rr * rr) {
+            e.dragonT = clock + 0.3;
+            damage(e, dmg, e.x, e.y);
+          }
+        }
+        if (b && !(b.dragonT > clock) && inBoss(b, x, y, r)) {
+          b.dragonT = clock + 0.15;
+          damage(b, dmg, x, y);
+        }
+      });
+    }
+    D.breath -= dt;
+    if (D.breath <= 0) { // lightning breath at up to three ships near the head
+      D.breath = 1.6 * cdMul;
+      const near = gather(D.x, D.y, 200).filter((e) => !e.dead && e.t >= 0 && !e.ghost && (e.x - D.x) ** 2 + (e.y - D.y) ** 2 < 40000);
+      near.sort((p, q) => (p.x - D.x) ** 2 + (p.y - D.y) ** 2 - ((q.x - D.x) ** 2 + (q.y - D.y) ** 2));
+      const tone = rb('#9ad8ff');
+      for (const e of near.slice(0, 3)) {
+        zaps.push(zigzag(D.x, D.y, e.x, e.y, 'ult', tone, true));
+        damage(e, 80 * K, e.x, e.y);
+      }
+      const b = liveBoss();
+      if (b && near.length < 3 && inBoss(b, D.x, D.y, 200)) {
+        zaps.push(zigzag(D.x, D.y, b.x, b.y + 20, 'ult', tone, true));
+        damage(b, 80 * K, b.x, b.y + 20);
+      }
+      if (near.length || b) sfx.play('zap');
+    }
+  }
+  // where the head has been, newest first (a point every few steps)
+  function dragonTrail(w) {
+    const D = w.ph;
+    const tr = w.trail || (w.trail = []);
+    const last = tr[0];
+    if (!last || (last[0] - D.x) ** 2 + (last[1] - D.y) ** 2 > 16) {
+      tr.unshift([D.x, D.y]);
+      if (tr.length > 90) tr.length = 90;
+    }
+  }
+  // the head and fourteen segments behind it, evenly spaced along that path
+  function dragonBody(w, A) {
+    const out = [[w.ph.x, w.ph.y]];
+    const gap = 13 * Math.min(1.4, A);
+    let px = w.ph.x;
+    let py = w.ph.y;
+    let left = gap;
+    for (const [x, y] of w.trail || []) {
+      let dx = x - px;
+      let dy = y - py;
+      let L = Math.hypot(dx, dy);
+      while (L >= left && out.length < 15) {
+        const u = left / L;
+        px += dx * u;
+        py += dy * u;
+        out.push([px, py]);
+        dx = x - px;
+        dy = y - py;
+        L = Math.hypot(dx, dy);
+        left = gap;
+      }
+      if (out.length >= 15) break;
+      left -= L;
+      px = x;
+      py = y;
+    }
+    return out;
   }
   // The constellation: seven stars on a turning circle, joined into a seven-pointed star.
   function starNodes(w, A) {
@@ -8024,6 +8301,50 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
         continue;
       }
       if (f.type === 'chrono') {
+        if (f.t >= f.T) removeAt(ufx, i);
+        continue;
+      }
+      if (f.type === 'solar') { // the sun's flare: a ring of fire that burns each ship once and wipes out enemy fire
+        const R = f.r * easeOut(Math.min(1, f.t / f.T));
+        for (const e of gather(f.x, f.y, R + 30)) {
+          if (f.hit.has(e) || e.dead || e.t < 0 || e.ghost) continue;
+          if ((e.x - f.x) ** 2 + (e.y - f.y) ** 2 < (R + e.r) ** 2) {
+            f.hit.add(e);
+            damage(e, f.dmg, e.x, e.y);
+          }
+        }
+        const b = liveBoss();
+        if (b && !f.hit.has(b) && inBoss(b, f.x, f.y, R)) {
+          f.hit.add(b);
+          damage(b, f.dmg, b.x, b.y + 20);
+        }
+        const r2 = R * R;
+        for (let j = eShots.length - 1; j >= 0; j--) {
+          const sh = eShots[j];
+          if ((sh.x - f.x) ** 2 + (sh.y - f.y) ** 2 < r2) removeAt(eShots, j);
+        }
+        if (f.t >= f.T) removeAt(ufx, i);
+        continue;
+      }
+      if (f.type === 'mark') { // a target mark follows its ship, then the beam comes down
+        if (f.t < 0) continue;
+        if (f.tg && !f.tg.dead && f.t < f.T * 0.7) {
+          f.x = f.tg.x;
+          f.y = f.tg.y + (f.tg.boss ? 20 : 0);
+        }
+        if (f.t >= f.T) {
+          hitArea(f.x, f.y, f.r, f.dmg);
+          ufx.push({ type: 'strike', x: f.x, y: f.y, t: 0, T: 0.35, r: f.r });
+          blooms.push({ x: f.x, y: f.y, size: f.r * 3.4, life: 0.4, full: 0.4, color: '#ff6f91' });
+          rings.push({ x: f.x, y: f.y, r: 6, max: f.r * 1.3, life: 0.4, full: 0.4, color: '#ffffff', wide: true });
+          flash = Math.max(flash, motionOK() ? 0.18 : 0.06);
+          shakeBy(5);
+          sfx.play('boom');
+          removeAt(ufx, i);
+        }
+        continue;
+      }
+      if (f.type === 'strike') {
         if (f.t >= f.T) removeAt(ufx, i);
         continue;
       }
@@ -8150,7 +8471,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
   // Each missile takes a different nearby target so a salvo spreads out.
   function fireMissiles(s, evolved) {
     const t = tierOf('missile');
-    const tone = toneOf('missile', evolved);
+    const tone = s.burst ? ALT_TONES.missile : toneOf('missile', evolved);
     const targets = [];
     const taken = new Set();
     for (let i = 0; i < s.count; i++) {
@@ -8171,7 +8492,8 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
       const a = -Math.PI / 2 + (i - (s.count - 1) / 2) * 0.32;
       pShots.push({
         kind: 'missile', x: player.x, y: player.y - 8, vx: Math.cos(a) * 230, vy: Math.sin(a) * 230,
-        dmg: s.dmg * stats.dmgMul, blast: s.blast * stats.area, target: targets[i], life: 3, size: 1, tone, tier: t,
+        dmg: s.dmg * stats.dmgMul, blast: s.blast * stats.area, target: targets[i], life: 3, size: s.burst ? 1.5 : 1, tone, tier: t,
+        ...(s.burst ? { burst: s.burst, frag: s.frag * stats.dmgMul, fragR: s.fragR * stats.area } : {}),
       });
     }
     sfx.play('missile');
@@ -8201,6 +8523,49 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     m.vx = Math.cos(a) * sp;
     m.vy = Math.sin(a) * sp;
   }
+  // A cluster missile bursts: bomblets scatter, slow down and go off a moment later (or on whatever they touch).
+  function missileBurst(s) {
+    const n = s.burst;
+    for (let k = 0; k < n && pShots.length < MAX_PSHOTS; k++) {
+      const a = (k / n) * TAU + rand(-0.25, 0.25);
+      const sp = rand(190, 260);
+      pShots.push({ kind: 'orb', straight: true, drag: 3.2, x: s.x, y: s.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, dmg: s.frag, blast: s.fragR,
+        tone: '#ffd166', life: rand(0.38, 0.5), size: 0.6, pop: true, target: null });
+    }
+    if (blooms.length < fxCap(64)) blooms.push({ x: s.x, y: s.y, size: 90, life: 0.25, full: 0.25, color: s.tone });
+    sfx.play('bomb');
+  }
+  // a cluster missile or bomblet that runs out of time goes off where it is
+  function shotPop(s) {
+    if (s.burst) {
+      blastAt(s.x, s.y, s.blast, s.dmg * 0.6, null, s.tone);
+      missileBurst(s);
+    } else {
+      blastAt(s.x, s.y, s.blast, s.dmg, null, s.tone);
+      if (blooms.length < fxCap(64)) blooms.push({ x: s.x, y: s.y, size: s.blast * 2.2, life: 0.2, full: 0.2, color: s.tone });
+    }
+  }
+  // The mirror field: enemy fire that comes inside is turned round and sent at the nearest ship.
+  function reflectShots(s) {
+    if (!player.alive) return;
+    const R = s.radius * stats.area;
+    const r2 = R * R;
+    const spr = boltOf(ALT_TONES.aura);
+    for (let i = eShots.length - 1; i >= 0; i--) {
+      const b = eShots[i];
+      if ((b.x - player.x) ** 2 + (b.y - player.y) ** 2 > r2) continue;
+      removeAt(eShots, i);
+      if (pShots.length < MAX_PSHOTS) {
+        const tg = nearestOther(b.x, b.y, null);
+        const a = tg ? Math.atan2(tg.y - b.y, tg.x - b.x) : Math.atan2(-b.vy || -1, -b.vx || 0);
+        const sp = 520 * stats.speedMul;
+        const vx = Math.cos(a) * sp;
+        const vy = Math.sin(a) * sp;
+        pShots.push({ kind: 'bolt', x: b.x, y: b.y, vx, vy, a: Math.atan2(vx, -vy), dmg: s.reflect * stats.dmgMul, pierce: 0, size: 0.9, plasma: false, spr, last: null, trail: false, life: 1.6 });
+      }
+      if (sparks.length < fxCap(420)) spark(b.x, b.y, ALT_TONES.aura, 2);
+    }
+  }
   function blastAt(x, y, radius, dmg, skip, color = COLOR.orange) {
     for (const e of gather(x, y, radius + 30)) {
       if (e === skip) continue;
@@ -8216,7 +8581,11 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     const a = w.angle + (k / s.n) * TAU;
     return [player.x + Math.cos(a) * R, player.y + Math.sin(a) * R];
   }
-  function updateDrones(w, s) {
+  function updateDrones(w, s, dt) {
+    if (s.hunt) {
+      updateHunters(w, s, dt);
+      return;
+    }
     const size = s.size * stats.area;
     const b = liveBoss();
     for (let k = 0; k < s.n; k++) {
@@ -8245,21 +8614,135 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
       }
     }
   }
+  // Hunter drones circle like the others, and every half second the next free one darts at a ship, rams it and comes
+  // back. Where each one is lives in w.hd, so a friend's phone in co-op can draw them.
+  function updateHunters(w, s, dt) {
+    if (!w.hd || w.hd.length !== s.n) {
+      w.hd = Array.from({ length: s.n }, (_, k) => {
+        const [x, y] = dronePos(w, s, k);
+        return { x, y, m: 0, tg: null, t: 0 };
+      });
+    }
+    const size = s.size * stats.area;
+    const sp = s.speed * stats.speedMul;
+    w.launch = (w.launch || 0) - dt;
+    if (w.launch <= 0) {
+      const d = w.hd.find((q) => q.m === 0);
+      const tg = d && huntTarget(w);
+      if (tg) {
+        Object.assign(d, { m: 1, tg, t: 0 });
+        tg.huntT = clock + 1.2; // the next hunters go for other ships for a moment
+        w.launch = s.every * stats.cdMul;
+      } else w.launch = 0.15;
+    }
+    const b = liveBoss();
+    w.hd.forEach((d, k) => {
+      const [ox, oy] = dronePos(w, s, k);
+      if (d.m === 0) {
+        d.x = ox;
+        d.y = oy;
+      } else if (d.m === 1) { // on the hunt
+        const tg = d.tg;
+        d.t += dt;
+        if (!tg || tg.dead || tg.y < -30 || tg.y > H + 30 || d.t > 1.4) d.m = 2;
+        else {
+          const reach = tg.boss ? 30 : tg.r;
+          const ty = tg.y + (tg.boss ? 18 : 0);
+          const dx = tg.x - d.x;
+          const dy = ty - d.y;
+          const dist = Math.hypot(dx, dy) || 1;
+          const step = sp * dt;
+          if (dist <= step + reach) {
+            d.x = tg.x - (dx / dist) * reach;
+            d.y = ty - (dy / dist) * reach;
+            damage(tg, s.hunt * stats.dmgMul, d.x, d.y);
+            blastAt(d.x, d.y, 24 * stats.area, s.hunt * 0.45 * stats.dmgMul, tg, ALT_TONES.drones);
+            if (sparks.length < fxCap(420)) spark(d.x, d.y, ALT_TONES.drones, 4);
+            d.m = 2;
+          } else {
+            d.x += (dx / dist) * step;
+            d.y += (dy / dist) * step;
+          }
+        }
+      } else { // heading back to its place in the circle
+        const dx = ox - d.x;
+        const dy = oy - d.y;
+        const dist = Math.hypot(dx, dy) || 1;
+        const step = sp * 0.85 * dt;
+        if (dist <= step + 2) {
+          d.m = 0;
+          d.x = ox;
+          d.y = oy;
+        } else {
+          d.x += (dx / dist) * step;
+          d.y += (dy / dist) * step;
+        }
+      }
+      // whatever a drone touches on the way gets hurt too
+      for (const e of gather(d.x, d.y, size + 30)) {
+        if (e.droneT > 0) continue;
+        const rr = e.r + size;
+        if ((e.x - d.x) ** 2 + (e.y - d.y) ** 2 < rr * rr) {
+          damage(e, s.dmg * stats.dmgMul, d.x, d.y);
+          e.droneT = 0.25;
+        }
+      }
+      if (b && b.droneT <= 0 && inBoss(b, d.x, d.y, size)) {
+        damage(b, s.dmg * stats.dmgMul, d.x, d.y);
+        b.droneT = 0.12;
+      }
+    });
+  }
+  // the next ship for a hunter: the boss now and then, otherwise the nearest one not hunted just now
+  function huntTarget(w) {
+    const b = liveBoss();
+    const bossOk = b && b.step === 'fight';
+    if (bossOk && Math.random() < 0.5) return b;
+    let best = null;
+    let bd = Infinity;
+    let fresh = false;
+    for (const e of enemies) {
+      if (e.dead || e.t < 0 || e.ghost || e.boss || e.y < 10 || e.y > H - 20) continue;
+      if (w.hd.some((q) => q.m === 1 && q.tg === e)) continue;
+      const isFresh = !(e.huntT > clock);
+      if (fresh && !isFresh) continue;
+      const d = (e.x - player.x) ** 2 + (e.y - player.y) ** 2;
+      if ((isFresh && !fresh) || d < bd) {
+        bd = d;
+        best = e;
+        fresh = isFresh;
+      }
+    }
+    return best || (bossOk ? b : null);
+  }
+  // the prism splits the beam in three; the fan opens and closes as it sweeps
+  function laserGeoms(w, s) {
+    const g = laserGeom(w, s);
+    if (!s.beams) return [g];
+    const out = [];
+    const fan = s.fan * (0.75 + 0.25 * Math.sin(w.sweepT * 2.4));
+    for (let k = 0; k < s.beams; k++) {
+      const a = g.a + (k - (s.beams - 1) / 2) * fan;
+      out.push({ x: g.x, y: g.y, dx: Math.cos(a), dy: Math.sin(a), half: g.half, a });
+    }
+    return out;
+  }
   function laserGeom(w, s) {
     const a = -Math.PI / 2 + (s.sweep ? Math.sin(w.sweepT * 4.5) * s.sweep : 0);
     return { x: player.x, y: player.y - 16, dx: Math.cos(a), dy: Math.sin(a), half: (s.width * stats.area) / 2, a };
   }
   function laserTick(w, s) {
-    const g = laserGeom(w, s);
     const dmg = s.dps * 0.1 * stats.dmgMul;
-    for (const e of enemies) {
-      if (e.dead || e.t < 0) continue;
-      if (e.ghost || (e.boss && e.step !== 'fight')) continue;
-      const rx = e.x - g.x;
-      const ry = e.y - g.y;
-      if (rx * g.dx + ry * g.dy < -e.r) continue;
-      const reach = e.boss ? 24 : e.r;
-      if (Math.abs(rx * g.dy - ry * g.dx) < g.half + reach) damage(e, dmg, e.x + rand(-4, 4), e.y + reach * 0.5);
+    for (const g of laserGeoms(w, s)) {
+      for (const e of enemies) {
+        if (e.dead || e.t < 0) continue;
+        if (e.ghost || (e.boss && e.step !== 'fight')) continue;
+        const rx = e.x - g.x;
+        const ry = e.y - g.y;
+        if (rx * g.dx + ry * g.dy < -e.r) continue;
+        const reach = e.boss ? 24 : e.r;
+        if (Math.abs(rx * g.dy - ry * g.dx) < g.half + reach) damage(e, dmg, e.x + rand(-4, 4), e.y + reach * 0.5);
+      }
     }
   }
   function nova(s) {
@@ -8368,7 +8851,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
   function slowField() {
     if (!player.alive) return 0;
     const w = owned('weapon', 'aura');
-    if (!w || !w.evolved) return 0;
+    if (!w || !w.evolved || w.alt) return 0; // the mirror field turns fire round instead
     const R = weaponStats(w).radius * stats.area;
     return R * R;
   }
@@ -8544,6 +9027,11 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
           damage(b, s.dmg, s.x, s.y);
         }
         continue;
+      } else if (s.kind === 'orb' && s.straight) { // a bomblet: flies out and slows down
+        s.life -= dt;
+        const k = Math.max(0, 1 - s.drag * dt);
+        s.vx *= k;
+        s.vy *= k;
       } else if (s.kind === 'orb') {
         s.life -= dt;
         if (s.lastT > 0) { // after a moment a bee may sting the same ship again
@@ -8607,6 +9095,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
         }
       }
       if (s.y < -30 || s.y > H + 30 || s.x < -30 || s.x > W + 30 || s.life <= 0) {
+        if (s.life <= 0 && (s.burst || s.pop)) shotPop(s);
         removeAt(pShots, i);
         continue;
       }
@@ -8625,6 +9114,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
       if (s.kind === 'missile' || s.kind === 'orb') {
         damage(hit, s.dmg * frontArmor(hit, s), s.x, s.y);
         if (s.blast > 0) blastAt(s.x, s.y, s.blast, s.dmg * 0.6, hit, s.tone);
+        if (s.burst) missileBurst(s);
         if (s.tier >= 3 && blooms.length < fxCap(64)) blooms.push({ x: s.x, y: s.y, size: s.blast * 2.4, life: 0.22, full: 0.22, color: s.tone });
         if (s.kind === 'orb') spark(s.x, s.y, s.tone || '#ff6f91', 3);
         if (s.bounce > 0) { // a bee stings and goes on to the next ship
@@ -10125,7 +10615,9 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     if (!player.alive || !inPlay()) return;
     for (const w of build.weapons) {
       const s = weaponStats(w);
-      if (w.id === 'drones') {
+      if (w.id === 'drones' && s.hunt) {
+        drawHunters(w, s);
+      } else if (w.id === 'drones') {
         const size = s.size * stats.area;
         const t = tierOf('drones');
         const tone = toneOf('drones', w.evolved);
@@ -10168,14 +10660,16 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
       } else if (w.id === 'ult') {
         drawUltWeapon(w);
       } else if (w.id === 'laser' && w.active > 0) {
-        const g = laserGeom(w, s);
         const fade = Math.min(1, w.active / 0.12, (s.dur - w.active) / 0.08 + 0.2);
+        const geoms = laserGeoms(w, s);
+        geoms.forEach((g, gi) => {
+        const main = gi === (geoms.length - 1) / 2; // the middle beam (or the only one) carries the extras
         ctx.save();
         ctx.translate(g.x, g.y);
         ctx.rotate(g.a + Math.PI / 2);
-        const tone = toneOf('laser', w.evolved);
-        const t = tierOf('laser');
-        const half = g.half * (1 + 0.06 * Math.sin(clock * 50));
+        const tone = s.beams ? PRISM_TONES[gi % PRISM_TONES.length] : toneOf('laser', w.evolved);
+        const t = main ? tierOf('laser') : 0;
+        const half = g.half * (1 + 0.06 * Math.sin(clock * 50 + gi * 2));
         ctx.globalCompositeOperation = 'lighter';
         ctx.globalAlpha = fade * fxAlpha();
         ctx.fillStyle = beamFill(-half * 1.7, half * 1.7, tone, 0.29);
@@ -10203,7 +10697,72 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
           ctx.drawImage(GOLD_STAR, -st, -st, st * 2, st * 2);
         }
         ctx.restore();
+        });
+        if (s.beams) drawPrism(geoms[0], fade);
       }
+    }
+  }
+  // the crystal at the muzzle that splits the beam
+  function drawPrism(g, fade) {
+    const x = g.x;
+    const y = g.y - 2;
+    const r = 9;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = fade * fxAlpha();
+    soft(dot('#ffffff'), x - r * 2.2, y - r * 2.2, r * 4.4, r * 4.4);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 0.9 * fade;
+    ctx.beginPath();
+    for (let k = 0; k < 3; k++) {
+      const a = -Math.PI / 2 + clock * 2 + (k / 3) * TAU;
+      if (k) ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+      else ctx.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+    }
+    ctx.closePath();
+    const g2 = ctx.createLinearGradient(x - r, y - r, x + r, y + r);
+    PRISM_TONES.forEach((c, k) => g2.addColorStop(k / (PRISM_TONES.length - 1), c));
+    ctx.fillStyle = g2;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    ctx.restore();
+  }
+  // Hunter drones: a pointed glow each; one on the hunt leaves a short streak behind it.
+  function drawHunters(w, s) {
+    const size = s.size * stats.area;
+    const tone = ALT_TONES.drones;
+    const fx = fxAlpha();
+    for (let k = 0; k < s.n; k++) {
+      const d = w.hd && w.hd[k];
+      const [ox, oy] = dronePos(w, s, k);
+      const away = d && d.m;
+      const x = away ? d.x : ox;
+      const y = away ? d.y : oy;
+      let a = w.angle + (k / s.n) * TAU + Math.PI / 2; // along the circle
+      if (d) {
+        if (!d.tr) d.tr = [];
+        if (clock - (d.trT || 0) > 0.025) {
+          d.tr.unshift([x, y]);
+          if (d.tr.length > 5) d.tr.length = 5;
+          d.trT = clock;
+        }
+        if (away && d.tr.length > 1) {
+          a = Math.atan2(y - d.tr[1][1], x - d.tr[1][0]);
+          d.tr.forEach(([tx, ty], j) => j && glow(dot(tone), tx, ty, size * (3.4 - j * 0.5), (0.55 - j * 0.1) * fx));
+        }
+      }
+      glow(dot(tone), x, y, size * (d && d.m === 1 ? 5.2 : 4), 0.9 * fx);
+      glow(dot('#ffffff'), x, y, size * 1.4, 0.9 * fx);
+      ctx.strokeStyle = rgba(tone, 0.9);
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(x + Math.cos(a) * size * 1.25, y + Math.sin(a) * size * 1.25);
+      ctx.lineTo(x + Math.cos(a + 2.5) * size, y + Math.sin(a + 2.5) * size);
+      ctx.lineTo(x + Math.cos(a - 2.5) * size, y + Math.sin(a - 2.5) * size);
+      ctx.closePath();
+      ctx.stroke();
     }
   }
   // The ultimate's own presence around the ship, plus the parts that live on the ship.
@@ -10265,8 +10824,156 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
       }
     } else if (w.ult === 'phoenix' && w.ph) {
       drawPhoenix(w.ph, A);
+    } else if (w.ult === 'sun') {
+      drawSun(A, fx);
+    } else if (w.ult === 'blades') {
+      drawBlades(w, A, fx);
+    } else if (w.ult === 'dragon' && w.ph) {
+      drawDragon(w, A, fx);
     }
     ctx.restore();
+  }
+  function drawSun(A, fx) {
+    const [x, y] = sunAt(A);
+    const R = 22 * Math.min(1.4, A);
+    const pulse = 1 + 0.06 * Math.sin(clock * 7);
+    ctx.globalAlpha = 0.55 * fx;
+    soft(dot(rb('#ff9b4a')), x - R * 3.6, y - R * 3.6, R * 7.2, R * 7.2);
+    ctx.globalAlpha = 0.8 * fx;
+    ctx.strokeStyle = '#ffd27a';
+    ctx.lineCap = 'round';
+    for (let k = 0; k < 12; k++) { // rays of the corona, each breathing on its own
+      const a = clock * 0.7 + (k / 12) * TAU;
+      const r2 = R * (1.9 + 0.45 * Math.sin(clock * 5 + k * 1.7));
+      ctx.lineWidth = k % 2 ? 2 : 3.2;
+      ctx.beginPath();
+      ctx.moveTo(x + Math.cos(a) * R * 1.2, y + Math.sin(a) * R * 1.2);
+      ctx.lineTo(x + Math.cos(a) * r2, y + Math.sin(a) * r2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = fx;
+    soft(dot('#ffb347'), x - R * 1.7 * pulse, y - R * 1.7 * pulse, R * 3.4 * pulse, R * 3.4 * pulse);
+    soft(dot('#fff3b0'), x - R * pulse, y - R * pulse, R * 2 * pulse, R * 2 * pulse);
+    soft(dot('#ffffff'), x - R * 0.55, y - R * 0.55, R * 1.1, R * 1.1);
+    ctx.globalAlpha = 0.3 * fx; // how far it burns
+    ctx.strokeStyle = '#ff9b4a';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 8]);
+    ctx.lineDashOffset = -clock * 30;
+    ctx.beginPath();
+    ctx.arc(x, y, 62 * A, 0, TAU);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  function drawBlades(w, A, fx) {
+    const nodes = bladeNodes(w, A);
+    const R = Math.hypot(nodes[0][0] - player.x, nodes[0][1] - player.y);
+    ctx.globalAlpha = 0.28 * fx; // the ring they ride on
+    ctx.strokeStyle = '#bfefff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, R, 0, TAU);
+    ctx.stroke();
+    const img = sawOf(rb('#bfefff'));
+    const d = 36 * Math.min(1.3, A);
+    for (const [x, y] of nodes) {
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = 0.95 * fx;
+      soft(dot('#9ad8ff'), x - d * 1.2, y - d * 1.2, d * 2.4, d * 2.4);
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(clock * 18);
+      ctx.drawImage(img, -d / 2, -d / 2, d, d);
+      ctx.restore();
+    }
+    ctx.globalCompositeOperation = 'lighter';
+  }
+  // the dragon: a glowing ribbon that thins toward the tail, spines along its back, lightning crackling through it,
+  // and a horned head
+  function drawDragon(w, A, fx) {
+    const segs = dragonBody(w, A);
+    const tone = rb('#9ad8ff');
+    const z = Math.min(1.3, A);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    for (const [lw, col, al, op] of [[28, tone, 0.35, 'lighter'], [14, '#2f6fe0', 0.95, 'source-over'], [5, '#9fe2ff', 0.95, 'source-over']]) {
+      ctx.globalCompositeOperation = op; // a solid blue body inside its own glow, so it reads on bright skies too
+      ctx.strokeStyle = col;
+      ctx.globalAlpha = al * (op === 'lighter' ? fx : 1);
+      for (let k = 1; k < segs.length; k++) {
+        ctx.lineWidth = lw * (1 - (k / segs.length) * 0.7) * z;
+        ctx.beginPath();
+        ctx.moveTo(segs[k - 1][0], segs[k - 1][1]);
+        ctx.lineTo(segs[k][0], segs[k][1]);
+        ctx.stroke();
+      }
+    }
+    ctx.globalAlpha = 0.95; // spines on both sides
+    ctx.strokeStyle = '#e8f7ff';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let k = 1; k < segs.length - 1; k += 2) {
+      const [x0, y0] = segs[k - 1];
+      const [x1, y1] = segs[k + 1];
+      const [x, y] = segs[k];
+      const a = Math.atan2(y1 - y0, x1 - x0) + Math.PI / 2;
+      const L = (12 - k * 0.55) * z;
+      for (const side of [1, -1]) {
+        ctx.moveTo(x + Math.cos(a) * 5 * z * side, y + Math.sin(a) * 5 * z * side);
+        ctx.lineTo(x + Math.cos(a + 0.5 * side) * L * side, y + Math.sin(a + 0.5 * side) * L * side);
+      }
+    }
+    ctx.stroke();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.7 * fx; // lightning crackling through the body
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    segs.forEach(([x, y], k) => {
+      const jx = k ? rand(-3, 3) : 0;
+      const jy = k ? rand(-3, 3) : 0;
+      if (k) ctx.lineTo(x + jx, y + jy);
+      else ctx.moveTo(x, y);
+    });
+    ctx.stroke();
+    const [hx, hy] = segs[0];
+    const a = w.ph.ang || 0;
+    const s = 18 * z;
+    ctx.globalAlpha = fx;
+    soft(dot(tone), hx - s * 2.6, hy - s * 2.6, s * 5.2, s * 5.2);
+    ctx.save();
+    ctx.translate(hx, hy);
+    ctx.rotate(a);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = '#2f6fe0';
+    ctx.strokeStyle = '#bfefff';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath(); // the snout and jaw
+    ctx.moveTo(s * 1.3, 0);
+    ctx.lineTo(s * 0.2, -s * 0.62);
+    ctx.lineTo(-s * 0.7, -s * 0.5);
+    ctx.lineTo(-s * 0.7, s * 0.5);
+    ctx.lineTo(s * 0.2, s * 0.62);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = '#e8f7ff';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath(); // horns sweeping back
+    ctx.moveTo(-s * 0.3, -s * 0.45);
+    ctx.lineTo(-s * 1.4, -s * 1.05);
+    ctx.moveTo(-s * 0.3, s * 0.45);
+    ctx.lineTo(-s * 1.4, s * 1.05);
+    ctx.stroke();
+    ctx.fillStyle = '#ffe08a'; // eyes
+    ctx.beginPath();
+    ctx.arc(s * 0.15, -s * 0.28, s * 0.13, 0, TAU);
+    ctx.arc(s * 0.15, s * 0.28, s * 0.13, 0, TAU);
+    ctx.fill();
+    ctx.restore();
+    ctx.globalCompositeOperation = 'lighter';
   }
   function drawPhoenix(P, A) {
     const flap = Math.sin(clock * 14);
@@ -10450,6 +11157,55 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
         ctx.stroke();
         continue;
       }
+      if (f.type === 'solar') { // the flare: a widening ring of fire, fading as it goes
+        const u = Math.min(1, f.t / (f.T || 0.7));
+        const R = (f.r || 230) * easeOut(u);
+        const k = 1 - u;
+        ctx.globalAlpha = 0.85 * k * fx;
+        for (const [lw, col] of [[16, '#ff7a3d'], [7, '#ffb347'], [2.2, '#fff3b0']]) {
+          ctx.strokeStyle = col;
+          ctx.lineWidth = lw * (0.6 + 0.4 * k);
+          ctx.beginPath();
+          ctx.arc(f.x, f.y, R, 0, TAU);
+          ctx.stroke();
+        }
+        continue;
+      }
+      if (f.type === 'mark') { // a red sight that closes in on its ship
+        if (f.t < 0) continue;
+        const u = Math.min(1, f.t / (f.T || 0.75));
+        const r = (f.r || 44) * (1.7 - 0.7 * u);
+        ctx.globalAlpha = 0.6 * fx;
+        soft(dot('#ff5a6e'), f.x - r * 0.5, f.y - r * 0.5, r, r);
+        ctx.globalAlpha = (0.7 + 0.3 * Math.sin(clock * 30)) * fx;
+        ctx.strokeStyle = '#ff5a6e';
+        ctx.lineWidth = 2.6;
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, r, 0, TAU);
+        ctx.stroke();
+        ctx.beginPath();
+        for (let n = 0; n < 4; n++) {
+          const a = clock * 3 + (n / 4) * TAU;
+          ctx.moveTo(f.x + Math.cos(a) * r * 0.55, f.y + Math.sin(a) * r * 0.55);
+          ctx.lineTo(f.x + Math.cos(a) * r * 1.25, f.y + Math.sin(a) * r * 1.25);
+        }
+        ctx.stroke();
+        ctx.globalAlpha = 0.25 * u * fx; // the beam warming up overhead
+        ctx.fillStyle = beamFill(f.x - 6, f.x + 6, '#ff6f91', 0.3);
+        ctx.fillRect(f.x - 6, 0, 12, f.y);
+        continue;
+      }
+      if (f.type === 'strike') { // the beam from orbit: white-hot, narrowing as it fades
+        const k = Math.max(0, 1 - f.t / (f.T || 0.35));
+        const w2 = (f.r || 44) * (0.45 + 0.55 * k);
+        ctx.globalAlpha = k * fx;
+        ctx.fillStyle = beamFill(f.x - w2, f.x + w2, '#ff6f91', 0.3);
+        ctx.fillRect(f.x - w2, 0, w2 * 2, f.y);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.fillRect(f.x - w2 * 0.22, 0, w2 * 0.44, f.y);
+        soft(dot('#ffffff'), f.x - w2 * 1.4, f.y - w2 * 1.4, w2 * 2.8, w2 * 2.8);
+        continue;
+      }
       if (f.type === 'meteor') {
         const dx = f.tx - f.sx;
         const dy = f.ty - f.sy;
@@ -10578,7 +11334,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
   }
   function drawAura(w, s) {
     const R = s.radius * stats.area;
-    const tone = toneOf('aura', w.evolved);
+    const tone = w.alt ? ALT_TONES.aura : toneOf('aura', w.evolved);
     const t = tierOf('aura');
     const fx = fxAlpha();
     ctx.save();
@@ -10624,7 +11380,38 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     ctx.arc(player.x, player.y, R - 1, 0, TAU);
     ctx.stroke();
     ctx.setLineDash([]);
-    if (w.evolved || t >= 3) { // motes spiral in toward the ship
+    if (w.alt) { // the mirror: a slowly turning hexagon of silver panes, with glints running along it
+      const rot = clock * 0.6;
+      const corner = (k) => [player.x + Math.cos(rot + (k / 6) * TAU) * R, player.y + Math.sin(rot + (k / 6) * TAU) * R];
+      ctx.globalAlpha = 0.8 * fx;
+      ctx.strokeStyle = '#eafaff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let k = 0; k <= 6; k++) {
+        const [x, y] = corner(k);
+        if (k) ctx.lineTo(x, y);
+        else ctx.moveTo(x, y);
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 0.22 * fx;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      for (let k = 0; k < 6; k++) {
+        const [x, y] = corner(k);
+        ctx.moveTo(player.x + (x - player.x) * 0.3, player.y + (y - player.y) * 0.3);
+        ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      for (let k = 0; k < 3; k++) {
+        const u = (clock * 0.9 + k / 3) % 1;
+        const side = Math.floor(u * 6);
+        const v = u * 6 - side;
+        const [x1, y1] = corner(side);
+        const [x2, y2] = corner(side + 1);
+        ctx.globalAlpha = 0.9 * fx;
+        soft(dot('#ffffff'), x1 + (x2 - x1) * v - 6, y1 + (y2 - y1) * v - 6, 12, 12);
+      }
+    } else if (w.evolved || t >= 3) { // motes spiral in toward the ship
       for (let k = 0; k < 8; k++) {
         const u = (clock * 0.6 + k / 8) % 1;
         const a = k * 2.4 + clock * 2.2 + u * 3;
@@ -10665,7 +11452,8 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
       if (s.kind === 'missile') {
         const a = Math.atan2(s.vy, s.vx);
         const tone = s.tone || COLOR.orange;
-        const big = s.tier >= 2 ? 1.35 : 1;
+        const body = Math.max(1, s.size || 1); // a cluster missile is bigger
+        const big = Math.max(s.tier >= 2 ? 1.35 : 1, body);
         const gx = s.x - Math.cos(a) * 12 * big; // the round glow sits behind the nose: no need to turn the canvas for it
         const gy = s.y - Math.sin(a) * 12 * big;
         soft(dot(tone), gx - 7 * big, gy - 7 * big, 14 * big, 14 * big);
@@ -10674,7 +11462,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
         unturn();
         ctx.globalCompositeOperation = 'source-over';
         turnTo(s.x, s.y, a);
-        ctx.drawImage(MISSILE, -8, -8, 16, 16);
+        ctx.drawImage(MISSILE, -8 * body, -8 * body, 16 * body, 16 * body);
         unturn();
         ctx.globalCompositeOperation = 'lighter';
         continue;
@@ -10692,13 +11480,14 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
       }
       if (s.kind === 'orb') {
         const tone = s.tone || '#ff6f91';
+        const z = s.size || 1;
         for (const [k, r, al] of ORB_TAIL) { // a short comet tail
           ctx.globalAlpha = al * fxAlpha();
-          soft(dot(tone), s.x - s.vx * k - r, s.y - s.vy * k - r, r * 2, r * 2);
+          soft(dot(tone), s.x - s.vx * k - r * z, s.y - s.vy * k - r * z, r * 2 * z, r * 2 * z);
         }
         ctx.globalAlpha = fxAlpha();
-        soft(dot(tone), s.x - 13, s.y - 13, 26, 26);
-        soft(dot('#ffffff'), s.x - 4, s.y - 4, 8, 8);
+        soft(dot(tone), s.x - 13 * z, s.y - 13 * z, 26 * z, 26 * z);
+        soft(dot('#ffffff'), s.x - 4 * z, s.y - 4 * z, 8 * z, 8 * z);
         continue;
       }
       if (s.kind === 'blade') { // a crescent of light, bright edge first
@@ -10983,7 +11772,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
         const def = kind === 'weapon' ? WEAPONS[s.id] : PASSIVES[s.id];
         chip.className = `chip${kind === 'passive' ? ' is-passive' : ''}${s.evolved ? ' is-evolved' : ''}`;
         chip.innerHTML = svgIcon(def.icon);
-        chip.append(s.evolved ? def.evo.name : def.name);
+        chip.append(s.evolved && kind === 'weapon' ? evoName(s.id, s.alt) : def.name);
         const lv = document.createElement('b');
         lv.textContent = s.evolved ? (s.used ? '합체 ★' : '합체') : `Lv ${s.lv}`;
         chip.append(lv);
@@ -11004,20 +11793,28 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     const hot = new Set(offered.map((o) => o.id).filter(Boolean));
     const compact = listEl === ui.choiceRecipes;
     let far = 0;
-    listEl.replaceChildren(...Object.keys(EVOLVE).map((wid) => {
+    const rows = [...Object.keys(EVOLVE).map((wid) => [wid, false]), ...Object.keys(ALT_EVOLVE).map((wid) => [wid, true])];
+    listEl.replaceChildren(...rows.map(([wid, alt]) => {
+      const form = alt ? ALT_EVOLVE[wid] : EVOLVE[wid];
       const w = owned('weapon', wid) || (run.fused.includes(wid) ? { evolved: true, lv: 5 } : null);
-      const pid = EVOLVE[wid].partner;
-      const ready = w && w.id && canEvolve(w);
-      const isHot = hot.has(wid) || hot.has(pid);
-      const isFar = compact && !w && !passiveLv(pid) && !isHot;
+      const pid = form.partner;
+      const locked = alt && !altOpen(wid);
+      const mine = !!(w && w.evolved && !!w.alt === alt); // combined into this form
+      const other = !!(w && w.evolved && !mine); // combined into its other form: this one is out for the run
+      const ready = !locked && !!(w && w.id && evoForms(w).includes(alt));
+      const isHot = !locked && (hot.has(wid) || hot.has(pid));
+      const isFar = compact && (locked || other || (!w && !passiveLv(pid) && !isHot));
       if (isFar) far += 1;
       const li = document.createElement('li');
-      li.className = `recipe${w && w.evolved ? ' is-done' : ready ? ' is-ready' : ''}${isHot ? ' is-hot' : ''}${isFar ? ' is-far' : ''}`;
+      li.className = `recipe${alt ? ' is-alt' : ''}${locked ? ' is-locked' : mine || other ? ' is-done' : ready ? ' is-ready' : ''}${isHot ? ' is-hot' : ''}${isFar ? ' is-far' : ''}`;
       const left = document.createElement('span');
       const weaponPart = w && !w.evolved ? `${WEAPONS[wid].name} Lv ${w.lv}/5` : `${WEAPONS[wid].name} Lv 5`;
-      left.textContent = `${weaponPart} + ${PASSIVES[pid].name}${passiveLv(pid) ? ' ✓' : ''}`;
+      left.textContent = `${weaponPart} + ${PASSIVES[pid].name}${passiveLv(pid) && !locked ? ' ✓' : ''}`;
       const right = document.createElement('b');
-      right.textContent = `${WEAPONS[wid].evo.name}${w && w.evolved ? ' 완료' : ready ? ' 준비' : ''}`;
+      if (locked) {
+        right.innerHTML = svgIcon('lock');
+        right.append(`${evoName(wid, alt)} · ${STAGES[rewardOf('evo', wid)].name} 클리어`);
+      } else right.textContent = `${evoName(wid, alt)}${mine ? ' 완료' : other ? ' (다른 합체)' : ready ? ' 준비' : ''}`;
       li.append(left, right);
       return li;
     }));
@@ -11038,6 +11835,18 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     let far = 0;
     let shown = 0;
     listEl.replaceChildren(...Object.entries(ULTS).map(([id, u]) => {
+      if (!ultOpen(id)) { // a region reward not opened yet: shown with where it comes from, out of reach
+        if (compact) far += 1;
+        const li = document.createElement('li');
+        li.className = `recipe is-special is-locked${compact ? ' is-far' : ''}`;
+        const left = document.createElement('span');
+        left.textContent = u.sig.map((wid) => `${WEAPONS[wid].name} 합체`).join(' + ');
+        const right = document.createElement('b');
+        right.innerHTML = svgIcon('lock');
+        right.append(`${u.name} · ${STAGES[rewardOf('ult', id)].name} 클리어`);
+        li.append(left, right);
+        return li;
+      }
       // the two places of the recipe: a particular combined skill (special ultimates) or any of a family
       const places = u.sig ? u.sig.map((wid) => ({ wid })) : u.pair.map((f) => ({ f }));
       const fits = (w, p) => (p.wid ? w.id === p.wid : FAMILY[w.id] === p.f);
@@ -11070,7 +11879,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
       const li = document.createElement('li');
       li.className = `recipe${u.sig ? ' is-special' : ''}${done ? ' is-done' : can ? ' is-ready' : ''}${!done && got === 1 ? ' is-hot' : ''}${isFar ? ' is-far' : ''}`;
       const left = document.createElement('span');
-      const words = parts.map((w, k) => (w ? `${WEAPONS[w.id].evo.name} ✓` : places[k].wid ? WEAPONS[places[k].wid].evo.name : `${FAMILY_NAME[places[k].f]} 합체`));
+      const words = parts.map((w, k) => (w ? `${evoName(w.id, w.alt)} ✓` : places[k].wid ? (ALT_EVOLVE[places[k].wid] && altOpen(places[k].wid) ? `${WEAPONS[places[k].wid].name} 합체` : WEAPONS[places[k].wid].evo.name) : `${FAMILY_NAME[places[k].f]} 합체`));
       left.textContent = [...words.filter((t, k) => parts[k]), ...words.filter((t, k) => !parts[k])].join(' + '); // what they have first
       const right = document.createElement('b');
       right.textContent = `${u.sig ? '특별 · ' : ''}${u.name}${done ? ' 완료' : can ? ' 준비' : ''}`;
@@ -11080,7 +11889,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     if (compact) ui.choiceUltHead.hidden = !allRecipes && shown === 0;
     else {
       const names = (f) => Object.keys(FAMILY).filter((wid) => FAMILY[wid] === f).map((wid) => WEAPONS[wid].evo.name).join('·');
-      ui.ultFamily.textContent = `${Object.keys(FAMILY_NAME).map((f) => `${FAMILY_NAME[f]} 합체: ${names(f)}`).join(' / ')}. 특별 궁극기는 정해진 두 합체 스킬로만 만들어져요(그 두 스킬은 계열 궁극기 대신 특별 궁극기가 돼요).`;
+      ui.ultFamily.textContent = `${Object.keys(FAMILY_NAME).map((f) => `${FAMILY_NAME[f]} 합체: ${names(f)}`).join(' / ')}. 특별 궁극기는 정해진 두 합체 스킬로만 만들어져요(그 두 스킬은 계열 궁극기 대신 특별 궁극기가 돼요). 새 합체 스킬도 같은 무기의 합체로 쳐요. 잠긴 것은 그 지역을 처음 깨면 열려요.`;
     }
     return far;
   }
@@ -11241,7 +12050,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
       b.disabled = !open;
       b.dataset.stage = String(i);
       b.style.setProperty('--stage-color', s.color);
-      b.innerHTML = '<span class="stage-no"></span><span class="stage-body"><span class="stage-name"></span><span class="stage-about"></span><span class="stage-need"></span><span class="stage-best"></span></span><span class="stage-state"></span>';
+      b.innerHTML = '<span class="stage-no"></span><span class="stage-body"><span class="stage-name"></span><span class="stage-about"></span><span class="stage-need"></span><span class="stage-reward"></span><span class="stage-best"></span></span><span class="stage-state"></span>';
       b.querySelector('.stage-no').textContent = String(i + 1);
       b.querySelector('.stage-name').textContent = s.name;
       b.querySelector('.stage-name').after(regionPreview(i));
@@ -11252,6 +12061,14 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
         needEl.textContent = `권장 스킬 트리 ${need}단계 · 지금 ${have}단계`;
         needEl.classList.toggle('is-low', have < need);
       } else needEl.remove();
+      const rw = REWARDS[i];
+      const rwEl = b.querySelector('.stage-reward');
+      if (rw) {
+        const got = !!saved.cleared[i];
+        rwEl.innerHTML = svgIcon(got ? 'check' : rw.kind === 'evo' ? 'merge' : 'ult');
+        rwEl.append(`${got ? '받은 보상' : '클리어 보상'}: ${rewardKind(rw)} '${rewardName(rw)}'`);
+        rwEl.classList.toggle('is-got', got);
+      } else rwEl.remove();
       const best = open ? stageBest(i) : null;
       b.querySelector('.stage-best').textContent = best ? `최고 ${clockText(best.timeMs / 1000)} 버팀 · Lv ${best.level}` : '';
       const st = b.querySelector('.stage-state');
@@ -11459,8 +12276,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     } else if (pendingChests > 0) {
       const offers = [];
       if (!chestSkip) {
-        const ready = build.weapons.filter(canEvolve);
-        if (ready.length) offers.push({ kind: 'evolve', id: pick(ready).id });
+        offers.push(...evolveOffers());
         const pair = ultPair();
         if (pair) offers.push({ kind: 'ult', a: pair[0], b: pair[1], ult: ultFor(pair[0], pair[1]) });
       }
@@ -11492,7 +12308,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     ui.quitNote.textContent = coop.on ? (coop.pauseRemote ? `${coop.partner || '친구'}님이 일시정지했어요. ` : '친구 화면도 같이 멈춰요. ') + (coopGuest() ? '나가면 지금까지 점수와 코인을 받아요.' : '끝내면 둘 다 지금 점수와 코인을 받아요.')
       : run.vs ? '대결은 계속돼요. 끝내면 지금 점수로 대결 순위에 남아요.'
       : run.endless ? '끝내면 지금까지 모은 점수와 코인을 받아요.' : '그만하면 이번 판의 기록과 코인은 남지 않아요.';
-    ui.ultNote.textContent = `합체 스킬 2개를 가진 채 보급 상자를 열면 궁극기가 하나 더 생겨요. 두 합체 스킬도 그대로 계속 나가고, 궁극기에 쓴 스킬에는 ★ 표시가 붙어요. ${run.endless ? `무한 모드는 제한이 없어요: 합체 스킬 2개만 있으면(궁극기에 이미 쓴 것도 돼요) 아직 없는 종류의 궁극기를 계속 만들어요. ${Object.keys(ULTS).length}종 모두 모을 수 있어요.` : `한 판에 두 번까지 할 수 있어요(지금 ${run.ults}/${ULT_PER_RUN}). 두 번째는 아직 안 쓴 합체 스킬 2개가 더 있어야 해요.`}`;
+    ui.ultNote.textContent = `합체 스킬 2개를 가진 채 보급 상자를 열면 궁극기가 하나 더 생겨요. 두 합체 스킬도 그대로 계속 나가고, 궁극기에 쓴 스킬에는 ★ 표시가 붙어요. ${run.endless ? `무한 모드는 제한이 없어요: 합체 스킬 2개만 있으면(궁극기에 이미 쓴 것도 돼요) 아직 없는 종류의 궁극기를 계속 만들어요. 지금 열린 ${ultKinds()}종을 모두 모을 수 있어요.` : `한 판에 두 번까지 할 수 있어요(지금 ${run.ults}/${ULT_PER_RUN}). 두 번째는 아직 안 쓴 합체 스킬 2개가 더 있어야 해요.`}`;
     renderSlots(ui.pauseSlots);
     renderRecipes(ui.recipes);
     renderUltGuide();
@@ -11518,7 +12334,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     for (const k of KEEP_RUN) r[k] = run[k];
     const snap = {
       v: 1, at: Date.now(), stage: run.endless ? ENDLESS : stageIndex, ship: run.ship, run: r, fused: run.fused, stat: run.stat, risk: run.risk,
-      weapons: build.weapons.map((w) => (w.id === 'ult' ? { id: 'ult', ult: w.ult, from: w.from } : { id: w.id, lv: w.lv, evolved: !!w.evolved, used: !!w.used })),
+      weapons: build.weapons.map((w) => (w.id === 'ult' ? { id: 'ult', ult: w.ult, from: w.from } : { id: w.id, lv: w.lv, evolved: !!w.evolved, alt: !!w.alt, used: !!w.used })),
       passives: build.passives.map((p) => ({ id: p.id, lv: p.lv })),
       hp: player.hp, shield: !!player.shield, shieldT: player.shieldT || 0,
       mid: director.mid, bossAt: director.bossAt || 0, final: !!director.final,
@@ -11584,7 +12400,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     }
     build.weapons = s.weapons.map((w) => (w.id === 'ult'
       ? { id: 'ult', ult: w.ult, from: Array.isArray(w.from) ? w.from : [], lv: 1, evolved: true, cd: 0.6, cd2: 2, t: 0, charge: 0 }
-      : Object.assign(newWeapon(w.id), { lv: w.lv, evolved: !!w.evolved, used: !!w.used })));
+      : Object.assign(newWeapon(w.id), { lv: w.lv, evolved: !!w.evolved, alt: !!w.alt && !!w.evolved && !!ALT_EVOLVE[w.id], used: !!w.used })));
     build.passives = s.passives.map((p) => ({ id: p.id, lv: p.lv }));
     recompute();
     Object.assign(player, { hp: clamp(s.hp, 1, stats.maxHp), shield: !!s.shield, shieldT: Number(s.shieldT) || 0, invuln: 2 });
@@ -11636,6 +12452,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     if (endless) Object.assign(record, { sector: run.sector + 1, combo: run.bestCombo });
     const prev = bestRecord(saved.records.filter((r) => r.stage === stageNo));
     const unlockedBefore = saved.unlocked;
+    const firstClear = cleared && !endless && !saved.cleared[stageIndex]; // a region's reward opens on its first clear
     const timeCoins = Math.floor(secs / 10) * stats.coinMul;
     const interest = Math.min(100 * rank('interest'), Math.floor(saved.coins * 0.01 * rank('interest')));
     const earned = given ? Math.max(0, Math.floor(given.earned)) : Math.floor(run.coins + timeCoins + (cleared ? 100 * (stageIndex + 1) : 0) + interest);
@@ -11694,6 +12511,12 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     if (fresh.length) {
       ui.achvLine.textContent = `업적 달성! ${fresh.map((a) => `'${a.name}'`).join(', ')} 칭호를 받았어요 (+${fmt(fresh.reduce((n, a) => n + a.coins, 0))} 코인)`;
       sfx.play('evolve');
+    }
+    const reward = firstClear ? REWARDS[stageIndex] : null;
+    ui.rewardLine.hidden = !reward;
+    if (reward) {
+      ui.rewardLine.textContent = `${rewardKind(reward)} '${rewardName(reward)}'${particle(rewardName(reward), '이', '가')} 열렸어요! ${rewardRecipe(reward)} 조합으로 ${reward.kind === 'evo' ? '보급 상자에서 합체해요' : '궁극 합체를 하면 나와요'}. 무한 모드에서도 써요.`;
+      if (!fresh.length) sfx.play('evolve');
     }
     ui.resultWarn.hidden = stored;
     const hasNext = cleared && stageIndex < STAGES.length - 1;
@@ -13478,7 +14301,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
   const STEPS = ['', 'hover', 'dash', 'aim'];
   const BULLET_TONES = Object.keys(EBULLET);
   const ITEM_KINDS = ['coin', 'heal', 'magnet', 'bomb', 'chest', 'mystery'];
-  const UFX_TYPES = ['meteor', 'pillar', 'shell', 'fire', 'hole', 'wave', 'wing', 'chrono'];
+  const UFX_TYPES = ['meteor', 'pillar', 'shell', 'fire', 'hole', 'wave', 'wing', 'chrono', 'solar', 'mark', 'strike'];
   const WEAPON_IDS = [...Object.keys(WEAPONS), 'ult'];
   const ULT_IDS = Object.keys(ULTS);
   const PALETTE = [...new Set(['#7fe7ff', ...Object.values(TIER_TONES).flat(), ...Object.values(EVO_TONES), ...SHIPS.map((sd) => sd.tone),
@@ -13683,7 +14506,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
   }
   // both ways open: introduce ourselves (name, fighter, skill tree)
   function coopLinked() {
-    coopSend({ t: 'hello', name: saved.name || '조종사', ship: saved.ship, tree: saved.tree, tt: myTitle(), pg: PAGE_ID });
+    coopSend({ t: 'hello', name: saved.name || '조종사', ship: saved.ship, tree: saved.tree, tt: myTitle(), pg: PAGE_ID, un: myRewards() });
     if (state === 'together') renderTogether();
   }
   // the database route: each phone keeps one record with its recent messages and, for the host, the latest snapshot
@@ -13737,7 +14560,8 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
   function coopCtl(m) {
     if (!m || typeof m !== 'object') return;
     if (m.t === 'hello') {
-      coop.info = { name: cleanName(m.name) || '친구', ship: SHIPS.some((sd) => sd.id === m.ship) ? m.ship : 'star', tree: cleanTree(m.tree), pg: typeof m.pg === 'string' ? m.pg : '' };
+      coop.info = { name: cleanName(m.name) || '친구', ship: SHIPS.some((sd) => sd.id === m.ship) ? m.ship : 'star', tree: cleanTree(m.tree), pg: typeof m.pg === 'string' ? m.pg : '',
+        un: Number.isInteger(m.un) ? m.un & ((1 << REWARDS.length) - 1) : 0 };
       coop.partner = coop.info.name;
       if (coop.on && !coop.lost && coop.peerPg && coop.info.pg && coop.info.pg !== coop.peerPg) { // their page started over
         coopLost(coop.role === 'host' ? '친구 화면이 처음부터 다시 열려서 혼자 계속 싸워요.' : '');
@@ -13831,7 +14655,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
     const tree = info.tree || {};
     const ship = info.ship;
     return {
-      name: info.name, ship, tree,
+      name: info.name, ship, tree, un: info.un || 0,
       player: { x: W / 2, y: H - 90, hp: 100, invuln: 1.5, bank: 0, prevX: W / 2, alive: true, shield: (tree.barrier || 0) > 0, shieldT: 0, downT: 0 },
       build: { weapons: [], passives: [] }, stats: null, gun: { cd: 0.4, a: 0 }, hitbox: shipOf(ship).hitbox,
       run: {
@@ -13966,7 +14790,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
   const coopWaiting = () => !!coop.ally && coopHost() && (!!coop.ally.asking || coop.ally.levels > 0 || coop.ally.chests > 0 || coop.ally.start);
   function buildView(c) {
     return {
-      weapons: c.build.weapons.map((w) => ({ id: w.id, lv: w.lv, evolved: w.evolved, ult: w.ult, from: w.from, used: !!w.used })),
+      weapons: c.build.weapons.map((w) => ({ id: w.id, lv: w.lv, evolved: w.evolved, alt: !!w.alt, ult: w.ult, from: w.from, used: !!w.used })),
       passives: c.build.passives.map((p) => ({ id: p.id, lv: p.lv })),
     };
   }
@@ -13986,8 +14810,7 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
   function chestRequest(a) {
     const offers = [];
     if (!a.chestSkip) {
-      const ready = build.weapons.filter(canEvolve);
-      if (ready.length) offers.push({ kind: 'evolve', id: pick(ready).id });
+      offers.push(...evolveOffers());
       const pair = ultPair();
       if (pair) offers.push({ kind: 'ult', a: pair[0], b: pair[1], ult: ultFor(pair[0], pair[1]) });
     }
@@ -14062,9 +14885,10 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
       iv: Math.round(Math.max(0, p.invuln) * 100) / 100, al: p.alive ? 1 : 0, dn: Math.ceil(p.downT || 0), sh: p.shield ? 1 : 0,
       ship: c ? c.run.ship : run.ship, ga: Math.round(g.a * 100) / 100, sk: Math.round(withCtx(c, barrierCharge) * 100) / 100,
       st: st ? { area: st.area, ultArea: st.ultArea, reachMul: st.reachMul, speedMul: st.speedMul, maxHp: st.maxHp } : null,
-      w: b.weapons.map((w) => [w.id, w.ult || '', w.lv, w.evolved ? 1 : 0, Math.round((w.angle || 0) * 1000) / 1000, Math.round((w.active || 0) * 1000) / 1000,
+      w: b.weapons.map((w) => [w.id, w.ult || '', w.lv, w.evolved ? (w.alt ? 2 : 1) : 0, Math.round((w.angle || 0) * 1000) / 1000, Math.round((w.active || 0) * 1000) / 1000,
         Math.round((w.sweepT || 0) * 1000) / 1000, Math.round((w.charge || 0) * 100) / 100, Math.round((w.t || 0) * 100) / 100,
-        w.ph ? [Math.round(w.ph.x), Math.round(w.ph.y), Math.round(w.ph.ang * 100) / 100] : 0, w.used ? 1 : 0]),
+        w.ph ? [Math.round(w.ph.x), Math.round(w.ph.y), Math.round(w.ph.ang * 100) / 100] : 0, w.used ? 1 : 0,
+        w.hd ? w.hd.map((d) => [Math.round(d.x), Math.round(d.y), d.m]) : 0]),
       pv: b.passives.map((q) => [q.id, q.lv]),
     };
   }
@@ -14398,14 +15222,16 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
   // weapons as the host has them, keeping the moving parts we animate between snapshots
   function syncWeapons(b, list, passives) {
     const old = b.weapons;
-    b.weapons = (list || []).map(([id, ult, lv, evo, angle, active, sweepT, charge, t, ph, used], k) => {
+    b.weapons = (list || []).map(([id, ult, lv, evo, angle, active, sweepT, charge, t, ph, used, hd], k) => {
       const w = old[k] && old[k].id === id && (old[k].ult || '') === ult ? old[k] : { id, cd: 0, tick: 0 };
-      Object.assign(w, { id, lv, evolved: !!evo, angle, active, sweepT, charge, t, used: !!used });
+      Object.assign(w, { id, lv, evolved: !!evo, alt: evo === 2, angle, active, sweepT, charge, t, used: !!used });
       if (ult) w.ult = ult;
       if (ph) {
         w.ph = w.ph || { mode: 'orbit' };
         Object.assign(w.ph, { x: ph[0], y: ph[1], ang: ph[2] });
+        if (ult === 'dragon') dragonTrail(w); // the body follows the path the head has taken
       } else w.ph = null;
+      w.hd = Array.isArray(hd) ? hd.map(([x, y, m], j) => Object.assign((w.hd && w.hd[j]) || {}, { x, y, m })) : null;
       return w;
     });
     b.passives = (passives || []).map(([id, lv]) => ({ id, lv }));
@@ -15993,6 +16819,14 @@ details[open] > summary.patch-date::after { rotate: 225deg; translate: 0 2px; }
   // game sees the window once (until the next entry), and the button on the title screen opens it any time.
   // Kinds: new = 신규, up = 개선, fix = 수정.
   const PATCH_NOTES = [
+    {
+      id: '2026-11-04', date: '11월 4일',
+      items: [
+        ['new', '지역 클리어 보상', '지역을 처음 깰 때마다 새 스킬이 하나씩 열려요. 지역 카드에 어떤 보상인지 보여요. 열지 못한 스킬은 무한 모드에서도 쓸 수 없어요. 이미 깬 지역의 보상은 바로 열려 있어요.'],
+        ['new', '새 합체 스킬 4종', '같은 무기라도 다른 장비와 합체하면 새 스킬이 돼요. 반사 역장(역장 + 강화 장갑), 집속 미사일(유도 미사일 + 확산기), 사냥꾼 드론(궤도 드론 + 증폭기), 프리즘 광선(레이저 + 행운 부적).'],
+        ['new', '새 궁극기 4종', '작은 태양(화염 방사기 + 역장), 궤도 폭격(유도 미사일 + 레이저), 칼날 폭풍(회전 톱날 + 궤도 드론), 번개 용(번개 + 주포). 두 무기의 합체 스킬로 궁극 합체를 하면 나와요.'],
+      ],
+    },
     {
       id: '2026-11-03', date: '11월 3일',
       items: [
